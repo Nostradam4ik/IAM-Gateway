@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  CSV resource MINIMAL - Pour découverte du schéma uniquement
+  Utilisez ce fichier en PREMIER pour que MidPoint découvre le schéma
+-->
+<resource xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:icfc="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/connector-schema-3"
+          xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+          oid="8a8b9c1d-0002-0000-0000-000000000001">
+
+  <name>HR CSV Resource</name>
+  <description>CSV resource for HR employee data import</description>
+
+  <connectorRef type="ConnectorType">
+    <filter>
+      <q:equal>
+        <q:path>connectorType</q:path>
+        <q:value>com.evolveum.polygon.connector.csv.CsvConnector</q:value>
+      </q:equal>
+    </filter>
+  </connectorRef>
+
+  <connectorConfiguration>
+    <icfc:configurationProperties xmlns:icfccsv="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/com.evolveum.polygon.connector-csv/com.evolveum.polygon.connector.csv.CsvConnector">
+      <icfccsv:filePath>/opt/midpoint/var/import/hr_sample.csv</icfccsv:filePath>
+      <icfccsv:encoding>UTF-8</icfccsv:encoding>
+      <icfccsv:fieldDelimiter>;</icfccsv:fieldDelimiter>
+      <icfccsv:multivalueDelimiter>|</icfccsv:multivalueDelimiter>
+      <icfccsv:uniqueAttribute>uid</icfccsv:uniqueAttribute>
+    </icfc:configurationProperties>
+  </connectorConfiguration>
+
+</resource>

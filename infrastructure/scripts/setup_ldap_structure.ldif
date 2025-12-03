@@ -1,0 +1,14 @@
+# Structure LDAP de base pour MidPoint
+# Création de l'OU people pour contenir les utilisateurs
+
+dn: ou=people,dc=example,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: people
+description: Container for user accounts
+
+dn: ou=groups,dc=example,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: groups
+description: Container for groups

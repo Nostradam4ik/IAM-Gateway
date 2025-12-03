@@ -30,16 +30,17 @@ services:
       - midpoint_home:/opt/midpoint/var
 
   apacheds:
-    image: ghcr.io/dogtagpki/ldap-server:latest
+    image: osixia/openldap:1.5.0
     container_name: apacheds
     environment:
-      LDAP_DOMAIN: example.com
       LDAP_ORGANISATION: Example Corp
+      LDAP_DOMAIN: example.com
       LDAP_ADMIN_PASSWORD: secret
     ports:
       - "10389:389"
     volumes:
       - apacheds_data:/var/lib/ldap
+      - apacheds_config:/etc/ldap/slapd.d
 
   odoo:
     image: odoo:17
@@ -82,6 +83,7 @@ volumes:
   postgres_data:
   midpoint_home:
   apacheds_data:
+  apacheds_config:
   odoo_data:
   odoo_db_data:
   intranet_db_data:

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Rôle LDAP Basic - Attribution automatique d'un compte LDAP
+
+  Ce rôle provisionne automatiquement un compte dans ApacheDS pour tout utilisateur
+  qui se voit attribuer ce rôle.
+
+  Import: Configuration -> Import object
+-->
+<role xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+      xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+      oid="8a8b9c1d-1001-0000-0000-000000000001">
+
+  <name>LDAP Basic User</name>
+  <description>Rôle de base - Attribution d'un compte LDAP dans l'annuaire ApacheDS</description>
+
+  <requestable>true</requestable>
+  <riskLevel>low</riskLevel>
+
+  <inducement>
+    <construction>
+      <resourceRef oid="8a8b9c1d-0001-0000-0000-000000000001" type="c:ResourceType">
+        <!-- ApacheDS LDAP Resource -->
+      </resourceRef>
+      <kind>account</kind>
+      <intent>default</intent>
+    </construction>
+  </inducement>
+
+  <autoassign>
+    <enabled>true</enabled>
+    <focus>
+      <selector>
+        <type>UserType</type>
+      </selector>
+    </focus>
+  </autoassign>
+
+</role>

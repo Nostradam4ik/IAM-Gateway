@@ -17,7 +17,7 @@ docker compose -f "$COMPOSE_FILE" up -d
 cat <<'EOF'
 MidPoint stack started:
   MidPoint UI     -> http://localhost:8080/midpoint  (admin/admin)
-  ApacheDS LDAP   -> ldap://localhost:10389         (uid=admin,ou=system)
+  ApacheDS LDAP   -> ldap://localhost:10389         (cn=admin,dc=example,dc=com)
   Odoo            -> http://localhost:8069
   Intranet DB     -> postgres://intranet:intranet@localhost:55432/intranet
 

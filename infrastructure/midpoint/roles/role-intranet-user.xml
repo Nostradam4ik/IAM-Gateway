@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Rôle Application Intranet - Accès à la base PostgreSQL intranet
+
+  Ce rôle provisionne un compte dans la base de données PostgreSQL
+  de l'application intranet.
+
+  Import: Configuration -> Import object
+-->
+<role xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+      xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+      oid="8a8b9c1d-1003-0000-0000-000000000001">
+
+  <name>Intranet Application User</name>
+  <description>Rôle pour accès à l'application Intranet - Base PostgreSQL</description>
+
+  <requestable>true</requestable>
+  <riskLevel>low</riskLevel>
+
+  <!-- Note: Ce rôle sera fonctionnel une fois la ressource PostgreSQL créée -->
+
+</role>

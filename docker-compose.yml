@@ -1,0 +1,329 @@
+version: "3.9"
+
+services:
+  # ===========================================
+  # MidPoint IAM Core
+  # ===========================================
+  midpoint-postgres:
+    image: postgres:15
+    container_name: midpoint-postgres
+    environment:
+      POSTGRES_DB: midpoint
+      POSTGRES_USER: midpoint
+      POSTGRES_PASSWORD: midpoint
+    ports:
+      - "5433:5432"
+    volumes:
+      - midpoint_postgres_data:/var/lib/postgresql/data
+    networks:
+      - iam-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U midpoint"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  midpoint:
+    image: evolveum/midpoint:4.8
+    container_name: midpoint-core
+    depends_on:
+      midpoint-postgres:
+        condition: service_healthy
+    environment:
+      MIDPOINT_REPO_DATABASE_TYPE: postgresql
+      MIDPOINT_REPO_JDBC_URL: jdbc:postgresql://midpoint-postgres:5432/midpoint
+      MIDPOINT_REPO_JDBC_USERNAME: midpoint
+      MIDPOINT_REPO_JDBC_PASSWORD: midpoint
+      MIDPOINT_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - midpoint_home:/opt/midpoint/var
+    networks:
+      - iam-network
+
+  # ===========================================
+  # Gateway IAM (FastAPI)
+  # ===========================================
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: gateway-iam
+    depends_on:
+      gateway-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    environment:
+      DEBUG: "false"
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      DATABASE_URL: postgresql+asyncpg://gateway:gateway@gateway-db:5432/gateway
+      REDIS_URL: redis://redis:6379/0
+      MIDPOINT_URL: http://midpoint:8080/midpoint
+      MIDPOINT_USER: administrator
+      MIDPOINT_PASSWORD: admin
+      LDAP_HOST: openldap
+      LDAP_PORT: 389
+      LDAP_BIND_DN: cn=admin,dc=example,dc=com
+      LDAP_BIND_PASSWORD: secret
+      LDAP_BASE_DN: dc=example,dc=com
+      ODOO_URL: http://odoo:8069
+      ODOO_DB: odoo
+      ODOO_USER: admin
+      ODOO_PASSWORD: admin
+      INTRANET_DB_URL: postgresql://intranet:intranet@intranet-db:5432/intranet
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: gateway
+      KEYCLOAK_CLIENT_ID: gateway-client
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: gpt-4-turbo-preview
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-jwt-secret-change-in-production}
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_MINUTES: 60
+      WORKFLOW_DEFAULT_TIMEOUT_HOURS: 72
+      WORKFLOW_MAX_LEVELS: 5
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./gateway/app:/app/app
+      - gateway_logs:/app/logs
+    networks:
+      - iam-network
+    restart: unless-stopped
+
+  gateway-db:
+    image: postgres:15
+    container_name: gateway-db
+    environment:
+      POSTGRES_DB: gateway
+      POSTGRES_USER: gateway
+      POSTGRES_PASSWORD: gateway
+    ports:
+      - "5434:5432"
+    volumes:
+      - gateway_db_data:/var/lib/postgresql/data
+    networks:
+      - iam-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gateway"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # Gateway Frontend (React)
+  # ===========================================
+  gateway-frontend:
+    build:
+      context: ./gateway/frontend
+      dockerfile: Dockerfile
+    container_name: gateway-frontend
+    depends_on:
+      - gateway
+    ports:
+      - "3000:80"
+    networks:
+      - iam-network
+    restart: unless-stopped
+
+  # ===========================================
+  # Cache & Vector Store
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    container_name: gateway-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - iam-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: gateway-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - iam-network
+    restart: unless-stopped
+
+  # ===========================================
+  # Target Systems
+  # ===========================================
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: openldap
+    environment:
+      LDAP_ORGANISATION: "Example Corp"
+      LDAP_DOMAIN: "example.com"
+      LDAP_ADMIN_PASSWORD: secret
+      LDAP_CONFIG_PASSWORD: config
+      LDAP_READONLY_USER: "true"
+      LDAP_READONLY_USER_USERNAME: readonly
+      LDAP_READONLY_USER_PASSWORD: readonly
+    ports:
+      - "10389:389"
+      - "10636:636"
+    volumes:
+      - openldap_data:/var/lib/ldap
+      - openldap_config:/etc/ldap/slapd.d
+    networks:
+      - iam-network
+    restart: unless-stopped
+
+  phpldapadmin:
+    image: osixia/phpldapadmin:latest
+    container_name: phpldapadmin
+    depends_on:
+      - openldap
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: openldap
+      PHPLDAPADMIN_HTTPS: "false"
+    ports:
+      - "8088:80"
+    networks:
+      - iam-network
+
+  odoo-db:
+    image: postgres:15
+    container_name: odoo-db
+    environment:
+      POSTGRES_DB: odoo
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+    volumes:
+      - odoo_db_data:/var/lib/postgresql/data
+    networks:
+      - iam-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  odoo:
+    image: odoo:17
+    container_name: odoo
+    depends_on:
+      odoo-db:
+        condition: service_healthy
+    ports:
+      - "8069:8069"
+    environment:
+      HOST: odoo-db
+      USER: odoo
+      PASSWORD: odoo
+      PORT: 5432
+    volumes:
+      - odoo_data:/var/lib/odoo
+      - odoo_addons:/mnt/extra-addons
+    networks:
+      - iam-network
+    restart: unless-stopped
+
+  intranet-db:
+    image: postgres:15
+    container_name: intranet-db
+    environment:
+      POSTGRES_DB: intranet
+      POSTGRES_USER: intranet
+      POSTGRES_PASSWORD: intranet
+    ports:
+      - "55432:5432"
+    volumes:
+      - intranet_db_data:/var/lib/postgresql/data
+      - ./infrastructure/sql/init-intranet.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - iam-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U intranet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # Authentication (Keycloak)
+  # ===========================================
+  keycloak-db:
+    image: postgres:15
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    networks:
+      - iam-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: keycloak
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY: edge
+    command: start-dev
+    ports:
+      - "8081:8080"
+    networks:
+      - iam-network
+    restart: unless-stopped
+
+networks:
+  iam-network:
+    driver: bridge
+    name: iam-network
+
+volumes:
+  # MidPoint
+  midpoint_postgres_data:
+  midpoint_home:
+  # Gateway
+  gateway_db_data:
+  gateway_logs:
+  # Cache & Vector
+  redis_data:
+  qdrant_data:
+  # LDAP
+  openldap_data:
+  openldap_config:
+  # Odoo
+  odoo_db_data:
+  odoo_data:
+  odoo_addons:
+  # Intranet
+  intranet_db_data:
+  # Keycloak
+  keycloak_db_data:

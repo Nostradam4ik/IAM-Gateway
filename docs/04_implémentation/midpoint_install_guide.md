@@ -20,7 +20,7 @@
 | Composant | URL / Outil | Identifiants démo | Captures à déposer dans `media/` |
 | --- | --- | --- | --- |
 | MidPoint UI | `http://localhost:8080/midpoint` | `administrator` / `admin` | `media/midpoint/login.png`, `media/midpoint/dashboard.png`, `media/midpoint/resource-ldap.png`, `media/midpoint/task-import.png`, `media/midpoint/role-crm.png` |
-| ApacheDS | Apache Directory Studio (`ldap://localhost:10389`) | `uid=admin,ou=system` / `secret` | `media/apacheds/tree.png`, `media/apacheds/group.png` |
+| ApacheDS | Apache Directory Studio (`ldap://localhost:10389`) | `cn=admin,dc=example,dc=com` / `secret` | `media/apacheds/tree.png`, `media/apacheds/group.png` |
 | Odoo | `http://localhost:8069` | `admin` / `admin` (création base démo) | `media/odoo/hr.png`, `media/odoo/crm.png` |
 
 ### 4. MidPoint – Configuration initiale

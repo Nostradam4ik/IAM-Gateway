@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  CSV resource definition for HR data import in MidPoint.
+
+  CSV file must be copied to: /opt/midpoint/var/import/hr_sample.csv
+  Use: docker cp datasets/hr_sample.csv midpoint-core:/opt/midpoint/var/import/hr_sample.csv
+
+  Import this file from the midPoint UI: Configuration -> Import object
+-->
+<resource xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:icfs="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/resource-schema-3"
+          xmlns:icfc="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/connector-schema-3"
+          xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+          xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+          oid="8a8b9c1d-0002-0000-0000-000000000001">
+
+  <name>HR CSV Resource</name>
+  <description>CSV resource for HR employee data import</description>
+
+  <connectorRef type="ConnectorType">
+    <filter>
+      <q:equal>
+        <q:path>connectorType</q:path>
+        <q:value>com.evolveum.polygon.connector.csv.CsvConnector</q:value>
+      </q:equal>
+    </filter>
+  </connectorRef>
+
+  <connectorConfiguration xmlns:icfc="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/connector-schema-3">
+    <icfc:configurationProperties xmlns:icfccsv="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/com.evolveum.polygon.connector-csv/com.evolveum.polygon.connector.csv.CsvConnector">
+      <icfccsv:filePath>/opt/midpoint/var/import/hr_sample.csv</icfccsv:filePath>
+      <icfccsv:encoding>UTF-8</icfccsv:encoding>
+      <icfccsv:fieldDelimiter>;</icfccsv:fieldDelimiter>
+      <icfccsv:multivalueDelimiter>|</icfccsv:multivalueDelimiter>
+      <icfccsv:uniqueAttribute>uid</icfccsv:uniqueAttribute>
+    </icfc:configurationProperties>
+    <icfc:resultsHandlerConfiguration>
+      <icfc:enableNormalizingResultsHandler>false</icfc:enableNormalizingResultsHandler>
+      <icfc:enableFilteredResultsHandler>false</icfc:enableFilteredResultsHandler>
+      <icfc:enableAttributesToGetSearchResultsHandler>false</icfc:enableAttributesToGetSearchResultsHandler>
+    </icfc:resultsHandlerConfiguration>
+  </connectorConfiguration>
+
+  <schemaHandling>
+    <objectType>
+      <kind>account</kind>
+      <intent>default</intent>
+      <displayName>Default Account</displayName>
+      <default>true</default>
+      <objectClass>ri:AccountObjectClass</objectClass>
+
+      <attribute>
+        <ref>icfs:uid</ref>
+        <displayName>UID</displayName>
+        <inbound>
+          <strength>weak</strength>
+          <target>
+            <path>name</path>
+          </target>
+        </inbound>
+      </attribute>
+
+      <attribute>
+        <ref>icfs:name</ref>
+        <displayName>Name</displayName>
+        <inbound>
+          <strength>weak</strength>
+          <target>
+            <path>name</path>
+          </target>
+        </inbound>
+      </attribute>
+
+      <attribute>
+        <ref>ri:givenName</ref>
+        <displayName>Given Name</displayName>
+        <inbound>
+          <target>
+            <path>givenName</path>
+          </target>
+        </inbound>
+      </attribute>
+
+      <attribute>
+        <ref>ri:familyName</ref>
+        <displayName>Family Name</displayName>
+        <inbound>
+          <target>
+            <path>familyName</path>
+          </target>
+        </inbound>
+      </attribute>
+
+      <attribute>
+        <ref>ri:email</ref>
+        <displayName>Email</displayName>
+        <inbound>
+          <target>
+            <path>emailAddress</path>
+          </target>
+        </inbound>
+      </attribute>
+
+      <attribute>
+        <ref>ri:department</ref>
+        <displayName>Department</displayName>
+        <inbound>
+          <target>
+            <path>organizationalUnit</path>
+          </target>
+        </inbound>
+      </attribute>
+
+    </objectType>
+  </schemaHandling>
+
+  <synchronization>
+    <objectSynchronization>
+      <name>Account sync</name>
+      <enabled>true</enabled>
+      <kind>account</kind>
+      <intent>default</intent>
+      <focusType>UserType</focusType>
+
+      <correlation>
+        <q:equal>
+          <q:path>name</q:path>
+          <expression>
+            <path>$projection/attributes/uid</path>
+          </expression>
+        </q:equal>
+      </correlation>
+
+      <reaction>
+        <situation>linked</situation>
+        <synchronize>true</synchronize>
+      </reaction>
+
+      <reaction>
+        <situation>deleted</situation>
+        <action>
+          <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/action-3#unlink</handlerUri>
+        </action>
+      </reaction>
+
+      <reaction>
+        <situation>unlinked</situation>
+        <action>
+          <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/action-3#link</handlerUri>
+        </action>
+      </reaction>
+
+      <reaction>
+        <situation>unmatched</situation>
+        <action>
+          <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/action-3#addFocus</handlerUri>
+        </action>
+      </reaction>
+    </objectSynchronization>
+  </synchronization>
+
+</resource>

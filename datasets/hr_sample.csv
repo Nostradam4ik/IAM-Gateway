@@ -1,0 +1,4 @@
+uid;givenName;familyName;email;department
+u1001;Alice;Dupont;alice.dupont@example.com;Engineering
+u1002;Bob;Martin;bob.martin@example.com;Sales
+u1003;Carla;Nguyen;carla.nguyen@example.com;HR

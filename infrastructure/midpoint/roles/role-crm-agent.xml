@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Rôle Agent Commercial CRM - Accès à Odoo
+
+  Ce rôle donne accès au système CRM Odoo pour les agents commerciaux.
+  Nécessite la ressource Odoo configurée dans MidPoint.
+
+  Import: Configuration -> Import object
+-->
+<role xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+      xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+      oid="8a8b9c1d-1002-0000-0000-000000000001">
+
+  <name>Agent Commercial CRM</name>
+  <description>Rôle pour les agents commerciaux - Accès au CRM Odoo</description>
+
+  <requestable>true</requestable>
+  <riskLevel>medium</riskLevel>
+
+  <!-- Note: Ce rôle sera fonctionnel une fois la ressource Odoo créée -->
+
+</role>

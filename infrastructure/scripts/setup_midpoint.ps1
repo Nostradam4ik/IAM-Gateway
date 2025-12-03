@@ -20,7 +20,7 @@ docker compose -f $composeFile up -d
 Write-Host ""
 Write-Host "Services launched:" -ForegroundColor Green
 Write-Host "  MidPoint UI     -> http://localhost:8080/midpoint (admin/admin)"
-Write-Host "  ApacheDS LDAP   -> ldap://localhost:10389 (admin=uid=admin,ou=system)"
+Write-Host "  ApacheDS LDAP   -> ldap://localhost:10389 (admin=cn=admin,dc=example,dc=com)"
 Write-Host "  Odoo            -> http://localhost:8069"
 Write-Host "  Intranet DB     -> postgres://intranet:intranet@localhost:55432/intranet"
 

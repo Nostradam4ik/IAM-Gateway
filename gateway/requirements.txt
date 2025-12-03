@@ -1,0 +1,42 @@
+# Gateway IAM - Dependencies
+# Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart
+
+# Authentication
+python-jose[cryptography]
+passlib[bcrypt]
+httpx
+
+# Database
+sqlalchemy>=2.0.0
+sqlmodel
+asyncpg
+psycopg2-binary
+redis
+
+# LDAP Connector
+ldap3
+
+# Rule Engine
+pyyaml
+jinja2
+jsonschema
+
+# AI Integration (optional)
+openai
+
+# Vector Store (optional)
+qdrant-client
+
+# Validation
+pydantic>=2.0.0
+pydantic-settings
+email-validator
+
+# Logging
+structlog
+
+# Utils
+python-dotenv
