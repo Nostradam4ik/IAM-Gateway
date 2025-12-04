@@ -69,38 +69,40 @@ class SQLConnector(BaseConnector):
     ) -> Dict[str, Any]:
         """Create user in SQL database."""
         try:
+            username = attributes.get("username", account_id)
             with self.engine.connect() as conn:
-                # Check if user exists
+                # Check if user exists by username
                 result = conn.execute(
-                    text("SELECT id FROM users WHERE id = :id OR username = :username"),
-                    {"id": account_id, "username": attributes.get("username", account_id)}
+                    text("SELECT id FROM users WHERE username = :username"),
+                    {"username": username}
                 )
                 if result.fetchone():
-                    raise Exception(f"User {account_id} already exists")
+                    raise Exception(f"User {username} already exists")
 
-                # Insert user
+                # Insert user (id is auto-generated SERIAL)
                 insert_sql = text("""
-                    INSERT INTO users (id, username, email, first_name, last_name, role, is_active, created_at)
-                    VALUES (:id, :username, :email, :first_name, :last_name, :role, :is_active, :created_at)
+                    INSERT INTO users (username, email, first_name, last_name, department, is_active, created_at)
+                    VALUES (:username, :email, :first_name, :last_name, :department, :is_active, :created_at)
+                    RETURNING id
                 """)
 
-                conn.execute(insert_sql, {
-                    "id": account_id,
-                    "username": attributes.get("username", account_id),
+                result = conn.execute(insert_sql, {
+                    "username": username,
                     "email": attributes.get("email"),
                     "first_name": attributes.get("firstname", attributes.get("first_name")),
                     "last_name": attributes.get("lastname", attributes.get("last_name")),
-                    "role": attributes.get("role", "APP_USER"),
+                    "department": attributes.get("department"),
                     "is_active": True,
                     "created_at": datetime.utcnow()
                 })
 
+                new_id = result.fetchone()[0]
                 conn.commit()
 
-                logger.info("SQL account created", id=account_id)
+                logger.info("SQL account created", id=new_id, username=username)
                 return {
-                    "id": account_id,
-                    "username": attributes.get("username", account_id),
+                    "id": new_id,
+                    "username": username,
                     "status": "created"
                 }
 

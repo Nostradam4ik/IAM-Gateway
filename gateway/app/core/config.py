@@ -22,9 +22,9 @@ class Settings(BaseSettings):
     REDIS_URL: str = Field(default="redis://localhost:6379/0")
 
     # MidPoint
-    MIDPOINT_URL: str = Field(default="http://localhost:8080/midpoint")
+    MIDPOINT_URL: str = Field(default="http://midpoint-core:8080/midpoint")
     MIDPOINT_USER: str = Field(default="administrator")
-    MIDPOINT_PASSWORD: str = Field(default="admin")
+    MIDPOINT_PASSWORD: str = Field(default="Nost1")
 
     # LDAP/AD
     LDAP_HOST: str = Field(default="localhost")

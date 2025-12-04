@@ -65,8 +65,10 @@ async def provision_account(
         await audit_service.log_provision_request(operation, current_user)
 
         # Apply rules to calculate attributes
+        # Include account_id in attributes for rule engine
+        enriched_attributes = {**request.attributes, "account_id": request.account_id}
         calculated_attrs = await rule_engine.calculate_attributes(
-            attributes=request.attributes,
+            attributes=enriched_attributes,
             target_systems=request.target_systems,
             policy_id=request.policy_id
         )

@@ -24,21 +24,21 @@ services:
       retries: 5
 
   midpoint:
-    image: evolveum/midpoint:4.8
+    image: evolveum/midpoint:4.8-support
     container_name: midpoint-core
     depends_on:
       midpoint-postgres:
         condition: service_healthy
     environment:
-      MIDPOINT_REPO_DATABASE_TYPE: postgresql
-      MIDPOINT_REPO_JDBC_URL: jdbc:postgresql://midpoint-postgres:5432/midpoint
-      MIDPOINT_REPO_JDBC_USERNAME: midpoint
-      MIDPOINT_REPO_JDBC_PASSWORD: midpoint
-      MIDPOINT_ADMIN_PASSWORD: admin
+      # Use Native PostgreSQL Repository (Sqale)
+      MP_SET_midpoint_repository_type: native
+      MP_SET_midpoint_repository_jdbcUrl: jdbc:postgresql://midpoint-postgres:5432/midpoint
+      MP_SET_midpoint_repository_jdbcUsername: midpoint
+      MP_SET_midpoint_repository_jdbcPassword: midpoint
     ports:
       - "8080:8080"
     volumes:
-      - midpoint_home:/opt/midpoint/var
+      - ./midpoint-resources/var:/opt/midpoint/var
     networks:
       - iam-network
 
@@ -62,9 +62,9 @@ services:
       SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
       DATABASE_URL: postgresql+asyncpg://gateway:gateway@gateway-db:5432/gateway
       REDIS_URL: redis://redis:6379/0
-      MIDPOINT_URL: http://midpoint:8080/midpoint
+      MIDPOINT_URL: http://midpoint-core:8080/midpoint
       MIDPOINT_USER: administrator
-      MIDPOINT_PASSWORD: admin
+      MIDPOINT_PASSWORD: Nost1
       LDAP_HOST: openldap
       LDAP_PORT: 389
       LDAP_BIND_DN: cn=admin,dc=example,dc=com

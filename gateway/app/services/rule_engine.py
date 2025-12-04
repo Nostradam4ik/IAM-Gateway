@@ -284,6 +284,46 @@ class RuleEngine:
                         priority=100
                     ),
                     Rule(
+                        id="rule-sql-email",
+                        name="SQL Email",
+                        rule_type=RuleType.MAPPING,
+                        target_system=target_name,
+                        source_attributes=json.dumps(["email"]),
+                        target_attribute="email",
+                        expression="{{ email }}",
+                        priority=95
+                    ),
+                    Rule(
+                        id="rule-sql-firstname",
+                        name="SQL First Name",
+                        rule_type=RuleType.MAPPING,
+                        target_system=target_name,
+                        source_attributes=json.dumps(["first_name"]),
+                        target_attribute="first_name",
+                        expression="{{ first_name }}",
+                        priority=94
+                    ),
+                    Rule(
+                        id="rule-sql-lastname",
+                        name="SQL Last Name",
+                        rule_type=RuleType.MAPPING,
+                        target_system=target_name,
+                        source_attributes=json.dumps(["last_name"]),
+                        target_attribute="last_name",
+                        expression="{{ last_name }}",
+                        priority=93
+                    ),
+                    Rule(
+                        id="rule-sql-department",
+                        name="SQL Department",
+                        rule_type=RuleType.MAPPING,
+                        target_system=target_name,
+                        source_attributes=json.dumps(["department"]),
+                        target_attribute="department",
+                        expression="{{ department }}",
+                        priority=92
+                    ),
+                    Rule(
                         id="rule-sql-role",
                         name="SQL Default Role",
                         rule_type=RuleType.MAPPING,
