@@ -26,14 +26,17 @@ export default function Reconciliation() {
     enabled: !!selectedJob,
   })
 
+  const [lastResult, setLastResult] = useState<any>(null)
+
   const startMutation = useMutation({
     mutationFn: () =>
       startReconciliation(
         selectedTargets.length > 0 ? selectedTargets : undefined,
         fullSync
       ),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['reconciliationJobs'] })
+      setLastResult(data)
     },
   })
 
@@ -139,6 +142,27 @@ export default function Reconciliation() {
             )}
             Demarrer la reconciliation
           </button>
+
+          {startMutation.isError && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+              <AlertTriangle className="w-5 h-5 inline mr-2" />
+              Erreur: {(startMutation.error as any)?.response?.data?.detail || 'Echec de la reconciliation'}
+            </div>
+          )}
+
+          {lastResult && (
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center gap-2 text-green-700 font-medium">
+                <CheckCircle className="w-5 h-5" />
+                Reconciliation demarree avec succes !
+              </div>
+              <div className="mt-2 text-sm text-green-600 space-y-1">
+                <p><strong>Job ID:</strong> {lastResult.id}</p>
+                <p><strong>Statut:</strong> {lastResult.status}</p>
+                <p><strong>Systemes:</strong> {lastResult.target_systems?.join(', ')}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

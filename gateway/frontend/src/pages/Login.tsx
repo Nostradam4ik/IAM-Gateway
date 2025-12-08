@@ -21,7 +21,7 @@ export default function Login() {
     try {
       const data = await login(username, password)
       authLogin(data.access_token, { username, roles: ['admin'] })
-      navigate('/')
+      navigate('/dashboard')
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Erreur de connexion')
     } finally {

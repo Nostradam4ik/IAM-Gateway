@@ -21,14 +21,14 @@ interface LayoutProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Operations', href: '/operations', icon: GitBranch },
-  { name: 'Regles', href: '/rules', icon: FileCode2 },
-  { name: 'Workflows', href: '/workflows', icon: GitPullRequest },
-  { name: 'Reconciliation', href: '/reconciliation', icon: RefreshCw },
-  { name: 'Assistant IA', href: '/ai', icon: Bot },
-  { name: 'Audit', href: '/audit', icon: FileText },
-  { name: 'Parametres', href: '/settings', icon: Settings },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Operations', href: '/dashboard/operations', icon: GitBranch },
+  { name: 'Regles', href: '/dashboard/rules', icon: FileCode2 },
+  { name: 'Workflows', href: '/dashboard/workflows', icon: GitPullRequest },
+  { name: 'Reconciliation', href: '/dashboard/reconciliation', icon: RefreshCw },
+  { name: 'Assistant IA', href: '/dashboard/ai', icon: Bot },
+  { name: 'Audit', href: '/dashboard/audit', icon: FileText },
+  { name: 'Parametres', href: '/dashboard/settings', icon: Settings },
 ]
 
 export default function Layout({ children }: LayoutProps) {

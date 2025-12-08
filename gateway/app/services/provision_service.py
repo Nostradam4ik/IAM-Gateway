@@ -16,6 +16,7 @@ from app.models.provision import (
     TargetAccountState
 )
 from app.connectors.connector_factory import ConnectorFactory
+from app.core.memory_store import memory_store
 
 logger = structlog.get_logger()
 
@@ -243,10 +244,9 @@ class ProvisionService:
         # Upsert in DB
         # ...
 
-    async def get_operation(self, operation_id: str) -> Optional[ProvisioningOperation]:
+    async def get_operation(self, operation_id: str) -> Optional[Dict[str, Any]]:
         """Recupere une operation par ID."""
-        # DB query
-        return None
+        return memory_store.get_operation(operation_id)
 
     async def list_operations(
         self,
@@ -254,10 +254,15 @@ class ProvisionService:
         status: Optional[OperationStatus] = None,
         limit: int = 50,
         offset: int = 0
-    ) -> List[ProvisioningOperation]:
+    ) -> List[Dict[str, Any]]:
         """Liste les operations avec filtres."""
-        # DB query
-        return []
+        status_str = status.value if status else None
+        return memory_store.list_operations(
+            account_id=account_id,
+            status=status_str,
+            limit=limit,
+            offset=offset
+        )
 
     async def continue_after_approval(self, operation_id: str) -> ProvisioningOperation:
         """Continue le provisionnement apres approbation."""

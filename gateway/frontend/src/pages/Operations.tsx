@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getOperations, rollbackOperation } from '../lib/api'
+import { getOperations, rollbackOperation, createProvisioningRequest } from '../lib/api'
 import { format } from 'date-fns'
 import {
   Search,
@@ -10,11 +10,23 @@ import {
   XCircle,
   Clock,
   AlertTriangle,
+  Plus,
+  X,
+  UserPlus,
 } from 'lucide-react'
 
 export default function Operations() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [newUser, setNewUser] = useState({
+    account_id: '',
+    firstname: '',
+    lastname: '',
+    email: '',
+    department: '',
+    target_systems: ['LDAP', 'SQL'] as string[],
+  })
   const queryClient = useQueryClient()
 
   const { data: operations, isLoading } = useQuery({
@@ -29,6 +41,46 @@ export default function Operations() {
       queryClient.invalidateQueries({ queryKey: ['operations'] })
     },
   })
+
+  const createMutation = useMutation({
+    mutationFn: createProvisioningRequest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['operations'] })
+      setShowCreateModal(false)
+      setNewUser({
+        account_id: '',
+        firstname: '',
+        lastname: '',
+        email: '',
+        department: '',
+        target_systems: ['LDAP', 'SQL'],
+      })
+    },
+  })
+
+  const handleCreateUser = () => {
+    createMutation.mutate({
+      operation: 'create',
+      account_id: newUser.account_id,
+      target_systems: newUser.target_systems,
+      attributes: {
+        firstname: newUser.firstname,
+        lastname: newUser.lastname,
+        email: newUser.email,
+        department: newUser.department,
+      },
+      priority: 'normal',
+    })
+  }
+
+  const toggleTargetSystem = (system: string) => {
+    setNewUser(prev => ({
+      ...prev,
+      target_systems: prev.target_systems.includes(system)
+        ? prev.target_systems.filter(s => s !== system)
+        : [...prev.target_systems, system]
+    }))
+  }
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { color: string; icon: any }> = {
@@ -65,7 +117,167 @@ export default function Operations() {
             Historique des operations de provisionnement
           </p>
         </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="btn-primary flex items-center gap-2"
+        >
+          <UserPlus className="w-5 h-5" />
+          Nouveau provisionnement
+        </button>
       </div>
+
+      {/* Modal de création */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-blue-600 to-blue-700">
+              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                <UserPlus className="w-6 h-6" />
+                Nouveau provisionnement
+              </h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-white/80 hover:text-white"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prenom
+                  </label>
+                  <input
+                    type="text"
+                    value={newUser.firstname}
+                    onChange={(e) => setNewUser({ ...newUser, firstname: e.target.value })}
+                    className="input"
+                    placeholder="Jean"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nom
+                  </label>
+                  <input
+                    type="text"
+                    value={newUser.lastname}
+                    onChange={(e) => setNewUser({ ...newUser, lastname: e.target.value })}
+                    className="input"
+                    placeholder="Dupont"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Identifiant compte
+                </label>
+                <input
+                  type="text"
+                  value={newUser.account_id}
+                  onChange={(e) => setNewUser({ ...newUser, account_id: e.target.value })}
+                  className="input"
+                  placeholder="jdupont"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="input"
+                  placeholder="jean.dupont@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Departement
+                </label>
+                <select
+                  value={newUser.department}
+                  onChange={(e) => setNewUser({ ...newUser, department: e.target.value })}
+                  className="input"
+                >
+                  <option value="">Selectionner...</option>
+                  <option value="IT">IT</option>
+                  <option value="Finance">Finance</option>
+                  <option value="RH">Ressources Humaines</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Direction">Direction</option>
+                  <option value="Commercial">Commercial</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Systemes cibles
+                </label>
+                <div className="flex gap-3">
+                  {['LDAP', 'SQL', 'ODOO'].map((system) => (
+                    <button
+                      key={system}
+                      onClick={() => toggleTargetSystem(system)}
+                      className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                        newUser.target_systems.includes(system)
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      {system}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {createMutation.isError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  Erreur: {(createMutation.error as any)?.response?.data?.detail || 'Echec du provisionnement'}
+                </div>
+              )}
+
+              {createMutation.isSuccess && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+                  Provisionnement reussi !
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="btn-secondary"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCreateUser}
+                disabled={createMutation.isPending || !newUser.account_id || !newUser.firstname || !newUser.lastname}
+                className="btn-primary flex items-center gap-2 disabled:opacity-50"
+              >
+                {createMutation.isPending ? (
+                  <>
+                    <Clock className="w-4 h-4 animate-spin" />
+                    Provisionnement...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Creer le compte
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="card">

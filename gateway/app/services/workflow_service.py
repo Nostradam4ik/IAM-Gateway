@@ -18,6 +18,7 @@ from app.models.workflow import (
     WorkflowInstanceResponse
 )
 from app.core.config import settings
+from app.core.memory_store import memory_store
 
 logger = structlog.get_logger()
 
@@ -207,11 +208,42 @@ class WorkflowService:
         offset: int = 0
     ) -> List[WorkflowInstanceResponse]:
         """Liste les instances de workflow."""
-        return []
+        status_str = status.value if status else None
+        workflows = memory_store.list_workflows(status=status_str, limit=limit, offset=offset)
+
+        result = []
+        for wf in workflows:
+            result.append(WorkflowInstanceResponse(
+                id=wf.get("id", ""),
+                workflow_id=wf.get("workflow_id", "wf-default-pre"),
+                operation_id=wf.get("operation_id", ""),
+                status=ApprovalStatus(wf.get("status", "pending")),
+                current_level=wf.get("current_level", 1),
+                total_levels=wf.get("total_levels", 3),
+                pending_approvers=wf.get("pending_approvers", []),
+                history=[],
+                created_at=wf.get("created_at"),
+                user_name=wf.get("user_name", ""),
+                operation_name=wf.get("operation_name", "")
+            ))
+        return result
 
     async def get_pending_approvals(self, user_id: str) -> List[Dict[str, Any]]:
         """Recupere les approbations en attente pour un utilisateur."""
-        return []
+        workflows = memory_store.list_workflows(status="pending")
+        return [
+            {
+                "id": wf.get("id"),
+                "operation_id": wf.get("operation_id"),
+                "operation_name": wf.get("operation_name", "Operation"),
+                "user_name": wf.get("user_name", "Unknown"),
+                "current_level": wf.get("current_level", 1),
+                "total_levels": wf.get("total_levels", 3),
+                "created_at": wf.get("created_at")
+            }
+            for wf in workflows
+            if user_id in wf.get("pending_approvers", []) or user_id == "admin"
+        ]
 
     async def can_approve(self, instance_id: str, user_id: str) -> bool:
         """Verifie si un utilisateur peut approuver."""

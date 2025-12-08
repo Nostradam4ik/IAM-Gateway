@@ -62,6 +62,9 @@ class WorkflowInstanceResponse(SQLModel):
     total_levels: int
     pending_approvers: List[str]
     history: List[Dict[str, Any]]
+    created_at: Optional[str] = None
+    user_name: Optional[str] = None
+    operation_name: Optional[str] = None
 
 
 # Database Models

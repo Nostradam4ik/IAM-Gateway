@@ -16,6 +16,7 @@ from app.models.provision import (
 )
 from app.core.security import get_current_user
 from app.core.database import get_session
+from app.core.memory_store import memory_store
 from app.services.provision_service import ProvisionService
 from app.services.rule_engine import RuleEngine
 from app.services.workflow_service import WorkflowService
@@ -101,6 +102,28 @@ async def provision_account(
         # Log success
         await audit_service.log_provision_success(operation, result)
 
+        # Save operation to memory store
+        memory_store.save_operation(operation.id, {
+            "operation_id": operation.id,
+            "account_id": request.account_id,
+            "operation": request.operation.value,
+            "status": "success",
+            "target_systems": [t.value for t in request.target_systems],
+            "calculated_attributes": calculated_attrs,
+            "created_by": current_user["username"],
+            "timestamp": datetime.utcnow().isoformat()
+        })
+
+        # Add audit log
+        memory_store.add_audit_log({
+            "type": "provision",
+            "action": "create",
+            "account_id": request.account_id,
+            "actor": current_user["username"],
+            "target_systems": [t.value for t in request.target_systems],
+            "status": "success"
+        })
+
         return ProvisioningResponse(
             status=OperationStatus.SUCCESS,
             operation_id=operation.id,
@@ -182,18 +205,17 @@ async def rollback_operation(
     return {"message": "Rollback executed", "result": result}
 
 
-@router.get("/", response_model=List[ProvisioningResponse])
+@router.get("/")
 async def list_operations(
     account_id: Optional[str] = None,
-    status: Optional[OperationStatus] = None,
+    status: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
     current_user: dict = Depends(get_current_user),
     session=Depends(get_session)
 ):
     """Liste les operations de provisionnement."""
-    provision_service = ProvisionService(session)
-    operations = await provision_service.list_operations(
+    operations = memory_store.list_operations(
         account_id=account_id,
         status=status,
         limit=limit,
@@ -201,12 +223,13 @@ async def list_operations(
     )
 
     return [
-        ProvisioningResponse(
-            status=op.status,
-            operation_id=op.id,
-            calculated_attributes=json.loads(op.calculated_attributes) if op.calculated_attributes else {},
-            message=op.error_message or "",
-            timestamp=op.updated_at
-        )
+        {
+            "operation_id": op.get("operation_id"),
+            "account_id": op.get("account_id"),
+            "status": op.get("status"),
+            "calculated_attributes": op.get("calculated_attributes", {}),
+            "message": op.get("message", ""),
+            "timestamp": op.get("timestamp")
+        }
         for op in operations
     ]

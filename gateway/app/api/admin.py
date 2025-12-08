@@ -17,6 +17,7 @@ from app.core.security import (
 )
 from app.core.config import settings
 from app.core.database import get_session
+from app.core.memory_store import memory_store
 from app.services.audit_service import AuditService
 from app.models.audit import AuditSearchRequest, AuditSearchResponse
 
@@ -227,8 +228,8 @@ async def get_recent_audit_logs(
     session=Depends(get_session)
 ):
     """Recupere les logs d'audit recents."""
-    audit_service = AuditService(session)
-    return await audit_service.get_recent_logs(limit)
+    # Return from memory store
+    return memory_store.get_recent_logs(limit)
 
 
 @router.get("/config")

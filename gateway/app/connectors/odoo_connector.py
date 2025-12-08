@@ -76,12 +76,18 @@ class OdooConnector(BaseConnector):
             # First create a contact (res.partner)
             partner_data = {
                 'name': f"{attributes.get('firstname', '')} {attributes.get('lastname', '')}".strip() or account_id,
-                'email': attributes.get('email') or attributes.get('login'),
-                'phone': attributes.get('phone'),
                 'is_company': False,
             }
 
-            partner_id = self._execute('res.partner', 'create', [partner_data])
+            # Only add email and phone if not None
+            if attributes.get('email') or attributes.get('login'):
+                partner_data['email'] = attributes.get('email') or attributes.get('login')
+            if attributes.get('phone'):
+                partner_data['phone'] = attributes.get('phone')
+
+            partner_result = self._execute('res.partner', 'create', [partner_data])
+            # Extract partner_id from result (can be int or list)
+            partner_id = partner_result[0] if isinstance(partner_result, list) else partner_result
 
             # Then create user linked to partner
             user_data = {
@@ -95,7 +101,9 @@ class OdooConnector(BaseConnector):
             if attributes.get('groups'):
                 user_data['groups_id'] = [(6, 0, attributes['groups'])]
 
-            user_id = self._execute('res.users', 'create', [user_data])
+            user_result = self._execute('res.users', 'create', [user_data])
+            # Extract user_id from result (can be int or list)
+            user_id = user_result[0] if isinstance(user_result, list) else user_result
 
             logger.info("Odoo account created", user_id=user_id, login=user_data['login'])
 

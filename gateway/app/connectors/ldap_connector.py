@@ -67,13 +67,20 @@ class LDAPConnector(BaseConnector):
             dn = f"uid={attributes.get('uid', account_id)},{self.users_ou}"
 
             # Build LDAP attributes
+            firstname = attributes.get('givenName') or attributes.get('firstname') or ''
+            lastname = attributes.get('sn') or attributes.get('lastname') or account_id
+            cn = attributes.get('cn') or f"{firstname} {lastname}".strip() or account_id
+
             ldap_attrs = {
                 'objectClass': ['inetOrgPerson', 'organizationalPerson', 'person', 'top'],
                 'uid': attributes.get('uid', account_id),
-                'cn': attributes.get('cn', f"{attributes.get('firstname', '')} {attributes.get('lastname', '')}".strip()),
-                'sn': attributes.get('sn', attributes.get('lastname', account_id)),
-                'givenName': attributes.get('givenName', attributes.get('firstname', '')),
+                'cn': cn,
+                'sn': lastname,
             }
+
+            # Only add givenName if not empty (LDAP doesn't accept empty strings)
+            if firstname:
+                ldap_attrs['givenName'] = firstname
 
             # Add optional attributes
             if attributes.get('mail'):

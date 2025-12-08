@@ -176,9 +176,16 @@ export default function Workflows() {
                       </div>
                     </td>
                     <td className="py-4 px-4">
-                      <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                        {instance.operation_id?.slice(0, 8)}
-                      </code>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900">
+                          {instance.operation_name || instance.operation_id?.slice(0, 8)}
+                        </span>
+                        {instance.user_name && (
+                          <span className="text-sm text-gray-500">
+                            {instance.user_name}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-4 px-4">
                       <span className="text-sm">

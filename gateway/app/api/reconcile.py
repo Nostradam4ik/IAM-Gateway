@@ -10,6 +10,7 @@ import structlog
 from app.models.provision import TargetSystem
 from app.core.security import get_current_user, require_role
 from app.core.database import get_session
+from app.core.memory_store import memory_store
 from app.services.reconciliation_service import ReconciliationService
 from app.services.audit_service import AuditService
 
@@ -75,6 +76,30 @@ async def start_reconciliation(
 
     await audit_service.log_reconciliation_start(job.id, current_user)
 
+    # Save job to memory store
+    job_data = {
+        "id": job.id,
+        "status": "in_progress",
+        "target_systems": job.target_systems,
+        "total_accounts": 0,
+        "processed_accounts": 0,
+        "discrepancies_found": 0,
+        "started_at": job.started_at.isoformat(),
+        "completed_at": None,
+        "started_by": current_user["username"],
+        "errors": []
+    }
+    memory_store.save_job(job.id, job_data)
+
+    # Add audit log
+    memory_store.add_audit_log({
+        "type": "reconciliation",
+        "action": "start",
+        "job_id": job.id,
+        "actor": current_user["username"],
+        "target_systems": job.target_systems
+    })
+
     # Run reconciliation in background
     background_tasks.add_task(
         recon_service.run_reconciliation,
@@ -111,7 +136,7 @@ async def get_reconciliation_status(
     return job
 
 
-@router.get("/jobs", response_model=List[ReconciliationStatus])
+@router.get("/jobs")
 async def list_reconciliation_jobs(
     limit: int = 20,
     offset: int = 0,
@@ -119,8 +144,8 @@ async def list_reconciliation_jobs(
     session=Depends(get_session)
 ):
     """Liste les jobs de reconciliation."""
-    recon_service = ReconciliationService(session)
-    return await recon_service.list_jobs(limit=limit, offset=offset)
+    jobs = memory_store.list_jobs(limit=limit, offset=offset)
+    return jobs
 
 
 @router.get("/{job_id}/discrepancies", response_model=List[DiscrepancyReport])
