@@ -3,7 +3,9 @@ API de l'agent IA pour assistance au provisionnement
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
 import structlog
+from sqlalchemy import text
 
 from app.core.security import get_current_user
 from app.core.database import get_session
@@ -23,6 +25,29 @@ from app.models.ai import (
 
 router = APIRouter()
 logger = structlog.get_logger()
+
+
+# Modeles pour la configuration IA
+class AIConfigRequest(BaseModel):
+    provider: str
+    api_key: str
+    model: str
+
+
+class AIConfigResponse(BaseModel):
+    is_configured: bool
+    provider: Optional[str] = None
+    provider_name: Optional[str] = None
+    model: Optional[str] = None
+
+
+PROVIDER_NAMES = {
+    "openai": "OpenAI",
+    "anthropic": "Anthropic",
+    "mistral": "Mistral AI",
+    "deepseek": "DeepSeek",
+    "azure": "Azure OpenAI"
+}
 
 
 @router.post("/query", response_model=AIQueryResponse)
@@ -195,3 +220,106 @@ async def delete_conversation(
     ai_agent = AIAgent(session)
     await ai_agent.delete_conversation(conversation_id)
     return {"message": f"Conversation {conversation_id} deleted"}
+
+
+@router.get("/config", response_model=AIConfigResponse)
+async def get_ai_config(
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_session)
+):
+    """
+    Recupere la configuration actuelle de l'IA.
+    Ne retourne jamais la cle API, seulement si elle est configuree.
+    """
+    try:
+        result = await session.execute(text("""
+            SELECT provider, model, api_key IS NOT NULL AND api_key != '' as has_key
+            FROM ai_configuration
+            WHERE id = 'default'
+        """))
+        row = result.fetchone()
+
+        if row and row[2]:
+            return AIConfigResponse(
+                is_configured=True,
+                provider=row[0],
+                provider_name=PROVIDER_NAMES.get(row[0], row[0]),
+                model=row[1]
+            )
+        else:
+            return AIConfigResponse(is_configured=False)
+
+    except Exception as e:
+        logger.warning("AI config table may not exist", error=str(e))
+        return AIConfigResponse(is_configured=False)
+
+
+@router.post("/config", response_model=AIConfigResponse)
+async def update_ai_config(
+    config: AIConfigRequest,
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_session)
+):
+    """
+    Met a jour la configuration de l'IA.
+    Seuls les administrateurs peuvent modifier cette configuration.
+    """
+    if "admin" not in current_user.get("roles", []):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Seuls les administrateurs peuvent configurer l'IA"
+        )
+
+    try:
+        # Creer la table si elle n'existe pas
+        await session.execute(text("""
+            CREATE TABLE IF NOT EXISTS ai_configuration (
+                id VARCHAR(50) PRIMARY KEY,
+                provider VARCHAR(50) NOT NULL,
+                model VARCHAR(100) NOT NULL,
+                api_key TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_by VARCHAR(100)
+            )
+        """))
+
+        # Upsert la configuration
+        await session.execute(text("""
+            INSERT INTO ai_configuration (id, provider, model, api_key, updated_at, updated_by)
+            VALUES ('default', :provider, :model, :api_key, CURRENT_TIMESTAMP, :user)
+            ON CONFLICT (id) DO UPDATE SET
+                provider = :provider,
+                model = :model,
+                api_key = :api_key,
+                updated_at = CURRENT_TIMESTAMP,
+                updated_by = :user
+        """), {
+            "provider": config.provider,
+            "model": config.model,
+            "api_key": config.api_key,
+            "user": current_user["username"]
+        })
+
+        await session.commit()
+
+        logger.info(
+            "AI configuration updated",
+            provider=config.provider,
+            model=config.model,
+            user=current_user["username"]
+        )
+
+        return AIConfigResponse(
+            is_configured=True,
+            provider=config.provider,
+            provider_name=PROVIDER_NAMES.get(config.provider, config.provider),
+            model=config.model
+        )
+
+    except Exception as e:
+        logger.error("Failed to update AI config", error=str(e))
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Echec de la configuration: {str(e)}"
+        )

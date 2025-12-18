@@ -264,16 +264,68 @@ class ProvisionService:
             offset=offset
         )
 
-    async def continue_after_approval(self, operation_id: str) -> ProvisioningOperation:
+    async def continue_after_approval(self, operation_id: str) -> Dict[str, Any]:
         """Continue le provisionnement apres approbation."""
         operation = await self.get_operation(operation_id)
         if not operation:
             raise ValueError(f"Operation {operation_id} not found")
 
-        calculated_attrs = json.loads(operation.calculated_attributes)
-        await self.execute_provisioning(operation, calculated_attrs)
+        # operation est un dictionnaire
+        calculated_attrs = operation.get("calculated_attributes", {})
+        if isinstance(calculated_attrs, str):
+            calculated_attrs = json.loads(calculated_attrs)
 
-        return operation
+        # Executer le provisionnement avec les donnees du dictionnaire
+        target_systems = operation.get("target_systems", [])
+        account_id = operation.get("account_id", "")
+        user_data = operation.get("user_data", {})
+        results = {}
+
+        # Mettre a jour le statut
+        memory_store.update_operation(operation_id, {"status": "in_progress"})
+
+        try:
+            for target in target_systems:
+                logger.info(
+                    "Provisioning to target after approval",
+                    operation_id=operation_id,
+                    target=target
+                )
+
+                connector = self.connector_factory.get_connector(target)
+                attrs = calculated_attrs.get(target, user_data)
+
+                result = await connector.create_account(
+                    account_id=account_id,
+                    attributes=attrs
+                )
+                results[target] = result
+
+            # Succes
+            memory_store.update_operation(operation_id, {
+                "status": "success",
+                "message": "Provisionnement termine avec succes apres approbation"
+            })
+
+            logger.info(
+                "Provisioning completed after approval",
+                operation_id=operation_id,
+                targets=target_systems
+            )
+
+            return {"success": True, "results": results}
+
+        except Exception as e:
+            logger.error(
+                "Provisioning failed after approval",
+                operation_id=operation_id,
+                error=str(e)
+            )
+            memory_store.update_operation(operation_id, {
+                "status": "failed",
+                "message": str(e)
+            })
+            raise
 
     async def cancel_operation(self, operation_id: str, reason: str) -> None:
         """Annule une operation en attente."""

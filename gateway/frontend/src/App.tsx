@@ -11,6 +11,9 @@ import Reconciliation from './pages/Reconciliation'
 import AIAssistant from './pages/AIAssistant'
 import Settings from './pages/Settings'
 import AuditLogs from './pages/AuditLogs'
+import LiveComparison from './pages/LiveComparison'
+import Permissions from './pages/Permissions'
+import Connectors from './pages/Connectors'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -33,6 +36,9 @@ function App() {
                 <Route path="/rules" element={<Rules />} />
                 <Route path="/workflows" element={<Workflows />} />
                 <Route path="/reconciliation" element={<Reconciliation />} />
+                <Route path="/live" element={<LiveComparison />} />
+                <Route path="/permissions" element={<Permissions />} />
+                <Route path="/connectors" element={<Connectors />} />
                 <Route path="/ai" element={<AIAssistant />} />
                 <Route path="/audit" element={<AuditLogs />} />
                 <Route path="/settings" element={<Settings />} />

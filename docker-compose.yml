@@ -64,7 +64,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       MIDPOINT_URL: http://midpoint-core:8080/midpoint
       MIDPOINT_USER: administrator
-      MIDPOINT_PASSWORD: Nost1
+      MIDPOINT_PASSWORD: Holimolly1
       LDAP_HOST: openldap
       LDAP_PORT: 389
       LDAP_BIND_DN: cn=admin,dc=example,dc=com
@@ -89,6 +89,14 @@ services:
       WORKFLOW_DEFAULT_TIMEOUT_HOURS: 72
       WORKFLOW_MAX_LEVELS: 5
       LOG_LEVEL: INFO
+      # Email / SMTP
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@iam-gateway.local}
+      BASE_URL: http://localhost:8000
+      DEV_MODE: ${DEV_MODE:-true}
     ports:
       - "8000:8000"
     volumes:

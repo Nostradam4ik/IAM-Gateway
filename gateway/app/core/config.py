@@ -61,7 +61,7 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:8080"]
+        default=["http://localhost:3000", "http://localhost:3001", "http://localhost:8080"]
     )
 
     # JWT
@@ -75,6 +75,15 @@ class Settings(BaseSettings):
 
     # Logging
     LOG_LEVEL: str = Field(default="INFO")
+
+    # Email / SMTP
+    SMTP_HOST: str = Field(default="smtp.gmail.com")
+    SMTP_PORT: int = Field(default=587)
+    SMTP_USER: str = Field(default="")
+    SMTP_PASSWORD: str = Field(default="")
+    FROM_EMAIL: str = Field(default="noreply@iam-gateway.local")
+    BASE_URL: str = Field(default="http://localhost:8000")
+    DEV_MODE: bool = Field(default=True)
 
     class Config:
         env_file = ".env"

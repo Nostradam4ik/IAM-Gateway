@@ -62,6 +62,18 @@ export const rollbackOperation = async (id: string) => {
   return response.data
 }
 
+export const updateProvisioningRequest = async (id: string, data: any) => {
+  const response = await api.put(`/provision/${id}`, data)
+  return response.data
+}
+
+export const deleteProvisioningRequest = async (id: string, targetSystems: string[]) => {
+  const response = await api.delete(`/provision/${id}`, {
+    data: { target_systems: targetSystems }
+  })
+  return response.data
+}
+
 // Rules
 export const getRules = async (params?: { target_system?: string; rule_type?: string }) => {
   const response = await api.get('/rules/', { params })
@@ -169,6 +181,16 @@ export const suggestMappings = async (sourceSchema: any, targetSystem: string) =
   return response.data
 }
 
+export const getAIConfig = async () => {
+  const response = await api.get('/ai/config')
+  return response.data
+}
+
+export const updateAIConfig = async (data: { provider: string; api_key: string; model: string }) => {
+  const response = await api.post('/ai/config', data)
+  return response.data
+}
+
 // Admin
 export const getSystemStatus = async () => {
   const response = await api.get('/admin/status')
@@ -203,6 +225,138 @@ export const searchAuditLogs = async (params: any) => {
 
 export const getRecentAuditLogs = async (limit?: number) => {
   const response = await api.get('/admin/audit/recent', { params: { limit } })
+  return response.data
+}
+
+// Live Comparison (Real-time)
+export const getLiveStats = async () => {
+  const response = await api.get('/live/stats')
+  return response.data
+}
+
+export const compareSystems = async () => {
+  const response = await api.get('/live/compare')
+  return response.data
+}
+
+export const getUserCrossReference = async (identifier: string) => {
+  const response = await api.get(`/live/user/${identifier}`)
+  return response.data
+}
+
+export const syncUserToSystems = async (identifier: string, targetSystems: string[]) => {
+  const response = await api.post(`/live/sync-user/${identifier}`, null, {
+    params: { target_systems: targetSystems }
+  })
+  return response.data
+}
+
+export const getOdooContacts = async (limit?: number) => {
+  const response = await api.get('/live/odoo/contacts', { params: { limit } })
+  return response.data
+}
+
+export const checkSystemsHealth = async () => {
+  const response = await api.get('/live/health-check')
+  return response.data
+}
+
+// Permissions / Niveaux de Droits
+export const getPermissionLevels = async () => {
+  const response = await api.get('/permissions/levels')
+  return response.data
+}
+
+export const getUsersPermissions = async (level?: number, department?: string) => {
+  const response = await api.get('/permissions/users', { params: { level, department } })
+  return response.data
+}
+
+export const getUserPermission = async (userId: string) => {
+  const response = await api.get(`/permissions/users/${userId}`)
+  return response.data
+}
+
+export const assignPermissionLevel = async (userId: string, level: number, reason?: string) => {
+  const response = await api.post('/permissions/assign', { user_id: userId, level, reason })
+  return response.data
+}
+
+export const getPermissionsStats = async () => {
+  const response = await api.get('/permissions/stats')
+  return response.data
+}
+
+// Connectors Management
+export const getConnectors = async (params?: { connector_type?: string; is_active?: boolean }) => {
+  const response = await api.get('/connectors/', { params })
+  return response.data
+}
+
+export const getConnectorTypes = async () => {
+  const response = await api.get('/connectors/types')
+  return response.data
+}
+
+export const getConnector = async (id: string) => {
+  const response = await api.get(`/connectors/${id}`)
+  return response.data
+}
+
+export const createConnector = async (data: {
+  name: string
+  connector_type: string
+  connector_subtype: string
+  display_name: string
+  description?: string
+  configuration: Record<string, any>
+  is_active?: boolean
+}) => {
+  const response = await api.post('/connectors/', data)
+  return response.data
+}
+
+export const updateConnector = async (id: string, data: {
+  display_name?: string
+  description?: string
+  configuration?: Record<string, any>
+  is_active?: boolean
+}) => {
+  const response = await api.put(`/connectors/${id}`, data)
+  return response.data
+}
+
+export const deleteConnector = async (id: string) => {
+  const response = await api.delete(`/connectors/${id}`)
+  return response.data
+}
+
+export const testConnector = async (id: string) => {
+  const response = await api.post(`/connectors/${id}/test`)
+  return response.data
+}
+
+export const testConnectorPreview = async (data: {
+  connector_type: string
+  connector_subtype: string
+  configuration: Record<string, any>
+}) => {
+  const response = await api.post('/connectors/test-preview', data)
+  return response.data
+}
+
+export const toggleConnector = async (id: string, isActive: boolean) => {
+  const response = await api.post(`/connectors/${id}/toggle`, null, { params: { is_active: isActive } })
+  return response.data
+}
+
+export const runHealthChecks = async () => {
+  const response = await api.post('/connectors/health-check')
+  return response.data
+}
+
+export const getConnectorsHealth = async () => {
+  const response = await api.get('/connectors/health')
   return response.data
 }
 

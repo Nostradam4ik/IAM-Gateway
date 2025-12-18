@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resource oid="database-resource-oid"
+          xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:icfs="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/resource-schema-3"
+          xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3">
+
+    <name>Intranet Database Resource</name>
+    <description>Connecteur pour la base de données Intranet PostgreSQL</description>
+
+    <connectorRef type="ConnectorType">
+        <filter>
+            <q:equal xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3">
+                <q:path>connectorType</q:path>
+                <q:value>org.identityconnectors.databasetable.DatabaseTableConnector</q:value>
+            </q:equal>
+        </filter>
+    </connectorRef>
+
+    <connectorConfiguration>
+        <icfc:configurationProperties xmlns:icfc="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/connector-schema-3"
+                                      xmlns:icfcdb="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/org.identityconnectors.databasetable/org.identityconnectors.databasetable.DatabaseTableConnector">
+
+            <!-- Paramètres de connexion à la base de données -->
+            <icfcdb:jdbcDriver>org.postgresql.Driver</icfcdb:jdbcDriver>
+            <icfcdb:jdbcUrlTemplate>jdbc:postgresql://intranet-db:5432/intranet</icfcdb:jdbcUrlTemplate>
+            <icfcdb:user>intranet</icfcdb:user>
+            <icfcdb:password>
+                <t:clearValue xmlns:t="http://prism.evolveum.com/xml/ns/public/types-3">intranet</t:clearValue>
+            </icfcdb:password>
+
+            <!-- Configuration de la table -->
+            <icfcdb:table>users</icfcdb:table>
+            <icfcdb:keyColumn>id</icfcdb:keyColumn>
+            <icfcdb:passwordColumn>password_hash</icfcdb:passwordColumn>
+
+            <!-- Colonnes à synchroniser -->
+            <icfcdb:allNative>false</icfcdb:allNative>
+
+        </icfc:configurationProperties>
+    </connectorConfiguration>
+
+    <!-- Schéma Database -->
+    <schemaHandling>
+        <objectType>
+            <kind>account</kind>
+            <intent>default</intent>
+            <displayName>Database Account</displayName>
+            <default>true</default>
+            <objectClass>ri:AccountObjectClass</objectClass>
+
+            <attribute>
+                <ref>ri:id</ref>
+                <displayName>ID</displayName>
+            </attribute>
+
+            <attribute>
+                <ref>ri:username</ref>
+                <displayName>Username</displayName>
+                <outbound>
+                    <source>
+                        <path>$user/name</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <attribute>
+                <ref>ri:email</ref>
+                <displayName>Email</displayName>
+                <outbound>
+                    <source>
+                        <path>$user/emailAddress</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <attribute>
+                <ref>ri:first_name</ref>
+                <displayName>First Name</displayName>
+                <outbound>
+                    <source>
+                        <path>$user/givenName</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <attribute>
+                <ref>ri:last_name</ref>
+                <displayName>Last Name</displayName>
+                <outbound>
+                    <source>
+                        <path>$user/familyName</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <attribute>
+                <ref>ri:is_active</ref>
+                <displayName>Active</displayName>
+                <outbound>
+                    <expression>
+                        <value>true</value>
+                    </expression>
+                </outbound>
+            </attribute>
+
+        </objectType>
+    </schemaHandling>
+
+    <synchronization>
+        <objectSynchronization>
+            <enabled>true</enabled>
+            <kind>account</kind>
+            <intent>default</intent>
+            <focusType>UserType</focusType>
+
+            <reaction>
+                <situation>linked</situation>
+                <synchronize>true</synchronize>
+            </reaction>
+        </objectSynchronization>
+    </synchronization>
+
+</resource>

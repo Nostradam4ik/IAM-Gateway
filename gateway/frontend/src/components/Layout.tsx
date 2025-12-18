@@ -14,6 +14,9 @@ import {
   Menu,
   X,
   AlertTriangle,
+  Zap,
+  Shield,
+  Database,
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -26,6 +29,9 @@ const navigation = [
   { name: 'Regles', href: '/dashboard/rules', icon: FileCode2 },
   { name: 'Workflows', href: '/dashboard/workflows', icon: GitPullRequest },
   { name: 'Reconciliation', href: '/dashboard/reconciliation', icon: RefreshCw },
+  { name: 'Comparaison Live', href: '/dashboard/live', icon: Zap },
+  { name: 'Niveaux Droits', href: '/dashboard/permissions', icon: Shield },
+  { name: 'Connecteurs', href: '/dashboard/connectors', icon: Database },
   { name: 'Assistant IA', href: '/dashboard/ai', icon: Bot },
   { name: 'Audit', href: '/dashboard/audit', icon: FileText },
   { name: 'Parametres', href: '/dashboard/settings', icon: Settings },

@@ -7,10 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import structlog
 
-from app.api import provision, rules, workflow, reconcile, ai_assistant, admin
+from app.api import provision, rules, workflow, reconcile, ai_assistant, admin, live_comparison, permissions, connectors
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.logging import setup_logging
+from app.core.memory_store import memory_store
 
 logger = structlog.get_logger()
 
@@ -21,6 +22,9 @@ async def lifespan(app: FastAPI):
     setup_logging()
     logger.info("Starting Gateway IAM", version=app.version)
     await init_db()
+    # Charger les donnees depuis PostgreSQL
+    await memory_store.ensure_cache_loaded()
+    logger.info("Database cache loaded successfully")
     yield
     logger.info("Shutting down Gateway IAM")
 
@@ -58,6 +62,9 @@ app.include_router(workflow.router, prefix="/api/v1/workflow", tags=["Workflow"]
 app.include_router(reconcile.router, prefix="/api/v1/reconcile", tags=["Reconciliation"])
 app.include_router(ai_assistant.router, prefix="/api/v1/ai", tags=["Agent IA"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["Administration"])
+app.include_router(live_comparison.router, prefix="/api/v1/live", tags=["Comparaison Temps Reel"])
+app.include_router(permissions.router, prefix="/api/v1/permissions", tags=["Niveaux de Droits"])
+app.include_router(connectors.router, prefix="/api/v1/connectors", tags=["Connecteurs"])
 
 
 @app.get("/health", tags=["Health"])

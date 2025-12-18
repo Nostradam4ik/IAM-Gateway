@@ -76,22 +76,73 @@ async def provision_account(
 
         # Check if workflow approval is needed
         if request.require_approval:
-            workflow_instance = await workflow_service.start_pre_workflow(
-                operation_id=operation.id,
-                context={
-                    "account_id": request.account_id,
-                    "operation": request.operation,
-                    "calculated_attributes": calculated_attrs
-                }
-            )
+            # Extraire l'email du manager des attributs
+            manager_email = request.attributes.get("manager_email", "")
 
-            return ProvisioningResponse(
-                status=OperationStatus.AWAITING_APPROVAL,
-                operation_id=operation.id,
-                calculated_attributes=calculated_attrs,
-                message=f"Workflow d'approbation demarre. Instance: {workflow_instance.id}",
-                timestamp=datetime.utcnow()
-            )
+            if manager_email:
+                # Creer un workflow simplifie avec notification email
+                user_data = {
+                    **request.attributes,
+                    "account_id": request.account_id,
+                }
+                workflow_result = await workflow_service.create_approval_workflow(
+                    operation_id=operation.id,
+                    user_data=user_data,
+                    manager_email=manager_email,
+                    requester=current_user["username"]
+                )
+
+                # Sauvegarder l'operation avec statut pending
+                memory_store.save_operation(operation.id, {
+                    "operation_id": operation.id,
+                    "account_id": request.account_id,
+                    "operation": request.operation.value,
+                    "status": "awaiting_approval",
+                    "target_systems": [t.value for t in request.target_systems],
+                    "user_data": request.attributes,
+                    "calculated_attributes": calculated_attrs,
+                    "created_by": current_user["username"],
+                    "workflow_id": workflow_result.get("workflow_id"),
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+                # Add audit log
+                memory_store.add_audit_log({
+                    "type": "workflow",
+                    "action": "approval_requested",
+                    "account_id": request.account_id,
+                    "actor": current_user["username"],
+                    "target_systems": [t.value for t in request.target_systems],
+                    "status": "pending",
+                    "manager_email": manager_email
+                })
+
+                return ProvisioningResponse(
+                    status=OperationStatus.AWAITING_APPROVAL,
+                    operation_id=operation.id,
+                    calculated_attributes=calculated_attrs,
+                    message=f"Demande en attente d'approbation. Email envoye a {manager_email}",
+                    timestamp=datetime.utcnow()
+                )
+            else:
+                # Workflow standard sans email
+                workflow_instance = await workflow_service.start_pre_workflow(
+                    operation_id=operation.id,
+                    context={
+                        "account_id": request.account_id,
+                        "operation": request.operation,
+                        "calculated_attributes": calculated_attrs,
+                        **request.attributes
+                    }
+                )
+
+                return ProvisioningResponse(
+                    status=OperationStatus.AWAITING_APPROVAL,
+                    operation_id=operation.id,
+                    calculated_attributes=calculated_attrs,
+                    message=f"Workflow d'approbation demarre. Instance: {workflow_instance.id}",
+                    timestamp=datetime.utcnow()
+                )
 
         # Execute provisioning
         result = await provision_service.execute_provisioning(
@@ -228,8 +279,183 @@ async def list_operations(
             "account_id": op.get("account_id"),
             "status": op.get("status"),
             "calculated_attributes": op.get("calculated_attributes", {}),
+            "user_data": op.get("user_data", {}),
+            "target_systems": op.get("target_systems", []),
             "message": op.get("message", ""),
             "timestamp": op.get("timestamp")
         }
         for op in operations
     ]
+
+
+@router.put("/{operation_id}")
+async def update_operation(
+    operation_id: str,
+    request: ProvisioningRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_session)
+):
+    """
+    Met a jour un utilisateur existant.
+    Modifie les attributs dans les systemes cibles.
+    """
+    logger.info(
+        "Update request received",
+        operation_id=operation_id,
+        account_id=request.account_id,
+        targets=request.target_systems,
+        user=current_user["username"]
+    )
+
+    provision_service = ProvisionService(session)
+    rule_engine = RuleEngine(session)
+    audit_service = AuditService(session)
+
+    # Get existing operation
+    existing_op = memory_store.get_operation(operation_id)
+    if not existing_op:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Operation {operation_id} not found"
+        )
+
+    try:
+        # Create new operation for update
+        operation = await provision_service.create_operation(
+            request=request,
+            created_by=current_user["username"]
+        )
+
+        # Calculate new attributes
+        enriched_attributes = {**request.attributes, "account_id": request.account_id}
+        calculated_attrs = await rule_engine.calculate_attributes(
+            attributes=enriched_attributes,
+            target_systems=request.target_systems,
+            policy_id=request.policy_id
+        )
+
+        # Execute update provisioning
+        result = await provision_service.execute_provisioning(
+            operation=operation,
+            calculated_attributes=calculated_attrs
+        )
+
+        # Update memory store
+        memory_store.save_operation(operation.id, {
+            "operation_id": operation.id,
+            "account_id": request.account_id,
+            "operation": "update",
+            "status": "success",
+            "target_systems": [t.value for t in request.target_systems],
+            "user_data": request.attributes,
+            "calculated_attributes": calculated_attrs,
+            "created_by": current_user["username"],
+            "timestamp": datetime.utcnow().isoformat()
+        })
+
+        # Add audit log
+        memory_store.add_audit_log({
+            "type": "provision",
+            "action": "update",
+            "account_id": request.account_id,
+            "actor": current_user["username"],
+            "target_systems": [t.value for t in request.target_systems],
+            "status": "success"
+        })
+
+        return {
+            "status": "success",
+            "operation_id": operation.id,
+            "message": "Utilisateur mis a jour avec succes",
+            "calculated_attributes": calculated_attrs
+        }
+
+    except Exception as e:
+        logger.error("Update failed", error=str(e), operation_id=operation_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Update failed: {str(e)}"
+        )
+
+
+@router.delete("/{operation_id}")
+async def delete_operation(
+    operation_id: str,
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_session)
+):
+    """
+    Supprime un utilisateur des systemes cibles.
+    """
+    logger.info(
+        "Delete request received",
+        operation_id=operation_id,
+        user=current_user["username"]
+    )
+
+    provision_service = ProvisionService(session)
+
+    # Get existing operation
+    existing_op = memory_store.get_operation(operation_id)
+    if not existing_op:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Operation {operation_id} not found"
+        )
+
+    account_id = existing_op.get("account_id")
+    target_systems = existing_op.get("target_systems", [])
+    calculated_attrs = existing_op.get("calculated_attributes", {})
+
+    errors = []
+    deleted_systems = []
+
+    try:
+        # Delete from each target system
+        for target in target_systems:
+            try:
+                connector = provision_service._get_connector(target)
+                if connector:
+                    # Get the account identifier for each system
+                    target_attrs = calculated_attrs.get(target, {})
+                    account_identifier = target_attrs.get("uid") or target_attrs.get("username") or account_id
+
+                    await connector.delete_account(account_identifier)
+                    deleted_systems.append(target)
+                    logger.info(f"Deleted from {target}", account_id=account_identifier)
+            except Exception as e:
+                errors.append(f"{target}: {str(e)}")
+                logger.error(f"Failed to delete from {target}", error=str(e))
+
+        # Update operation status
+        new_status = "deleted" if not errors else "partially_deleted"
+        memory_store.update_operation(operation_id, {
+            "status": new_status,
+            "message": f"Supprime de: {', '.join(deleted_systems)}" + (f". Erreurs: {', '.join(errors)}" if errors else ""),
+            "updated_at": datetime.utcnow().isoformat()
+        })
+
+        # Add audit log
+        memory_store.add_audit_log({
+            "type": "provision",
+            "action": "delete",
+            "account_id": account_id,
+            "actor": current_user["username"],
+            "target_systems": deleted_systems,
+            "status": "success" if not errors else "partial"
+        })
+
+        return {
+            "status": "success" if not errors else "partial",
+            "message": f"Utilisateur supprime de {len(deleted_systems)} systeme(s)",
+            "deleted_from": deleted_systems,
+            "errors": errors if errors else None
+        }
+
+    except Exception as e:
+        logger.error("Delete failed", error=str(e), operation_id=operation_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Delete failed: {str(e)}"
+        )

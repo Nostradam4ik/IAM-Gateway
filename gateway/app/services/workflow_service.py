@@ -4,6 +4,7 @@ Service de gestion des workflows d'approbation
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 import json
+import uuid
 import structlog
 
 from app.models.workflow import (
@@ -19,6 +20,7 @@ from app.models.workflow import (
 )
 from app.core.config import settings
 from app.core.memory_store import memory_store
+from app.services.email_service import email_service
 
 logger = structlog.get_logger()
 
@@ -155,7 +157,11 @@ class WorkflowService:
         levels = json.loads(config.levels)
         timeout = datetime.utcnow() + timedelta(hours=config.timeout_hours)
 
+        # Generer un ID unique
+        workflow_id = f"wf-{str(uuid.uuid4())[:8]}"
+
         instance = WorkflowInstance(
+            id=workflow_id,
             workflow_id=config.id,
             operation_id=operation_id,
             status=ApprovalStatus.PENDING,
@@ -165,26 +171,186 @@ class WorkflowService:
             expires_at=timeout
         )
 
-        # Create approval levels
-        for level_config in levels:
-            level = ApprovalLevel(
-                workflow_instance_id=instance.id,
-                level_number=level_config["level"],
-                approver_type=ApproverType(level_config["approver_type"]),
-                approver_ids=json.dumps(level_config.get("approver_ids", [])),
-                required_approvals=level_config.get("required_approvals", 1)
+        # Extraire les infos pour l'affichage
+        user_name = f"{context.get('firstname', '')} {context.get('lastname', '')}".strip() or context.get('account_id', 'Unknown')
+        manager_email = context.get('manager_email', '')
+        requester = context.get('requester', 'admin')
+
+        # Sauvegarder dans memory_store pour persistance
+        workflow_data = {
+            "id": workflow_id,
+            "workflow_id": config.id,
+            "operation_id": operation_id,
+            "status": "pending",
+            "current_level": 1,
+            "total_levels": len(levels),
+            "user_name": user_name,
+            "operation_name": f"Creation compte: {context.get('account_id', 'N/A')}",
+            "pending_approvers": [manager_email] if manager_email else ["admin"],
+            "context": context,
+            "created_at": datetime.utcnow().isoformat(),
+            "expires_at": timeout.isoformat(),
+            "approve_token": None,
+            "reject_token": None,
+        }
+
+        # Envoyer notification email si manager_email specifie
+        if manager_email:
+            email_result = await email_service.send_approval_request(
+                workflow_id=workflow_id,
+                approver_email=manager_email,
+                user_data=context,
+                requester=requester
             )
-            # Save level
+            workflow_data["approve_token"] = email_result.get("approve_token")
+            workflow_data["reject_token"] = email_result.get("reject_token")
+            workflow_data["email_sent"] = email_result.get("sent", False)
+            logger.info(
+                "Approval email sent",
+                workflow_id=workflow_id,
+                to=manager_email,
+                sent=email_result.get("sent")
+            )
+
+        memory_store.save_workflow(workflow_id, workflow_data)
 
         logger.info(
             "Workflow started",
-            instance_id=instance.id,
+            instance_id=workflow_id,
             operation_id=operation_id,
             type=workflow_type,
-            levels=len(levels)
+            levels=len(levels),
+            manager_email=manager_email
         )
 
         return instance
+
+    async def create_approval_workflow(
+        self,
+        operation_id: str,
+        user_data: Dict[str, Any],
+        manager_email: str,
+        requester: str
+    ) -> Dict[str, Any]:
+        """
+        Cree un workflow d'approbation simplifie.
+        Utilise pour les demandes de creation avec require_approval=True.
+        """
+        workflow_id = f"wf-{str(uuid.uuid4())[:8]}"
+        timeout = datetime.utcnow() + timedelta(hours=72)
+
+        # Preparer le contexte
+        context = {
+            **user_data,
+            "manager_email": manager_email,
+            "requester": requester,
+        }
+
+        user_name = f"{user_data.get('firstname', '')} {user_data.get('lastname', '')}".strip() or user_data.get('account_id', 'Unknown')
+
+        workflow_data = {
+            "id": workflow_id,
+            "workflow_id": "wf-simple-approval",
+            "operation_id": operation_id,
+            "status": "pending",
+            "current_level": 1,
+            "total_levels": 1,
+            "user_name": user_name,
+            "operation_name": f"Creation compte: {user_data.get('account_id', 'N/A')}",
+            "pending_approvers": [manager_email],
+            "context": context,
+            "created_at": datetime.utcnow().isoformat(),
+            "expires_at": timeout.isoformat(),
+        }
+
+        # Envoyer notification email
+        email_result = await email_service.send_approval_request(
+            workflow_id=workflow_id,
+            approver_email=manager_email,
+            user_data=user_data,
+            requester=requester
+        )
+        workflow_data["approve_token"] = email_result.get("approve_token")
+        workflow_data["reject_token"] = email_result.get("reject_token")
+        workflow_data["email_sent"] = email_result.get("sent", False)
+
+        memory_store.save_workflow(workflow_id, workflow_data)
+
+        logger.info(
+            "Simple approval workflow created",
+            workflow_id=workflow_id,
+            operation_id=operation_id,
+            manager_email=manager_email,
+            email_sent=email_result.get("sent")
+        )
+
+        return {
+            "workflow_id": workflow_id,
+            "status": "pending",
+            "email_sent": email_result.get("sent", False),
+            "message": f"Workflow cree. Notification envoyee a {manager_email}"
+        }
+
+    async def approve_by_token(
+        self,
+        workflow_id: str,
+        token: str,
+        action: str
+    ) -> Dict[str, Any]:
+        """
+        Approuve ou rejette un workflow via un token email.
+        """
+        workflow = memory_store.get_workflow(workflow_id)
+        if not workflow:
+            return {"success": False, "error": "Workflow non trouve"}
+
+        # Verifier le token
+        valid_token = None
+        if action == "approve" and workflow.get("approve_token") == token:
+            valid_token = True
+        elif action == "reject" and workflow.get("reject_token") == token:
+            valid_token = True
+
+        if not valid_token:
+            return {"success": False, "error": "Token invalide ou expire"}
+
+        # Verifier le statut
+        if workflow.get("status") != "pending":
+            return {"success": False, "error": f"Workflow deja traite (statut: {workflow.get('status')})"}
+
+        # Mettre a jour le statut
+        new_status = "approved" if action == "approve" else "rejected"
+        workflow["status"] = new_status
+        workflow["decided_at"] = datetime.utcnow().isoformat()
+        workflow["decided_by"] = "email_link"
+
+        memory_store.save_workflow(workflow_id, workflow)
+
+        # Envoyer notification au demandeur
+        context = workflow.get("context", {})
+        requester_email = context.get("email")
+        if requester_email:
+            await email_service.send_approval_notification(
+                user_email=requester_email,
+                user_data=context,
+                approved=(action == "approve"),
+                approver=context.get("manager_email", "Manager")
+            )
+
+        logger.info(
+            "Workflow decided via email",
+            workflow_id=workflow_id,
+            action=action,
+            new_status=new_status
+        )
+
+        return {
+            "success": True,
+            "workflow_id": workflow_id,
+            "action": action,
+            "status": new_status,
+            "message": f"Demande {'approuvee' if action == 'approve' else 'rejetee'} avec succes"
+        }
 
     async def get_instance(self, instance_id: str) -> Optional[WorkflowInstanceResponse]:
         """Recupere les details d'une instance."""
