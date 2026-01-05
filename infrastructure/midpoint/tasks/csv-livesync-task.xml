@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<task oid="10000000-0000-0000-5555-000000000001"
+      xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3">
+
+    <name>Live Sync: CSV Odoo Employees</name>
+    <description>Synchronisation automatique des employés depuis le fichier CSV</description>
+
+    <executionState>runnable</executionState>
+
+    <activity>
+        <work>
+            <liveSynchronization>
+                <resourceObjects>
+                    <resourceRef oid="10000000-0000-0000-0000-000000000004"/>
+                    <kind>account</kind>
+                    <intent>default</intent>
+                    <objectclass>ri:AccountObjectClass</objectclass>
+                </resourceObjects>
+            </liveSynchronization>
+        </work>
+    </activity>
+
+    <!-- Exécution toutes les 5 minutes -->
+    <schedule>
+        <recurrence>recurring</recurrence>
+        <interval>300</interval>
+    </schedule>
+
+</task>

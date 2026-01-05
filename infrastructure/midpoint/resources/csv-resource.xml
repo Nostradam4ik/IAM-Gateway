@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resource oid="10000000-0000-0000-0000-000000000004"
+          xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:icfs="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/resource-schema-3"
+          xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+          xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3">
+
+    <name>CSV Odoo Employees</name>
+    <description>Import des employés Odoo avec dates de contrat</description>
+
+    <connectorRef oid="52f76624-4182-4557-9867-7d39dffa13c0" type="ConnectorType"/>
+
+    <connectorConfiguration>
+        <icfc:configurationProperties xmlns:icfc="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/connector-schema-3"
+                                      xmlns:icfccsv="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/com.evolveum.polygon.connector-csv/com.evolveum.polygon.connector.csv.CsvConnector">
+            <icfccsv:filePath>/opt/midpoint/var/csv/users.csv</icfccsv:filePath>
+            <icfccsv:encoding>UTF-8</icfccsv:encoding>
+            <icfccsv:fieldDelimiter>,</icfccsv:fieldDelimiter>
+            <icfccsv:multivalueDelimiter>;</icfccsv:multivalueDelimiter>
+            <icfccsv:uniqueAttribute>uid</icfccsv:uniqueAttribute>
+            <icfccsv:passwordAttribute>password</icfccsv:passwordAttribute>
+        </icfc:configurationProperties>
+    </connectorConfiguration>
+
+    <schemaHandling>
+        <objectType>
+            <kind>account</kind>
+            <intent>default</intent>
+            <displayName>Odoo Employee Account</displayName>
+            <default>true</default>
+            <objectClass>ri:AccountObjectClass</objectClass>
+
+            <!-- UID - Identifiant unique -->
+            <attribute>
+                <ref>ri:uid</ref>
+                <displayName>User ID</displayName>
+                <inbound>
+                    <target>
+                        <path>$user/name</path>
+                    </target>
+                </inbound>
+            </attribute>
+
+            <!-- Prénom -->
+            <attribute>
+                <ref>ri:firstname</ref>
+                <displayName>First Name</displayName>
+                <inbound>
+                    <target>
+                        <path>$user/givenName</path>
+                    </target>
+                </inbound>
+            </attribute>
+
+            <!-- Nom -->
+            <attribute>
+                <ref>ri:lastname</ref>
+                <displayName>Last Name</displayName>
+                <inbound>
+                    <target>
+                        <path>$user/familyName</path>
+                    </target>
+                </inbound>
+            </attribute>
+
+            <!-- Email -->
+            <attribute>
+                <ref>ri:email</ref>
+                <displayName>Email</displayName>
+                <inbound>
+                    <target>
+                        <path>$user/emailAddress</path>
+                    </target>
+                </inbound>
+            </attribute>
+
+            <!-- Téléphone -->
+            <attribute>
+                <ref>ri:phone</ref>
+                <displayName>Phone</displayName>
+                <inbound>
+                    <target>
+                        <path>$user/telephoneNumber</path>
+                    </target>
+                </inbound>
+            </attribute>
+
+            <!-- Département -->
+            <attribute>
+                <ref>ri:department</ref>
+                <displayName>Department</displayName>
+                <inbound>
+                    <target>
+                        <path>$user/organizationalUnit</path>
+                    </target>
+                </inbound>
+            </attribute>
+
+            <!-- Poste / Job Title -->
+            <attribute>
+                <ref>ri:job_title</ref>
+                <displayName>Job Title</displayName>
+                <inbound>
+                    <target>
+                        <path>$user/title</path>
+                    </target>
+                </inbound>
+            </attribute>
+
+            <!-- Manager -->
+            <attribute>
+                <ref>ri:manager</ref>
+                <displayName>Manager</displayName>
+            </attribute>
+
+            <!-- Date de début -->
+            <attribute>
+                <ref>ri:start_date</ref>
+                <displayName>Start Date</displayName>
+            </attribute>
+
+            <!-- Date de fin -->
+            <attribute>
+                <ref>ri:end_date</ref>
+                <displayName>End Date</displayName>
+            </attribute>
+
+            <!-- Statut actif -->
+            <attribute>
+                <ref>ri:active</ref>
+                <displayName>Active</displayName>
+            </attribute>
+
+            <!-- Activation - status enabled par défaut -->
+            <activation>
+                <administrativeStatus>
+                    <inbound>
+                        <strength>weak</strength>
+                        <expression>
+                            <value>enabled</value>
+                        </expression>
+                    </inbound>
+                </administrativeStatus>
+            </activation>
+
+        </objectType>
+    </schemaHandling>
+
+    <!-- Synchronisation -->
+    <synchronization>
+        <objectSynchronization>
+            <enabled>true</enabled>
+            <kind>account</kind>
+            <intent>default</intent>
+            <focusType>UserType</focusType>
+
+            <!-- Corrélation par uid (name) -->
+            <correlation>
+                <q:equal>
+                    <q:path>name</q:path>
+                    <expression>
+                        <path>$account/attributes/ri:uid</path>
+                    </expression>
+                </q:equal>
+            </correlation>
+
+            <!-- Réactions aux différentes situations -->
+            <reaction>
+                <situation>linked</situation>
+                <synchronize>true</synchronize>
+            </reaction>
+            <reaction>
+                <situation>unlinked</situation>
+                <synchronize>true</synchronize>
+                <action>
+                    <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/action-3#link</handlerUri>
+                </action>
+            </reaction>
+            <reaction>
+                <situation>unmatched</situation>
+                <synchronize>true</synchronize>
+                <action>
+                    <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/action-3#addFocus</handlerUri>
+                </action>
+            </reaction>
+            <reaction>
+                <situation>deleted</situation>
+                <synchronize>true</synchronize>
+                <action>
+                    <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/action-3#unlink</handlerUri>
+                </action>
+            </reaction>
+        </objectSynchronization>
+    </synchronization>
+
+</resource>
