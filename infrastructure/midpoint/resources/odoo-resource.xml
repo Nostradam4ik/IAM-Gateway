@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    MidPoint Resource: Odoo ERP (via Database)
+
+    This resource connects MidPoint to Odoo's PostgreSQL database directly.
+    We use the DatabaseTable connector to manage res_partner table.
+
+    Note: For production, consider using Odoo's XML-RPC API via REST connector.
+    Direct database access is simpler but bypasses Odoo's business logic.
+
+    Connection: odoo-db:5432 (inside Docker network)
+    Database: odoo
+    Table: res_partner
+-->
+<resource xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+          xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+          xmlns:icfs="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/resource-schema-3"
+          xmlns:icfc="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/connector-schema-3"
+          xmlns:t="http://prism.evolveum.com/xml/ns/public/types-3"
+          oid="10000000-0000-0000-0000-000000000002">
+
+    <name>Odoo ERP</name>
+    <description>Odoo ERP system - contacts via database connector</description>
+
+    <!-- DatabaseTable Connector Reference -->
+    <connectorRef type="ConnectorType">
+        <filter>
+            <q:equal>
+                <q:path>connectorType</q:path>
+                <q:value>org.identityconnectors.databasetable.DatabaseTableConnector</q:value>
+            </q:equal>
+        </filter>
+    </connectorRef>
+
+    <!-- Connection Configuration -->
+    <connectorConfiguration>
+        <icfc:configurationProperties
+            xmlns:icscdbtable="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/com.evolveum.polygon.connector-databasetable/org.identityconnectors.databasetable.DatabaseTableConnector">
+
+            <!-- Database connection -->
+            <icscdbtable:host>odoo-db</icscdbtable:host>
+            <icscdbtable:port>5432</icscdbtable:port>
+            <icscdbtable:database>odoo</icscdbtable:database>
+            <icscdbtable:user>odoo</icscdbtable:user>
+            <icscdbtable:password>
+                <t:clearValue>odoo</t:clearValue>
+            </icscdbtable:password>
+            <icscdbtable:jdbcDriver>org.postgresql.Driver</icscdbtable:jdbcDriver>
+            <icscdbtable:jdbcUrlTemplate>jdbc:postgresql://%h:%p/%d</icscdbtable:jdbcUrlTemplate>
+
+            <!-- Table configuration for res_partner (contacts) -->
+            <icscdbtable:table>res_partner</icscdbtable:table>
+            <icscdbtable:keyColumn>id</icscdbtable:keyColumn>
+            <icscdbtable:allNative>true</icscdbtable:allNative>
+            <icscdbtable:nativeTimestamps>true</icscdbtable:nativeTimestamps>
+            <icscdbtable:rethrowAllSQLExceptions>true</icscdbtable:rethrowAllSQLExceptions>
+            <icscdbtable:enableEmptyString>false</icscdbtable:enableEmptyString>
+        </icfc:configurationProperties>
+    </connectorConfiguration>
+
+    <!-- Let MidPoint discover schema automatically, then add schemaHandling later -->
+</resource>

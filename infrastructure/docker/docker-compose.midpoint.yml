@@ -23,7 +23,7 @@ services:
       MIDPOINT_REPO_JDBC_URL: jdbc:postgresql://postgres:5432/midpoint
       MIDPOINT_REPO_JDBC_USERNAME: midpoint
       MIDPOINT_REPO_JDBC_PASSWORD: midpoint
-      MIDPOINT_ADMIN_PASSWORD: admin
+      MIDPOINT_ADMIN_PASSWORD: holimolly1
     ports:
       - "8080:8080"
     volumes:

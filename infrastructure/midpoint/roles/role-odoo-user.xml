@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Role: Odoo User
+
+    Assigning this role to a user will:
+    1. Create a contact in Odoo (res_partner)
+    2. Sync user attributes to Odoo
+    3. Manage the contact lifecycle
+-->
+<role xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      oid="10000000-0000-0000-0000-000000000102">
+
+    <name>odoo-user</name>
+    <displayName>Odoo User</displayName>
+    <description>Grants a contact record in Odoo ERP</description>
+
+    <requestable>true</requestable>
+    <delegable>false</delegable>
+
+    <!-- Inducement: Create Odoo contact when role is assigned -->
+    <inducement>
+        <construction>
+            <!-- Reference to Odoo resource -->
+            <resourceRef oid="10000000-0000-0000-0000-000000000002" type="ResourceType"/>
+            <kind>account</kind>
+            <intent>contact</intent>
+        </construction>
+    </inducement>
+</role>

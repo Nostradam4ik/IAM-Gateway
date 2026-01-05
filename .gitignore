@@ -43,3 +43,4 @@ midpoint_home.tgz
 # Personal documents
 *.pdf
 midpoint-resources/var/
+infrastructure/midpoint/var/

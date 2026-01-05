@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Role: Employee
+
+    Meta-role that grants both LDAP and Odoo access.
+    This is typically assigned to all employees.
+
+    Assigning this role will:
+    1. Create LDAP account (via ldap-user role)
+    2. Create Odoo contact (via odoo-user role)
+-->
+<role xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      oid="10000000-0000-0000-0000-000000000100">
+
+    <name>employee</name>
+    <displayName>Employee</displayName>
+    <description>Standard employee role - grants access to LDAP and Odoo</description>
+
+    <requestable>true</requestable>
+    <delegable>false</delegable>
+
+    <!-- Include ldap-user role -->
+    <inducement>
+        <targetRef oid="10000000-0000-0000-0000-000000000101" type="RoleType"/>
+    </inducement>
+
+    <!-- Include odoo-user role -->
+    <inducement>
+        <targetRef oid="10000000-0000-0000-0000-000000000102" type="RoleType"/>
+    </inducement>
+</role>

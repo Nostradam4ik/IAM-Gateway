@@ -1,5 +1,9 @@
 """
 API de provisionnement - Point d'entree pour MidPoint
+
+Ce module gere le provisionnement des utilisateurs.
+Quand MIDPOINT_ENABLED=True, toutes les operations passent par MidPoint
+qui se charge de propager aux systemes cibles.
 """
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from typing import List, Optional
@@ -16,8 +20,10 @@ from app.models.provision import (
 )
 from app.core.security import get_current_user
 from app.core.database import get_session
+from app.core.config import settings
 from app.core.memory_store import memory_store
 from app.services.provision_service import ProvisionService
+from app.services.midpoint_provision_service import MidPointProvisionService, get_midpoint_provision_service
 from app.services.rule_engine import RuleEngine
 from app.services.workflow_service import WorkflowService
 from app.services.audit_service import AuditService
@@ -34,22 +40,104 @@ async def provision_account(
     session=Depends(get_session)
 ):
     """
-    Execute une operation de provisionnement multi-cibles.
+    Execute une operation de provisionnement.
 
-    - Valide la requete entrante
-    - Applique les regles dynamiques pour calculer les attributs
-    - Declenche le workflow d'approbation si necessaire
-    - Execute le provisionnement sur les systemes cibles
-    - Retourne le resultat consolide
+    Si MIDPOINT_ENABLED=True (defaut):
+        Gateway -> MidPoint -> [LDAP, Odoo, SQL, ...]
+        MidPoint gere la propagation vers les systemes cibles.
+
+    Sinon:
+        Gateway -> [LDAP, Odoo, SQL, ...] directement
     """
     logger.info(
         "Provisioning request received",
         operation=request.operation,
         account_id=request.account_id,
         targets=request.target_systems,
-        user=current_user["username"]
+        user=current_user["username"],
+        midpoint_enabled=settings.MIDPOINT_ENABLED
     )
 
+    # Use MidPoint as hub if enabled
+    if settings.MIDPOINT_ENABLED:
+        return await _provision_via_midpoint(request, current_user, session)
+
+    # Legacy: direct provisioning to targets
+    return await _provision_direct(request, background_tasks, current_user, session)
+
+
+async def _provision_via_midpoint(
+    request: ProvisioningRequest,
+    current_user: dict,
+    session
+) -> ProvisioningResponse:
+    """
+    Provision via MidPoint hub.
+
+    MidPoint handles:
+    - User storage in its repository
+    - Propagation to configured Resources (LDAP, Odoo, SQL)
+    - Workflow approvals
+    - Audit logging
+    """
+    try:
+        midpoint_service = await get_midpoint_provision_service(session)
+
+        result = await midpoint_service.provision(
+            request=request,
+            created_by=current_user["username"]
+        )
+
+        # Add audit log
+        memory_store.add_audit_log({
+            "type": "provision",
+            "action": request.operation.value,
+            "account_id": request.account_id,
+            "actor": current_user["username"],
+            "target_systems": ["MIDPOINT"],
+            "original_targets": [t.value for t in request.target_systems],
+            "status": "success",
+            "midpoint_hub": True
+        })
+
+        return ProvisioningResponse(
+            status=OperationStatus.SUCCESS,
+            operation_id=result.get("operation_id", ""),
+            calculated_attributes={"midpoint": result.get("midpoint_result", {})},
+            message=result.get("message", "Provisionnement via MidPoint termine"),
+            timestamp=datetime.utcnow()
+        )
+
+    except Exception as e:
+        logger.error("MidPoint provisioning failed", error=str(e))
+
+        memory_store.add_audit_log({
+            "type": "provision",
+            "action": request.operation.value,
+            "account_id": request.account_id,
+            "actor": current_user["username"],
+            "status": "failed",
+            "error": str(e),
+            "midpoint_hub": True
+        })
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"MidPoint provisioning failed: {str(e)}"
+        )
+
+
+async def _provision_direct(
+    request: ProvisioningRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict,
+    session
+) -> ProvisioningResponse:
+    """
+    Legacy: Direct provisioning to target systems.
+
+    Used when MIDPOINT_ENABLED=False.
+    """
     provision_service = ProvisionService(session)
     rule_engine = RuleEngine(session)
     workflow_service = WorkflowService(session)
@@ -459,3 +547,179 @@ async def delete_operation(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Delete failed: {str(e)}"
         )
+
+
+# ==================== MidPoint-specific endpoints ====================
+
+@router.get("/midpoint/users")
+async def list_midpoint_users(
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_session)
+):
+    """List all users from MidPoint."""
+    if not settings.MIDPOINT_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MidPoint is not enabled"
+        )
+
+    midpoint_service = await get_midpoint_provision_service(session)
+    users = await midpoint_service.list_users()
+
+    return {"users": users, "count": len(users)}
+
+
+@router.get("/midpoint/users/{account_id}")
+async def get_midpoint_user(
+    account_id: str,
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_session)
+):
+    """Get a specific user from MidPoint with their shadow accounts."""
+    if not settings.MIDPOINT_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MidPoint is not enabled"
+        )
+
+    midpoint_service = await get_midpoint_provision_service(session)
+
+    user = await midpoint_service.get_user(account_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User {account_id} not found in MidPoint"
+        )
+
+    # Get shadow accounts (projections to target systems)
+    shadows = await midpoint_service.get_user_shadows(account_id)
+
+    return {
+        "user": user,
+        "shadows": shadows,
+        "provisioned_to": len(shadows)
+    }
+
+
+@router.get("/midpoint/roles")
+async def list_midpoint_roles(
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_session)
+):
+    """List all roles from MidPoint."""
+    if not settings.MIDPOINT_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MidPoint is not enabled"
+        )
+
+    midpoint_service = await get_midpoint_provision_service(session)
+    roles = await midpoint_service.get_roles()
+
+    return {"roles": roles, "count": len(roles)}
+
+
+@router.post("/midpoint/users/{account_id}/roles/{role_name}")
+async def assign_role_to_user(
+    account_id: str,
+    role_name: str,
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_session)
+):
+    """Assign a role to a user (triggers provisioning to role's Resources)."""
+    if not settings.MIDPOINT_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MidPoint is not enabled"
+        )
+
+    midpoint_service = await get_midpoint_provision_service(session)
+    success = await midpoint_service.assign_role(account_id, role_name)
+
+    if success:
+        memory_store.add_audit_log({
+            "type": "role_assignment",
+            "action": "assign",
+            "account_id": account_id,
+            "role": role_name,
+            "actor": current_user["username"],
+            "status": "success"
+        })
+        return {"success": True, "message": f"Role {role_name} assigned to {account_id}"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to assign role {role_name}"
+        )
+
+
+@router.delete("/midpoint/users/{account_id}/roles/{role_name}")
+async def remove_role_from_user(
+    account_id: str,
+    role_name: str,
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_session)
+):
+    """Remove a role from a user (may trigger deprovisioning)."""
+    if not settings.MIDPOINT_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MidPoint is not enabled"
+        )
+
+    midpoint_service = await get_midpoint_provision_service(session)
+    success = await midpoint_service.remove_role(account_id, role_name)
+
+    if success:
+        memory_store.add_audit_log({
+            "type": "role_assignment",
+            "action": "remove",
+            "account_id": account_id,
+            "role": role_name,
+            "actor": current_user["username"],
+            "status": "success"
+        })
+        return {"success": True, "message": f"Role {role_name} removed from {account_id}"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to remove role {role_name}"
+        )
+
+
+@router.get("/midpoint/resources")
+async def list_midpoint_resources(
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_session)
+):
+    """List all configured Resources (target systems) in MidPoint."""
+    if not settings.MIDPOINT_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MidPoint is not enabled"
+        )
+
+    midpoint_service = await get_midpoint_provision_service(session)
+    resources = await midpoint_service.get_resources()
+
+    return {"resources": resources, "count": len(resources)}
+
+
+@router.get("/midpoint/status")
+async def midpoint_status(
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_session)
+):
+    """Check MidPoint connection status."""
+    from app.connectors.midpoint_connector import MidPointConnector
+
+    connector = MidPointConnector()
+    connected = await connector.test_connection()
+    await connector.close()
+
+    return {
+        "enabled": settings.MIDPOINT_ENABLED,
+        "connected": connected,
+        "url": settings.MIDPOINT_URL,
+        "user": settings.MIDPOINT_USER
+    }

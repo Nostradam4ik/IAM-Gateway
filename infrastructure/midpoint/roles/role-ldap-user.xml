@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Role: LDAP User
+
+    Assigning this role to a user will:
+    1. Create an account in OpenLDAP
+    2. Sync user attributes to LDAP
+    3. Manage the account lifecycle (enable/disable/delete)
+-->
+<role xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      oid="10000000-0000-0000-0000-000000000101">
+
+    <name>ldap-user</name>
+    <displayName>LDAP User</displayName>
+    <description>Grants an account in the OpenLDAP directory</description>
+
+    <requestable>true</requestable>
+    <delegable>false</delegable>
+
+    <!-- Inducement: Create LDAP account when role is assigned -->
+    <inducement>
+        <construction>
+            <!-- Reference to OpenLDAP resource -->
+            <resourceRef oid="10000000-0000-0000-0000-000000000001" type="ResourceType"/>
+            <kind>account</kind>
+            <intent>default</intent>
+        </construction>
+    </inducement>
+</role>

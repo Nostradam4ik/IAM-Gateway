@@ -9,6 +9,7 @@ from app.connectors.base import BaseConnector
 from app.connectors.ldap_connector import LDAPConnector
 from app.connectors.sql_connector import SQLConnector
 from app.connectors.odoo_connector import OdooConnector
+from app.connectors.midpoint_connector import MidPointConnector
 
 logger = structlog.get_logger()
 
@@ -385,7 +386,10 @@ class ConnectorFactory:
 
     def _create_static_connector(self, target: str) -> BaseConnector:
         """Create a static connector instance from config.py."""
-        if target in ("LDAP", "AD"):
+        if target == "MIDPOINT":
+            return MidPointConnector()
+
+        elif target in ("LDAP", "AD"):
             return LDAPConnector()
 
         elif target == "SQL":
@@ -409,6 +413,7 @@ class ConnectorFactory:
     def get_available_connectors(self) -> list:
         """Return list of available connector types."""
         connectors = [
+            {"name": "MIDPOINT", "status": "available", "description": "MidPoint IAM Hub (central)", "source": "static"},
             {"name": "LDAP", "status": "available", "description": "LDAP/OpenLDAP directory", "source": "static"},
             {"name": "AD", "status": "available", "description": "Active Directory", "source": "static"},
             {"name": "SQL", "status": "available", "description": "SQL Database (PostgreSQL, MySQL)", "source": "static"},
