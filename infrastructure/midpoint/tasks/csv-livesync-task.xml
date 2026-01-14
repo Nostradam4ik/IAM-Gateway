@@ -12,7 +12,7 @@
         <work>
             <liveSynchronization>
                 <resourceObjects>
-                    <resourceRef oid="10000000-0000-0000-0000-000000000004"/>
+                    <resourceRef oid="8a8b9c1d-0002-0000-0000-000000000001"/>
                     <kind>account</kind>
                     <intent>default</intent>
                     <objectclass>ri:AccountObjectClass</objectclass>
