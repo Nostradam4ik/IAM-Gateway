@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import structlog
 
-from app.api import provision, rules, workflow, reconcile, ai_assistant, admin, live_comparison, permissions, connectors
+from app.api import provision, rules, workflow, reconcile, ai_assistant, admin, live_comparison, permissions, connectors, provision_via_midpoint, webhooks
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.logging import setup_logging
@@ -65,6 +65,8 @@ app.include_router(admin.router, prefix="/api/v1/admin", tags=["Administration"]
 app.include_router(live_comparison.router, prefix="/api/v1/live", tags=["Comparaison Temps Reel"])
 app.include_router(permissions.router, prefix="/api/v1/permissions", tags=["Niveaux de Droits"])
 app.include_router(connectors.router, prefix="/api/v1/connectors", tags=["Connecteurs"])
+app.include_router(provision_via_midpoint.router, tags=["Provisionnement via MidPoint"])
+app.include_router(webhooks.router, tags=["Webhooks MidPoint"])
 
 
 @app.get("/health", tags=["Health"])

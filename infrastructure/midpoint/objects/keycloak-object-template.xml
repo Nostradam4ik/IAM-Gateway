@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Object Template for Keycloak Provisioning
+  This template triggers Keycloak provisioning when a user has the "Keycloak User" role
+-->
+<objectTemplate xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+                xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+                xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+                oid="30000000-0000-0000-0000-000000000001">
+
+    <name>Keycloak Provisioning Template</name>
+    <description>Automatically provisions users to Keycloak when they have the Keycloak User role</description>
+
+    <!-- This mapping runs after user modifications -->
+    <mapping>
+        <name>keycloak-provisioning-trigger</name>
+        <description>Triggers Keycloak provisioning via REST API</description>
+        <strength>strong</strength>
+        <source>
+            <path>name</path>
+        </source>
+        <source>
+            <path>givenName</path>
+        </source>
+        <source>
+            <path>familyName</path>
+        </source>
+        <source>
+            <path>emailAddress</path>
+        </source>
+        <source>
+            <path>assignment</path>
+        </source>
+        <expression>
+            <script>
+                <language>http://midpoint.evolveum.com/xml/ns/public/expression/language#Groovy</language>
+                <code>
+                    import groovy.json.JsonOutput
+                    import groovy.json.JsonSlurper
+
+                    // Configuration Keycloak
+                    def KEYCLOAK_URL = "http://keycloak:8080"
+                    def KEYCLOAK_REALM = "gateway"
+                    def KEYCLOAK_ADMIN = "admin"
+                    def KEYCLOAK_PASSWORD = "admin"
+                    def KEYCLOAK_ROLE_OID = "12345678-1234-1234-1234-000000000002"
+
+                    // Vérifier si l'utilisateur a le rôle Keycloak User
+                    def hasKeycloakRole = false
+                    if (assignment != null) {
+                        assignment.each { a ->
+                            if (a?.targetRef?.oid == KEYCLOAK_ROLE_OID) {
+                                hasKeycloakRole = true
+                            }
+                        }
+                    }
+
+                    if (!hasKeycloakRole) {
+                        log.info("User {} does not have Keycloak User role, skipping", name)
+                        return name
+                    }
+
+                    log.info("Provisioning user {} to Keycloak", name)
+
+                    try {
+                        // Get token
+                        def tokenUrl = "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token"
+                        def tokenConn = new URL(tokenUrl).openConnection()
+                        tokenConn.setRequestMethod("POST")
+                        tokenConn.setDoOutput(true)
+                        tokenConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+
+                        def tokenParams = "username=${KEYCLOAK_ADMIN}&amp;password=${KEYCLOAK_PASSWORD}&amp;grant_type=password&amp;client_id=admin-cli"
+                        tokenConn.outputStream.write(tokenParams.bytes)
+
+                        def tokenResponse = new JsonSlurper().parse(tokenConn.inputStream)
+                        def token = tokenResponse.access_token
+
+                        // Create/Update user in Keycloak
+                        def userUrl = "${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/users"
+                        def userConn = new URL(userUrl).openConnection()
+                        userConn.setRequestMethod("POST")
+                        userConn.setDoOutput(true)
+                        userConn.setRequestProperty("Content-Type", "application/json")
+                        userConn.setRequestProperty("Authorization", "Bearer ${token}")
+
+                        def userPayload = JsonOutput.toJson([
+                            username: name,
+                            email: emailAddress ?: "${name}@example.com",
+                            firstName: givenName ?: "",
+                            lastName: familyName ?: "",
+                            enabled: true,
+                            emailVerified: true,
+                            credentials: [[
+                                type: "password",
+                                value: "changeme123",
+                                temporary: true
+                            ]]
+                        ])
+
+                        userConn.outputStream.write(userPayload.bytes)
+
+                        def responseCode = userConn.responseCode
+                        if (responseCode == 201) {
+                            log.info("User {} created in Keycloak", name)
+                        } else if (responseCode == 409) {
+                            log.info("User {} already exists in Keycloak", name)
+                        } else {
+                            log.warn("Keycloak response: {}", responseCode)
+                        }
+
+                    } catch (Exception e) {
+                        log.error("Error provisioning to Keycloak: {}", e.message)
+                    }
+
+                    return name
+                </code>
+            </script>
+        </expression>
+        <target>
+            <path>description</path>
+        </target>
+        <condition>
+            <script>
+                <code>true</code>
+            </script>
+        </condition>
+    </mapping>
+
+</objectTemplate>

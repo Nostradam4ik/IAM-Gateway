@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Keycloak User Role for MidPoint
+  Assigns this role to a user to provision them to Keycloak
+-->
+<role xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      oid="12345678-1234-1234-1234-000000000002">
+    <name>Keycloak User</name>
+    <description>Role that provisions user account to Keycloak (gateway realm)</description>
+
+    <!--
+      Note: This role is used as a marker for the sync script.
+      When assigned to a user, the midpoint_to_keycloak_sync.py script
+      will provision the user to Keycloak.
+
+      In a production environment, you would use a proper REST connector
+      or scripted connector for automatic provisioning.
+    -->
+
+    <inducement>
+        <construction>
+            <resourceRef oid="20000000-0000-0000-0000-000000000001" type="ResourceType"/>
+            <kind>account</kind>
+            <intent>default</intent>
+        </construction>
+    </inducement>
+</role>

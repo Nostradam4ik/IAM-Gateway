@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # MidPoint - Hub central IAM
     MIDPOINT_URL: str = Field(default="http://midpoint-core:8080/midpoint")
     MIDPOINT_USER: str = Field(default="administrator")
-    MIDPOINT_PASSWORD: str = Field(default="Holimolly1")
+    MIDPOINT_PASSWORD: str = Field(default="5ecr3t")
     MIDPOINT_ENABLED: bool = Field(default=True)  # Use MidPoint as central hub
 
     # LDAP/AD

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Keycloak Resource for MidPoint
+  Uses REST API connector to provision users to Keycloak
+
+  Note: This is a scripted REST resource that uses Keycloak Admin API
+-->
+<resource xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+          xmlns:icfc="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/connector-schema-3"
+          xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+          xmlns:cap="http://midpoint.evolveum.com/xml/ns/public/resource/capabilities-3"
+          oid="20000000-0000-0000-0000-000000000001">
+
+  <name>Keycloak Directory</name>
+  <description>Keycloak IAM - User provisioning via REST API (gateway realm)</description>
+
+  <!-- Manual connector for now - requires script-based provisioning -->
+  <connectorRef type="ConnectorType">
+    <filter>
+      <q:equal>
+        <q:path>connectorType</q:path>
+        <q:value>ManualConnector</q:value>
+      </q:equal>
+    </filter>
+  </connectorRef>
+
+  <connectorConfiguration xmlns:icfcmanual="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/com.evolveum.polygon.connector-manual/com.evolveum.polygon.connector.manual.ManualConnector">
+    <icfc:configurationProperties>
+    </icfc:configurationProperties>
+  </connectorConfiguration>
+
+  <schemaHandling>
+    <objectType>
+      <kind>account</kind>
+      <intent>default</intent>
+      <displayName>Keycloak User Account</displayName>
+      <default>true</default>
+      <objectClass>ri:AccountObjectClass</objectClass>
+
+      <attribute>
+        <ref>ri:username</ref>
+        <displayName>Username</displayName>
+        <outbound>
+          <source>
+            <path>name</path>
+          </source>
+        </outbound>
+      </attribute>
+
+      <attribute>
+        <ref>ri:email</ref>
+        <displayName>Email</displayName>
+        <outbound>
+          <source>
+            <path>emailAddress</path>
+          </source>
+        </outbound>
+      </attribute>
+
+      <attribute>
+        <ref>ri:firstName</ref>
+        <displayName>First Name</displayName>
+        <outbound>
+          <source>
+            <path>givenName</path>
+          </source>
+        </outbound>
+      </attribute>
+
+      <attribute>
+        <ref>ri:lastName</ref>
+        <displayName>Last Name</displayName>
+        <outbound>
+          <source>
+            <path>familyName</path>
+          </source>
+        </outbound>
+      </attribute>
+
+      <attribute>
+        <ref>ri:enabled</ref>
+        <displayName>Enabled</displayName>
+        <outbound>
+          <expression>
+            <value>true</value>
+          </expression>
+        </outbound>
+      </attribute>
+
+    </objectType>
+  </schemaHandling>
+
+  <capabilities>
+    <configured xmlns:cap="http://midpoint.evolveum.com/xml/ns/public/resource/capabilities-3">
+      <cap:create>
+        <cap:enabled>true</cap:enabled>
+        <cap:manual>true</cap:manual>
+      </cap:create>
+      <cap:update>
+        <cap:enabled>true</cap:enabled>
+        <cap:manual>true</cap:manual>
+      </cap:update>
+      <cap:delete>
+        <cap:enabled>true</cap:enabled>
+        <cap:manual>true</cap:manual>
+      </cap:delete>
+      <cap:read>
+        <cap:enabled>true</cap:enabled>
+      </cap:read>
+    </configured>
+  </capabilities>
+
+</resource>

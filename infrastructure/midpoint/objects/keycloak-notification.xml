@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  System Configuration for Keycloak Provisioning Notifications
+
+  This configuration sends a webhook to the Gateway when users are modified
+  The Gateway then handles Keycloak provisioning
+-->
+<systemConfiguration xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+                     xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+                     oid="00000000-0000-0000-0000-000000000001">
+
+    <name>SystemConfiguration</name>
+
+    <notificationConfiguration>
+        <!-- HTTP Transport for webhooks -->
+        <handler>
+            <simpleUserNotifier>
+                <name>Keycloak Provisioning Webhook</name>
+                <description>Sends user changes to Gateway for Keycloak provisioning</description>
+                <operation>add</operation>
+                <operation>modify</operation>
+                <status>success</status>
+                <transport>custom:keycloakWebhook</transport>
+            </simpleUserNotifier>
+        </handler>
+
+        <!-- Custom webhook transport -->
+        <customTransport>
+            <name>keycloakWebhook</name>
+            <type>http</type>
+            <urlExpression>
+                <script>
+                    <code>"http://gateway:8000/api/v1/webhooks/midpoint/user-change"</code>
+                </script>
+            </urlExpression>
+            <method>POST</method>
+            <contentType>application/json</contentType>
+            <bodyExpression>
+                <script>
+                    <language>http://midpoint.evolveum.com/xml/ns/public/expression/language#Groovy</language>
+                    <code>
+                        import groovy.json.JsonOutput
+
+                        def user = event.requestee
+                        def operation = event.operationStatus
+
+                        JsonOutput.toJson([
+                            event: "user_change",
+                            operation: event.changeType?.toString() ?: "unknown",
+                            user: [
+                                oid: user?.oid,
+                                name: user?.name?.orig,
+                                givenName: user?.givenName?.orig,
+                                familyName: user?.familyName?.orig,
+                                email: user?.emailAddress
+                            ]
+                        ])
+                    </code>
+                </script>
+            </bodyExpression>
+        </customTransport>
+    </notificationConfiguration>
+
+</systemConfiguration>

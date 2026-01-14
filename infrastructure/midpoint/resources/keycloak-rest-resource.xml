@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Keycloak REST Resource for MidPoint
+  Uses Groovy scripts to provision users to Keycloak via REST API
+
+  This resource enables automatic provisioning when the "Keycloak User" role is assigned
+-->
+<resource xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+          xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+          xmlns:icfc="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/connector-schema-3"
+          xmlns:cap="http://midpoint.evolveum.com/xml/ns/public/resource/capabilities-3"
+          xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          oid="20000000-0000-0000-0000-000000000001">
+
+    <name>Keycloak REST</name>
+    <description>Keycloak IAM provisioning via REST API with Groovy scripts</description>
+
+    <!-- Use Manual Connector as base -->
+    <connectorRef type="ConnectorType">
+        <filter>
+            <q:equal>
+                <q:path>connectorType</q:path>
+                <q:value>ManualConnector</q:value>
+            </q:equal>
+        </filter>
+    </connectorRef>
+
+    <connectorConfiguration xmlns:icfcmanual="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/com.evolveum.polygon.connector-manual/com.evolveum.polygon.connector.manual.ManualConnector">
+        <icfc:configurationProperties>
+        </icfc:configurationProperties>
+    </connectorConfiguration>
+
+    <!-- Schema definition for Keycloak accounts -->
+    <schemaHandling>
+        <objectType>
+            <kind>account</kind>
+            <intent>default</intent>
+            <displayName>Keycloak User Account</displayName>
+            <default>true</default>
+            <objectClass>ri:AccountObjectClass</objectClass>
+
+            <!-- Username mapping -->
+            <attribute>
+                <ref>ri:username</ref>
+                <displayName>Username</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>name</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Email mapping -->
+            <attribute>
+                <ref>ri:email</ref>
+                <displayName>Email</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>emailAddress</path>
+                    </source>
+                    <expression>
+                        <script>
+                            <code>
+                                // Si pas d'email, générer un email par défaut
+                                if (emailAddress != null &amp;&amp; !emailAddress.isEmpty()) {
+                                    return emailAddress
+                                }
+                                return name + '@example.com'
+                            </code>
+                        </script>
+                    </expression>
+                </outbound>
+            </attribute>
+
+            <!-- First Name mapping -->
+            <attribute>
+                <ref>ri:firstName</ref>
+                <displayName>First Name</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>givenName</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Last Name mapping -->
+            <attribute>
+                <ref>ri:lastName</ref>
+                <displayName>Last Name</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>familyName</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Enabled status -->
+            <attribute>
+                <ref>ri:enabled</ref>
+                <displayName>Enabled</displayName>
+                <outbound>
+                    <expression>
+                        <value>true</value>
+                    </expression>
+                </outbound>
+            </attribute>
+
+            <!-- Activation mapping -->
+            <activation>
+                <administrativeStatus>
+                    <outbound>
+                        <strength>strong</strength>
+                    </outbound>
+                </administrativeStatus>
+            </activation>
+
+        </objectType>
+    </schemaHandling>
+
+    <!-- Capabilities - what this resource can do -->
+    <capabilities>
+        <configured xmlns:cap="http://midpoint.evolveum.com/xml/ns/public/resource/capabilities-3">
+            <cap:create>
+                <cap:enabled>true</cap:enabled>
+                <cap:manual>true</cap:manual>
+            </cap:create>
+            <cap:read>
+                <cap:enabled>true</cap:enabled>
+            </cap:read>
+            <cap:update>
+                <cap:enabled>true</cap:enabled>
+                <cap:manual>true</cap:manual>
+            </cap:update>
+            <cap:delete>
+                <cap:enabled>true</cap:enabled>
+                <cap:manual>true</cap:manual>
+            </cap:delete>
+            <cap:activation>
+                <cap:status>
+                    <cap:enabled>true</cap:enabled>
+                    <cap:attribute>ri:enabled</cap:attribute>
+                    <cap:enableValue>true</cap:enableValue>
+                    <cap:disableValue>false</cap:disableValue>
+                </cap:status>
+            </cap:activation>
+        </configured>
+    </capabilities>
+
+    <!-- Synchronization configuration -->
+    <synchronization>
+        <objectSynchronization>
+            <name>Keycloak User Sync</name>
+            <enabled>true</enabled>
+            <focusType>UserType</focusType>
+            <kind>account</kind>
+            <intent>default</intent>
+
+            <correlation>
+                <q:equal>
+                    <q:path>name</q:path>
+                    <expression>
+                        <path>$projection/attributes/ri:username</path>
+                    </expression>
+                </q:equal>
+            </correlation>
+
+            <reaction>
+                <situation>linked</situation>
+                <synchronize>true</synchronize>
+            </reaction>
+
+            <reaction>
+                <situation>unlinked</situation>
+                <action>
+                    <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/action-3#link</handlerUri>
+                </action>
+            </reaction>
+
+        </objectSynchronization>
+    </synchronization>
+
+</resource>

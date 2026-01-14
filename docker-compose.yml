@@ -24,23 +24,19 @@ services:
       retries: 5
 
   midpoint:
-    image: evolveum/midpoint:4.8-support
+    image: evolveum/midpoint:4.4
     container_name: midpoint-core
-    depends_on:
-      midpoint-postgres:
-        condition: service_healthy
-    environment:
-      # Use Native PostgreSQL Repository (Sqale)
-      MP_SET_midpoint_repository_type: native
-      MP_SET_midpoint_repository_jdbcUrl: jdbc:postgresql://midpoint-postgres:5432/midpoint
-      MP_SET_midpoint_repository_jdbcUsername: midpoint
-      MP_SET_midpoint_repository_jdbcPassword: midpoint
     ports:
       - "8080:8080"
     volumes:
-      - ./midpoint-resources/var:/opt/midpoint/var
+      - midpoint_home:/opt/midpoint/var
     networks:
       - iam-network
+    environment:
+      - REPO_DATABASE_TYPE=h2
+      - REPO_JDBC_URL=jdbc:h2:tcp://localhost:5437/./midpoint
+      - REPO_HOST=localhost
+      - REPO_PORT=5437
 
   # ===========================================
   # Gateway IAM (FastAPI)
@@ -64,7 +60,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       MIDPOINT_URL: http://midpoint-core:8080/midpoint
       MIDPOINT_USER: administrator
-      MIDPOINT_PASSWORD: Holimolly1
+      MIDPOINT_PASSWORD: 5ecr3t
       LDAP_HOST: openldap
       LDAP_PORT: 389
       LDAP_BIND_DN: cn=admin,dc=example,dc=com

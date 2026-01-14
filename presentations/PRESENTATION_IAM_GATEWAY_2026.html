@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projet #3 - Passerelle IAM Intelligente</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+        }
+
+        .slide {
+            width: 100%;
+            min-height: 100vh;
+            padding: 60px 80px;
+            display: flex;
+            flex-direction: column;
+            border-bottom: 3px solid #4a4a6a;
+            page-break-after: always;
+        }
+
+        .slide-title {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            text-align: center;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .slide-title h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .slide-title h2 {
+            font-size: 2em;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        .slide-title .meta {
+            margin-top: 60px;
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #667eea;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
+
+        h2 {
+            font-size: 1.8em;
+            color: #a78bfa;
+            margin: 30px 0 20px 0;
+        }
+
+        h3 {
+            font-size: 1.4em;
+            color: #c4b5fd;
+            margin: 20px 0 15px 0;
+        }
+
+        ul {
+            margin-left: 30px;
+            line-height: 2;
+            font-size: 1.3em;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 4px solid #667eea;
+        }
+
+        .box-success {
+            border-left-color: #10b981;
+        }
+
+        .box-warning {
+            border-left-color: #f59e0b;
+        }
+
+        .box-danger {
+            border-left-color: #ef4444;
+        }
+
+        .box-info {
+            border-left-color: #3b82f6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 1.1em;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #4a4a6a;
+        }
+
+        th {
+            background: rgba(102, 126, 234, 0.3);
+            color: #a78bfa;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .architecture {
+            background: #0d1117;
+            border-radius: 10px;
+            padding: 30px;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            line-height: 1.6;
+            white-space: pre;
+            overflow-x: auto;
+            color: #58a6ff;
+        }
+
+        .status-done {
+            color: #10b981;
+        }
+
+        .status-progress {
+            color: #f59e0b;
+        }
+
+        .status-todo {
+            color: #ef4444;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin: 5px;
+        }
+
+        .badge-success { background: #10b981; }
+        .badge-warning { background: #f59e0b; color: #000; }
+        .badge-danger { background: #ef4444; }
+        .badge-info { background: #3b82f6; }
+
+        .flow-step {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .flow-step .number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            float: left;
+            margin-right: 20px;
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: auto;
+            padding-top: 30px;
+            text-align: right;
+            opacity: 0.5;
+            font-size: 0.9em;
+        }
+
+        @media print {
+            .slide {
+                page-break-after: always;
+                height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SLIDE 1: Titre -->
+<div class="slide slide-title">
+    <h1>Projet #3</h1>
+    <h2>Passerelle IAM Intelligente</h2>
+    <p style="font-size: 1.5em; margin-top: 30px;">Gateway de Provisioning Multi-Cibles avec MidPoint</p>
+    <div class="meta">
+        <p>Janvier 2026</p>
+        <p style="margin-top: 10px;">Version 1.0</p>
+    </div>
+</div>
+
+<!-- SLIDE 2: Sommaire -->
+<div class="slide">
+    <h1>Sommaire</h1>
+    <div class="two-columns">
+        <div>
+            <ol style="font-size: 1.4em; line-height: 2.5;">
+                <li>Rappel du Projet</li>
+                <li>Architecture Mise en Place</li>
+                <li>Fonctionnalités Implémentées</li>
+                <li>Nouveautés Récentes</li>
+            </ol>
+        </div>
+        <div>
+            <ol start="5" style="font-size: 1.4em; line-height: 2.5;">
+                <li>Démonstration</li>
+                <li>Ce qui Reste à Faire</li>
+                <li>Difficultés Rencontrées</li>
+                <li>Conclusion</li>
+            </ol>
+        </div>
+    </div>
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+<!-- SLIDE 3: Rappel du Projet -->
+<div class="slide">
+    <h1>Rappel du Projet</h1>
+    <h2>Objectif Principal</h2>
+    <p style="font-size: 1.3em; margin-bottom: 30px;">
+        Développer une <span class="highlight">passerelle IAM intelligente</span> capable de:
+    </p>
+    <ul>
+        <li><span class="status-done">✅</span> Centraliser la gestion des identités via <strong>MidPoint</strong></li>
+        <li><span class="status-done">✅</span> Provisionner automatiquement vers plusieurs systèmes cibles</li>
+        <li><span class="status-done">✅</span> Appliquer des règles métier dynamiques</li>
+        <li><span class="status-done">✅</span> Gérer des workflows d'approbation</li>
+        <li><span class="status-done">✅</span> Fournir un assistant IA pour les opérations</li>
+    </ul>
+
+    <h3>Systèmes Intégrés</h3>
+    <table>
+        <tr><th>Source</th><th>Hub IAM</th><th>Cibles</th></tr>
+        <tr><td>Odoo (RH)</td><td>MidPoint</td><td>OpenLDAP, PostgreSQL, Keycloak</td></tr>
+    </table>
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+<!-- SLIDE 4: Architecture -->
+<div class="slide">
+    <h1>Architecture Globale</h1>
+    <div class="architecture">
+┌─────────────────────────────────────────────────────────────┐
+│                        FRONTEND                              │
+│                    React + TypeScript                        │
+│                     (Port 3000)                              │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────────┐
+│                     GATEWAY IAM                              │
+│                    FastAPI (Python)                          │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐         │
+│  │ Rules   │  │Workflows│  │  Audit  │  │   AI    │         │
+│  │ Engine  │  │ Manager │  │ Service │  │Assistant│         │
+│  └─────────┘  └─────────┘  └─────────┘  └─────────┘         │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────────┐
+│                      MIDPOINT                                │
+│               Hub IAM Central (Port 8080)                    │
+│           Rôles │ Mappings │ Synchronisation                 │
+└──────────┬─────────────────────────────┬────────────────────┘
+           │                             │
+    ┌──────▼──────┐              ┌───────▼───────┐
+    │  OpenLDAP   │              │  PostgreSQL   │
+    │   :10389    │              │    :55432     │
+    └─────────────┘              └───────────────┘
+    </div>
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+<!-- SLIDE 5: Fonctionnalités 1/2 -->
+<div class="slide">
+    <h1>Fonctionnalités Implémentées (1/2)</h1>
+    <div class="two-columns">
+        <div class="box box-success">
+            <h3>1. Provisioning Multi-Cibles <span class="badge badge-success">✅</span></h3>
+            <ul style="font-size: 1em;">
+                <li>Création, modification, suppression</li>
+                <li>7 types de systèmes cibles</li>
+                <li>Transactions atomiques + rollback</li>
+            </ul>
+        </div>
+        <div class="box box-success">
+            <h3>2. Moteur de Règles <span class="badge badge-success">✅</span></h3>
+            <ul style="font-size: 1em;">
+                <li>Règles YAML/JSON + Jinja2</li>
+                <li>Calcul automatique d'attributs</li>
+                <li>Environnement sandbox sécurisé</li>
+            </ul>
+        </div>
+        <div class="box box-success">
+            <h3>3. Gestion des Workflows <span class="badge badge-success">✅</span></h3>
+            <ul style="font-size: 1em;">
+                <li>Approbations multi-niveaux (5 max)</li>
+                <li>Timeout configurable (72h)</li>
+                <li>Historique des décisions</li>
+            </ul>
+        </div>
+        <div class="box box-success">
+            <h3>4. Interface Utilisateur <span class="badge badge-success">✅</span></h3>
+            <ul style="font-size: 1em;">
+                <li>Dashboard avec métriques</li>
+                <li>10+ pages fonctionnelles</li>
+                <li>Gestion des connecteurs</li>
+            </ul>
+        </div>
+    </div>
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+<!-- SLIDE 6: Fonctionnalités 2/2 -->
+<div class="slide">
+    <h1>Fonctionnalités Implémentées (2/2)</h1>
+    <div class="two-columns">
+        <div class="box box-success">
+            <h3>5. Comparaison Live <span class="badge badge-success">✅</span></h3>
+            <ul style="font-size: 1em;">
+                <li>Statistiques temps réel</li>
+                <li>Détection des écarts</li>
+                <li>Synchronisation manuelle</li>
+            </ul>
+        </div>
+        <div class="box box-success">
+            <h3>6. Audit Complet <span class="badge badge-success">✅</span></h3>
+            <ul style="font-size: 1em;">
+                <li>Traçabilité complète</li>
+                <li>Recherche sémantique</li>
+                <li>Logs structurés</li>
+            </ul>
+        </div>
+    </div>
+
+    <h2>Connecteurs Implémentés</h2>
+    <table>
+        <tr><th>Connecteur</th><th>Description</th><th>Status</th></tr>
+        <tr><td>OdooConnector</td><td>Connexion XML-RPC à Odoo ERP</td><td><span class="badge badge-success">✅</span></td></tr>
+        <tr><td>LDAPConnector</td><td>Provisioning vers OpenLDAP</td><td><span class="badge badge-success">✅</span></td></tr>
+        <tr><td>SQLConnector</td><td>Base PostgreSQL Intranet</td><td><span class="badge badge-success">✅</span></td></tr>
+        <tr><td>MidPointConnector</td><td>Intégration REST API MidPoint</td><td><span class="badge badge-success">✅</span></td></tr>
+        <tr><td>CSVConnector</td><td>Import/Export CSV</td><td><span class="badge badge-success">✅</span></td></tr>
+    </table>
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+<!-- SLIDE 7: Nouveautés Récentes -->
+<div class="slide">
+    <h1>Nouveautés Récentes</h1>
+    <h2>Ce qui a été fait dernièrement</h2>
+
+    <div class="flow-step">
+        <span class="number">1</span>
+        <h3>Architecture via MidPoint <span class="badge badge-info">🆕</span></h3>
+        <p>Tout passe maintenant par MidPoint - Plus de connexion directe aux systèmes cibles</p>
+        <code style="color: #a78bfa;">POST /api/v1/provision-midpoint/users</code>
+    </div>
+
+    <div class="flow-step">
+        <span class="number">2</span>
+        <h3>Connecteur CSV pour Odoo <span class="badge badge-info">🆕</span></h3>
+        <p>Synchronisation Odoo → MidPoint via fichier CSV avec Live Sync toutes les 5 minutes</p>
+    </div>
+
+    <div class="flow-step">
+        <span class="number">3</span>
+        <h3>Gestion des Permissions <span class="badge badge-info">🆕</span></h3>
+        <p>Niveaux de droits configurables avec API <code style="color: #a78bfa;">/api/v1/permissions/*</code></p>
+    </div>
+
+    <div class="flow-step">
+        <span class="number">4</span>
+        <h3>Documentation Technique <span class="badge badge-info">🆕</span></h3>
+        <p>15+ guides de configuration et scripts de démonstration</p>
+    </div>
+
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+<!-- SLIDE 8: Démonstration -->
+<div class="slide">
+    <h1>Démonstration - Flux Complet</h1>
+    <h2>Scénario: Nouvel Employé</h2>
+
+    <div class="flow-step">
+        <span class="number">1</span>
+        <strong>RH crée l'employé dans ODOO</strong><br>
+        <span style="color: #888;">→ Jean Dupont, IT Department</span>
+    </div>
+
+    <div class="flow-step">
+        <span class="number">2</span>
+        <strong>Gateway IAM détecte le changement</strong><br>
+        <span style="color: #888;">→ Validation des données → Application des règles (génération login: jdupont)</span>
+    </div>
+
+    <div class="flow-step">
+        <span class="number">3</span>
+        <strong>Gateway envoie à MidPoint</strong><br>
+        <span style="color: #888;">→ POST /midpoint/ws/rest/users → Assignation des rôles</span>
+    </div>
+
+    <div class="flow-step">
+        <span class="number">4</span>
+        <strong>MidPoint provisionne automatiquement</strong><br>
+        <span style="color: #888;">→ LDAP: uid=jdupont,ou=people,dc=example,dc=com</span><br>
+        <span style="color: #888;">→ PostgreSQL: INSERT INTO users...</span>
+    </div>
+
+    <div class="flow-step">
+        <span class="number">5</span>
+        <strong>Vérification et audit</strong><br>
+        <span style="color: #888;">→ Statuts collectés → Log enregistré</span>
+    </div>
+
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+<!-- SLIDE 9: Ce qui reste à faire -->
+<div class="slide">
+    <h1>Ce qui Reste à Faire</h1>
+    <div class="two-columns">
+        <div>
+            <h2>Phase 2: Configuration MidPoint</h2>
+            <table>
+                <tr><th>Tâche</th><th>Status</th></tr>
+                <tr><td>Configurer connecteur LDAP dans MidPoint UI</td><td><span class="badge badge-warning">🔄</span></td></tr>
+                <tr><td>Configurer connecteur PostgreSQL dans MidPoint UI</td><td><span class="badge badge-warning">🔄</span></td></tr>
+                <tr><td>Créer les rôles avec inducements</td><td><span class="badge badge-danger">⏳</span></td></tr>
+                <tr><td>Tester le Live Sync CSV</td><td><span class="badge badge-danger">⏳</span></td></tr>
+            </table>
+        </div>
+        <div>
+            <h2>Phase 3: Tests d'Intégration</h2>
+            <table>
+                <tr><th>Tâche</th><th>Status</th></tr>
+                <tr><td>Test création utilisateur bout en bout</td><td><span class="badge badge-danger">⏳</span></td></tr>
+                <tr><td>Test modification et propagation</td><td><span class="badge badge-danger">⏳</span></td></tr>
+                <tr><td>Test suppression et nettoyage</td><td><span class="badge badge-danger">⏳</span></td></tr>
+                <tr><td>Test workflows d'approbation</td><td><span class="badge badge-danger">⏳</span></td></tr>
+            </table>
+        </div>
+    </div>
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+<!-- SLIDE 10: Ce qu'on n'a pas pu faire -->
+<div class="slide">
+    <h1>Ce qu'on n'a pas pu faire</h1>
+    <h2>Contraintes de Temps</h2>
+
+    <div class="two-columns">
+        <div class="box box-danger">
+            <h3>1. Configuration complète MidPoint UI ❌</h3>
+            <p>Les connecteurs sont codés mais pas tous configurés via l'interface MidPoint</p>
+            <p style="color: #f59e0b; margin-top: 10px;"><strong>Raison:</strong> Problèmes de démarrage de MidPoint (driver PostgreSQL)</p>
+        </div>
+
+        <div class="box box-danger">
+            <h3>2. Assistant IA fonctionnel ❌</h3>
+            <p>L'API est prête mais nécessite une clé OpenAI payante</p>
+            <p style="color: #f59e0b; margin-top: 10px;"><strong>Raison:</strong> Coût de l'API externe</p>
+        </div>
+
+        <div class="box box-danger">
+            <h3>3. Tests automatisés complets ❌</h3>
+            <p>Tests unitaires partiels seulement</p>
+            <p style="color: #f59e0b; margin-top: 10px;"><strong>Raison:</strong> Priorité donnée aux fonctionnalités</p>
+        </div>
+
+        <div class="box box-danger">
+            <h3>4. Intégration Keycloak ❌</h3>
+            <p>Connecteur basique seulement</p>
+            <p style="color: #f59e0b; margin-top: 10px;"><strong>Raison:</strong> Complexité de la configuration OIDC</p>
+        </div>
+    </div>
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+<!-- SLIDE 11: Difficultés Rencontrées -->
+<div class="slide">
+    <h1>Difficultés Rencontrées</h1>
+
+    <div class="box box-warning" style="margin-bottom: 20px;">
+        <h3>1. MidPoint - Problèmes de Driver</h3>
+        <p><strong>Problème:</strong> Conflit entre drivers H2 et PostgreSQL</p>
+        <p><strong>Impact:</strong> MidPoint ne démarre pas correctement</p>
+        <p><strong>Solution:</strong> Utilisation de la version 4.4 avec H2 embedded</p>
+    </div>
+
+    <div class="box box-warning" style="margin-bottom: 20px;">
+        <h3>2. Docker Networking</h3>
+        <p><strong>Problème:</strong> Communication entre conteneurs</p>
+        <p><strong>Impact:</strong> Connexions timeout</p>
+        <p><strong>Solution:</strong> Configuration réseau iam-network</p>
+    </div>
+
+    <div class="box box-warning" style="margin-bottom: 20px;">
+        <h3>3. Permissions Volume</h3>
+        <p><strong>Problème:</strong> Fichiers créés par Docker avec mauvaises permissions</p>
+        <p><strong>Solution:</strong> Utilisation de volumes nommés Docker</p>
+    </div>
+
+    <div class="box box-warning">
+        <h3>4. Synchronisation Asynchrone</h3>
+        <p><strong>Problème:</strong> Timing entre création et vérification</p>
+        <p><strong>Solution:</strong> Ajout de délais et retry</p>
+    </div>
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+<!-- SLIDE 12: Points Forts -->
+<div class="slide">
+    <h1>Points Forts du Projet</h1>
+
+    <div class="two-columns">
+        <div class="box box-success">
+            <h3>Architecture Solide ✅</h3>
+            <ul style="font-size: 1em;">
+                <li>Séparation claire des responsabilités</li>
+                <li>Pattern Factory pour les connecteurs</li>
+                <li>Services modulaires et testables</li>
+            </ul>
+        </div>
+
+        <div class="box box-success">
+            <h3>Code Propre ✅</h3>
+            <ul style="font-size: 1em;">
+                <li>~13,000 lignes de code Python</li>
+                <li>Typage avec Pydantic</li>
+                <li>Logging structuré (structlog)</li>
+            </ul>
+        </div>
+
+        <div class="box box-success">
+            <h3>Documentation Complète ✅</h3>
+            <ul style="font-size: 1em;">
+                <li>20+ fichiers de documentation</li>
+                <li>Guides pas à pas</li>
+                <li>Architecture technique détaillée</li>
+            </ul>
+        </div>
+
+        <div class="box box-success">
+            <h3>Extensibilité ✅</h3>
+            <ul style="font-size: 1em;">
+                <li>Nouveaux connecteurs faciles à ajouter</li>
+                <li>Règles configurables sans code</li>
+                <li>API REST standard</li>
+            </ul>
+        </div>
+    </div>
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+<!-- SLIDE 13: Statistiques -->
+<div class="slide">
+    <h1>Statistiques du Projet</h1>
+
+    <div class="two-columns">
+        <div>
+            <h2>Code</h2>
+            <table>
+                <tr><th>Composant</th><th>Fichiers</th><th>Lignes</th></tr>
+                <tr><td>Backend Python</td><td>48</td><td>~13,000</td></tr>
+                <tr><td>Frontend React</td><td>15+</td><td>~5,000</td></tr>
+                <tr><td>Configuration</td><td>20+</td><td>~2,000</td></tr>
+                <tr><td>Documentation</td><td>25+</td><td>~3,000</td></tr>
+            </table>
+        </div>
+
+        <div>
+            <h2>Infrastructure</h2>
+            <table>
+                <tr><th>Service</th><th>Image</th><th>Port</th></tr>
+                <tr><td>Gateway API</td><td>FastAPI</td><td>8000</td></tr>
+                <tr><td>Frontend</td><td>React/Nginx</td><td>3000</td></tr>
+                <tr><td>MidPoint</td><td>Evolveum</td><td>8080</td></tr>
+                <tr><td>OpenLDAP</td><td>Osixia</td><td>10389</td></tr>
+                <tr><td>PostgreSQL</td><td>Postgres:15</td><td>55432</td></tr>
+            </table>
+        </div>
+    </div>
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+<!-- SLIDE 14: Conclusion -->
+<div class="slide">
+    <h1>Conclusion</h1>
+
+    <div class="two-columns">
+        <div class="box box-success">
+            <h3>✅ Réussites</h3>
+            <ul style="font-size: 1em;">
+                <li>Architecture IAM complète et fonctionnelle</li>
+                <li>Gateway intelligente avec règles et workflows</li>
+                <li>Intégration MidPoint comme hub central</li>
+                <li>Interface utilisateur moderne</li>
+            </ul>
+        </div>
+
+        <div class="box box-warning">
+            <h3>🔄 En Cours</h3>
+            <ul style="font-size: 1em;">
+                <li>Configuration finale des connecteurs MidPoint</li>
+                <li>Tests d'intégration</li>
+            </ul>
+
+            <h3 style="margin-top: 20px;">⏳ À Compléter</h3>
+            <ul style="font-size: 1em;">
+                <li>Assistant IA</li>
+                <li>Tests automatisés</li>
+                <li>Documentation utilisateur</li>
+            </ul>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 40px;">
+        <p style="font-size: 1.5em; color: #667eea;">Niveau de complétion estimé: <strong>~75-80%</strong></p>
+    </div>
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+<!-- SLIDE 15: Questions -->
+<div class="slide slide-title" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%);">
+    <h1>Questions ?</h1>
+    <h2 style="margin-top: 40px;">Merci de votre attention!</h2>
+
+    <div style="margin-top: 60px; text-align: left; max-width: 600px;">
+        <h3 style="color: #fff;">Ressources</h3>
+        <p style="margin: 10px 0;">📁 Repository: github.com/Nostradam4ik/Project3</p>
+        <p style="margin: 10px 0;">📚 Documentation: /docs/guides/</p>
+        <p style="margin: 10px 0;">🔗 API: http://localhost:8000/docs</p>
+    </div>
+</div>
+
+<!-- SLIDE 16: Annexes - Identifiants -->
+<div class="slide">
+    <h1>Annexes - Identifiants</h1>
+    <h2>Accès aux Systèmes</h2>
+
+    <table>
+        <tr><th>Système</th><th>URL</th><th>Login</th><th>Password</th></tr>
+        <tr><td>Odoo</td><td>localhost:8069</td><td>admin</td><td>admin</td></tr>
+        <tr><td>MidPoint</td><td>localhost:8080/midpoint</td><td>administrator</td><td>5ecr3t</td></tr>
+        <tr><td>Gateway</td><td>localhost:8000</td><td>admin</td><td>admin123</td></tr>
+        <tr><td>phpLDAPadmin</td><td>localhost:8088</td><td>cn=admin,dc=example,dc=com</td><td>secret</td></tr>
+        <tr><td>PostgreSQL</td><td>localhost:55432</td><td>intranet</td><td>intranet</td></tr>
+    </table>
+
+    <h2>Commandes Docker Utiles</h2>
+    <div class="architecture" style="font-size: 0.9em;">
+# Démarrer tous les services
+docker compose up -d
+
+# Vérifier les services
+docker ps --format "table {{.Names}}\t{{.Status}}"
+
+# Logs MidPoint
+docker logs midpoint-core -f
+
+# Test LDAP
+docker exec openldap ldapsearch -x -b "dc=example,dc=com" \
+  -D "cn=admin,dc=example,dc=com" -w secret
+    </div>
+    <div class="footer">Projet IAM Gateway - 2026</div>
+</div>
+
+</body>
+</html>
