@@ -354,16 +354,33 @@ class WorkflowService:
 
     async def get_instance(self, instance_id: str) -> Optional[WorkflowInstanceResponse]:
         """Recupere les details d'une instance."""
-        # Mock response
+        # Get from memory store
+        wf = memory_store.get_workflow(instance_id)
+        if not wf:
+            # Fallback mock response
+            return WorkflowInstanceResponse(
+                id=instance_id,
+                workflow_id="wf-default-pre",
+                operation_id="op-123",
+                status=ApprovalStatus.PENDING,
+                current_level=1,
+                total_levels=1,
+                pending_approvers=["admin"],
+                history=[]
+            )
+
         return WorkflowInstanceResponse(
-            id=instance_id,
-            workflow_id="wf-default-pre",
-            operation_id="op-123",
-            status=ApprovalStatus.PENDING,
-            current_level=1,
-            total_levels=3,
-            pending_approvers=["manager@example.com"],
-            history=[]
+            id=wf.get("id", instance_id),
+            workflow_id=wf.get("workflow_id", "wf-default-pre"),
+            operation_id=wf.get("operation_id", ""),
+            status=ApprovalStatus(wf.get("status", "pending")),
+            current_level=wf.get("current_level", 1),
+            total_levels=wf.get("total_levels", 1),
+            pending_approvers=wf.get("pending_approvers", []),
+            history=[],
+            created_at=wf.get("created_at"),
+            user_name=wf.get("user_name", ""),
+            operation_name=wf.get("operation_name", "")
         )
 
     async def list_instances(
@@ -446,7 +463,14 @@ class WorkflowService:
             # Check if all required approvals for this level
             if await self._is_level_complete(instance_id, instance.current_level):
                 if instance.current_level >= instance.total_levels:
-                    # Workflow complete
+                    # Workflow complete - update status in memory store
+                    workflow = memory_store.get_workflow(instance_id)
+                    if workflow:
+                        workflow["status"] = "approved"
+                        workflow["decided_at"] = datetime.utcnow().isoformat()
+                        workflow["decided_by"] = approver_id
+                        memory_store.save_workflow(instance_id, workflow)
+
                     return {
                         "workflow_complete": True,
                         "status": ApprovalStatus.APPROVED,
@@ -454,6 +478,11 @@ class WorkflowService:
                     }
                 else:
                     # Move to next level
+                    workflow = memory_store.get_workflow(instance_id)
+                    if workflow:
+                        workflow["current_level"] = instance.current_level + 1
+                        memory_store.save_workflow(instance_id, workflow)
+
                     return {
                         "workflow_complete": False,
                         "next_level": instance.current_level + 1,
@@ -461,6 +490,14 @@ class WorkflowService:
                     }
 
         elif decision == ApprovalStatus.REJECTED:
+            # Update status in memory store
+            workflow = memory_store.get_workflow(instance_id)
+            if workflow:
+                workflow["status"] = "rejected"
+                workflow["decided_at"] = datetime.utcnow().isoformat()
+                workflow["decided_by"] = approver_id
+                memory_store.save_workflow(instance_id, workflow)
+
             return {
                 "workflow_complete": True,
                 "status": ApprovalStatus.REJECTED,

@@ -33,7 +33,10 @@ class MidPointClient:
                 base_url=self.base_url,
                 auth=(self.username, self.password),
                 timeout=30.0,
-                headers={"Content-Type": "application/json"}
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                }
             )
         return self._client
 
@@ -56,14 +59,20 @@ class MidPointClient:
         """Retrieve all user accounts from MidPoint."""
         try:
             client = self._get_client()
-            response = await client.get(
-                "/ws/rest/users",
-                params={"options": "raw"}
-            )
+            response = await client.get("/ws/rest/users")
             response.raise_for_status()
 
             data = response.json()
-            users = data.get("object", [])
+            # MidPoint returns nested structure: data["object"]["object"] for the list
+            obj = data.get("object", {})
+            if isinstance(obj, dict):
+                users = obj.get("object", [])
+            else:
+                users = obj if isinstance(obj, list) else []
+
+            # Ensure users is always a list
+            if not isinstance(users, list):
+                users = [users] if users else []
 
             return [self._parse_user(u) for u in users]
 
@@ -103,8 +112,25 @@ class MidPointClient:
             )
             response.raise_for_status()
 
-            return response.json()
+            # MidPoint may return empty response on success (201/204)
+            # or return the created object
+            if response.status_code in [201, 204] or not response.text.strip():
+                # Success but no content - return a success indicator
+                return {"status": "created", "message": "User created successfully"}
 
+            try:
+                return response.json()
+            except Exception:
+                # JSON parsing failed but request was successful
+                return {"status": "created", "message": "User created successfully"}
+
+        except httpx.HTTPStatusError as e:
+            # Check if it's a conflict (user already exists)
+            if e.response.status_code == 409:
+                logger.warning("User already exists in MidPoint", attributes=attributes)
+                return {"status": "already_exists", "message": "User already exists"}
+            logger.error("Failed to create account in MidPoint", error=str(e))
+            raise
         except Exception as e:
             logger.error("Failed to create account in MidPoint", error=str(e))
             raise
@@ -250,7 +276,12 @@ class MidPointClient:
 
     def _parse_user(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
         """Parse MidPoint user object to simplified format."""
+        # Handle both REST API structures (user_data can be the user object directly)
         props = user_data.get("user", user_data)
+
+        # Get activation status
+        activation = props.get("activation", {})
+        admin_status = activation.get("administrativeStatus", "enabled")
 
         return {
             "id": props.get("oid"),
@@ -262,7 +293,7 @@ class MidPointClient:
             "employeeNumber": props.get("employeeNumber"),
             "department": props.get("organizationalUnit"),
             "title": props.get("title"),
-            "active": props.get("activation", {}).get("administrativeStatus") == "enabled"
+            "active": admin_status == "enabled"
         }
 
     def _build_user_object(self, attributes: Dict[str, Any]) -> Dict[str, Any]:

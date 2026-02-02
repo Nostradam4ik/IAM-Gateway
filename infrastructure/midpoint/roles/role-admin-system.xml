@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Role: System Administrator
+    Grants LDAP Admin group + IT group + VPN + full access
+-->
+<role xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+      xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+      oid="10000000-0000-0000-0000-000000000308">
+
+    <name>Admin-System</name>
+    <displayName>Administrateur Systeme</displayName>
+    <description>Role pour les administrateurs systeme - acces complet LDAP + VPN</description>
+
+    <requestable>true</requestable>
+    <riskLevel>critical</riskLevel>
+
+    <inducement>
+        <construction>
+            <resourceRef oid="10000000-0000-0000-0000-000000000001" type="ResourceType"/>
+            <kind>account</kind>
+            <intent>default</intent>
+            <!-- Groupe Admin -->
+            <association>
+                <ref>ri:ldapGroup</ref>
+                <outbound>
+                    <expression>
+                        <associationTargetSearch>
+                            <filter>
+                                <q:equal>
+                                    <q:path>attributes/ri:cn</q:path>
+                                    <q:value>Admin</q:value>
+                                </q:equal>
+                            </filter>
+                            <searchStrategy>onResource</searchStrategy>
+                        </associationTargetSearch>
+                    </expression>
+                </outbound>
+            </association>
+            <!-- Groupe IT -->
+            <association>
+                <ref>ri:ldapGroup</ref>
+                <outbound>
+                    <expression>
+                        <associationTargetSearch>
+                            <filter>
+                                <q:equal>
+                                    <q:path>attributes/ri:cn</q:path>
+                                    <q:value>IT</q:value>
+                                </q:equal>
+                            </filter>
+                            <searchStrategy>onResource</searchStrategy>
+                        </associationTargetSearch>
+                    </expression>
+                </outbound>
+            </association>
+            <!-- Groupe VPN -->
+            <association>
+                <ref>ri:ldapGroup</ref>
+                <outbound>
+                    <expression>
+                        <associationTargetSearch>
+                            <filter>
+                                <q:equal>
+                                    <q:path>attributes/ri:cn</q:path>
+                                    <q:value>VPN</q:value>
+                                </q:equal>
+                            </filter>
+                            <searchStrategy>onResource</searchStrategy>
+                        </associationTargetSearch>
+                    </expression>
+                </outbound>
+            </association>
+            <!-- Groupe Internet -->
+            <association>
+                <ref>ri:ldapGroup</ref>
+                <outbound>
+                    <expression>
+                        <associationTargetSearch>
+                            <filter>
+                                <q:equal>
+                                    <q:path>attributes/ri:cn</q:path>
+                                    <q:value>Internet</q:value>
+                                </q:equal>
+                            </filter>
+                            <searchStrategy>onResource</searchStrategy>
+                        </associationTargetSearch>
+                    </expression>
+                </outbound>
+            </association>
+        </construction>
+    </inducement>
+</role>

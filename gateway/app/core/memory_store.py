@@ -61,10 +61,10 @@ class MemoryStore:
         """Charge les donnees existantes depuis PostgreSQL."""
         try:
             async with self.async_session() as session:
-                # Charger les operations
+                # Charger les operations - utilise les colonnes existantes
                 result = await session.execute(text("""
-                    SELECT id, request_id, operation_type, status, target_system,
-                           identity_id, attributes, calculated_attributes,
+                    SELECT id, correlation_id, operation_type, status, target_systems,
+                           account_id, input_attributes, calculated_attributes,
                            error_message, created_at, updated_at
                     FROM provisioning_operations
                     ORDER BY created_at DESC
@@ -79,20 +79,29 @@ class MemoryStore:
                     target_system_str = row[4] or ""
                     target_systems = target_system_str.split(",") if target_system_str else []
 
-                    # Build calculated_attributes structure
-                    calc_attrs = row[7] or {}
+                    # Parse JSON attributes
+                    try:
+                        user_data = json.loads(row[6]) if row[6] else {}
+                    except (json.JSONDecodeError, TypeError):
+                        user_data = {}
+
+                    try:
+                        calc_attrs = json.loads(row[7]) if row[7] else {}
+                    except (json.JSONDecodeError, TypeError):
+                        calc_attrs = {}
+
                     if target_systems and not calc_attrs:
                         # Create structure for display
                         calc_attrs = {ts: {} for ts in target_systems}
 
                     self.operations[op_id] = {
                         "operation_id": op_id,
-                        "request_id": row[1],
+                        "request_id": row[1] or op_id[:8],
                         "operation_type": row[2],
                         "status": row[3],
                         "target_systems": target_systems,
                         "account_id": row[5],
-                        "user_data": row[6] or {},
+                        "user_data": user_data,
                         "calculated_attributes": calc_attrs,
                         "message": row[8] or "",
                         "timestamp": row[9].isoformat() if row[9] else datetime.utcnow().isoformat(),
@@ -101,16 +110,22 @@ class MemoryStore:
 
                 # Charger les logs d'audit
                 result = await session.execute(text("""
-                    SELECT id, timestamp, event_type, target_system, identity_id,
-                           action, status, actor, details
+                    SELECT id, created_at, event_type, target_system, account_id,
+                           action, severity, actor, details
                     FROM audit_logs
-                    ORDER BY timestamp DESC
+                    ORDER BY created_at DESC
                     LIMIT 1000
                 """))
                 rows = result.fetchall()
 
                 self.audit_logs = []
                 for i, row in enumerate(rows):
+                    # Parse details JSON
+                    try:
+                        details = json.loads(row[8]) if row[8] else {}
+                    except (json.JSONDecodeError, TypeError):
+                        details = {"raw": str(row[8])} if row[8] else {}
+
                     self.audit_logs.append({
                         "id": i + 1,
                         "db_id": str(row[0]),
@@ -121,13 +136,13 @@ class MemoryStore:
                         "action": row[5] or "-",
                         "severity": row[6] or "info",
                         "actor": row[7] or "system",
-                        "details": row[8] or {}
+                        "details": details
                     })
 
                 # Charger les jobs de reconciliation
                 result = await session.execute(text("""
-                    SELECT id, target_system, status, started_at, completed_at,
-                           total_accounts, matched_accounts, discrepancies, triggered_by
+                    SELECT id, status, started_at, completed_at,
+                           total_users, processed_users, discrepancies_found, targets
                     FROM reconciliation_jobs
                     ORDER BY started_at DESC
                     LIMIT 100
@@ -137,55 +152,66 @@ class MemoryStore:
                 self.reconciliation_jobs = {}
                 for row in rows:
                     job_id = str(row[0])
+                    # Parse targets JSON
+                    try:
+                        targets = row[7] if row[7] else []
+                        if isinstance(targets, str):
+                            targets = json.loads(targets)
+                    except (json.JSONDecodeError, TypeError):
+                        targets = []
+
                     self.reconciliation_jobs[job_id] = {
                         "id": job_id,
-                        "target_systems": [row[1]] if row[1] else [],
-                        "status": row[2] or "pending",
-                        "started_at": row[3].isoformat() if row[3] else None,
-                        "completed_at": row[4].isoformat() if row[4] else None,
-                        "total_accounts": row[5] or 0,
-                        "processed_accounts": row[6] or 0,
-                        "discrepancies_found": row[7] or 0,
-                        "started_by": row[8] or "system"
+                        "target_systems": targets if isinstance(targets, list) else [targets],
+                        "status": row[1] or "pending",
+                        "started_at": row[2].isoformat() if row[2] else None,
+                        "completed_at": row[3].isoformat() if row[3] else None,
+                        "total_accounts": row[4] or 0,
+                        "processed_accounts": row[5] or 0,
+                        "discrepancies_found": row[6] or 0,
+                        "started_by": "system"
                     }
 
-                # Charger les workflows
-                result = await session.execute(text("""
-                    SELECT id, workflow_id, operation_id, status, current_level, total_levels,
-                           user_name, operation_name, pending_approvers, context,
-                           approve_token, reject_token, email_sent, decided_at, decided_by,
-                           created_at, expires_at
-                    FROM workflows
-                    ORDER BY created_at DESC
-                    LIMIT 200
-                """))
-                rows = result.fetchall()
-
+                # Charger les workflows (si la table existe)
                 self.workflows = {}
-                for row in rows:
-                    wf_id = str(row[0])
-                    pending_approvers_str = row[8] or ""
-                    pending_approvers = pending_approvers_str.split(",") if pending_approvers_str else []
+                try:
+                    result = await session.execute(text("""
+                        SELECT id, workflow_id, operation_id, status, current_level, total_levels,
+                               user_name, operation_name, pending_approvers, context,
+                               approve_token, reject_token, email_sent, decided_at, decided_by,
+                               created_at, expires_at
+                        FROM workflows
+                        ORDER BY created_at DESC
+                        LIMIT 200
+                    """))
+                    rows = result.fetchall()
 
-                    self.workflows[wf_id] = {
-                        "id": wf_id,
-                        "workflow_id": row[1],
-                        "operation_id": row[2],
-                        "status": row[3] or "pending",
-                        "current_level": row[4] or 1,
-                        "total_levels": row[5] or 1,
-                        "user_name": row[6] or "",
-                        "operation_name": row[7] or "",
-                        "pending_approvers": pending_approvers,
-                        "context": row[9] or {},
-                        "approve_token": row[10],
-                        "reject_token": row[11],
-                        "email_sent": row[12] or False,
-                        "decided_at": row[13].isoformat() if row[13] else None,
-                        "decided_by": row[14],
-                        "created_at": row[15].isoformat() if row[15] else datetime.utcnow().isoformat(),
-                        "expires_at": row[16].isoformat() if row[16] else None
-                    }
+                    for row in rows:
+                        wf_id = str(row[0])
+                        pending_approvers_str = row[8] or ""
+                        pending_approvers = pending_approvers_str.split(",") if pending_approvers_str else []
+
+                        self.workflows[wf_id] = {
+                            "id": wf_id,
+                            "workflow_id": row[1],
+                            "operation_id": row[2],
+                            "status": row[3] or "pending",
+                            "current_level": row[4] or 1,
+                            "total_levels": row[5] or 1,
+                            "user_name": row[6] or "",
+                            "operation_name": row[7] or "",
+                            "pending_approvers": pending_approvers,
+                            "context": row[9] or {},
+                            "approve_token": row[10],
+                            "reject_token": row[11],
+                            "email_sent": row[12] or False,
+                            "decided_at": row[13].isoformat() if row[13] else None,
+                            "decided_by": row[14],
+                            "created_at": row[15].isoformat() if row[15] else datetime.utcnow().isoformat(),
+                            "expires_at": row[16].isoformat() if row[16] else None
+                        }
+                except Exception as wf_err:
+                    logger.debug("Workflows table not available", error=str(wf_err))
 
                 logger.info(
                     "Database cache loaded",
@@ -200,15 +226,18 @@ class MemoryStore:
             # En cas d'erreur, on garde des dictionnaires vides
 
     def _run_async(self, coro):
-        """Execute une coroutine de maniere synchrone."""
+        """Execute une coroutine de maniere asynchrone."""
         try:
             loop = asyncio.get_running_loop()
-            # Si on est dans une loop, creer une task
-            future = asyncio.ensure_future(coro)
-            return None  # On ne peut pas attendre
+            # Si on est dans une loop, creer une task qui s'executera
+            asyncio.ensure_future(coro)
+            return None
         except RuntimeError:
             # Pas de loop en cours, en creer une nouvelle
-            return asyncio.run(coro)
+            try:
+                return asyncio.run(coro)
+            except Exception as e:
+                logger.error("Failed to run async task", error=str(e))
 
     # Operations
     def save_operation(self, operation_id: str, operation_data: Dict[str, Any]) -> None:
@@ -232,25 +261,41 @@ class MemoryStore:
                     calculated = operation_data.get("calculated_attributes", {})
                     message = operation_data.get("message", "")
 
+                    # Convertir en MAJUSCULES pour les enums PostgreSQL
+                    op_type_raw = operation_data.get("operation_type", operation_data.get("operation", "create"))
+                    op_type = op_type_raw.upper() if isinstance(op_type_raw, str) else "CREATE"
+                    status_upper = status.upper().replace("-", "_") if isinstance(status, str) else "PENDING"
+                    # Mapper les statuts
+                    status_map = {
+                        "AWAITING_APPROVAL": "AWAITING_APPROVAL",
+                        "PENDING": "PENDING",
+                        "IN_PROGRESS": "IN_PROGRESS",
+                        "SUCCESS": "SUCCESS",
+                        "FAILED": "FAILED",
+                        "APPROVED": "APPROVED",
+                        "REJECTED": "REJECTED",
+                        "ROLLED_BACK": "ROLLED_BACK"
+                    }
+                    status_db = status_map.get(status_upper, "PENDING")
+
                     await session.execute(text("""
                         INSERT INTO provisioning_operations
-                        (id, request_id, operation_type, status, target_system, identity_id, identity_type,
-                         attributes, calculated_attributes, error_message, created_at)
-                        VALUES (:id, :request_id, :op_type, :status, :target, :identity, :identity_type,
-                                CAST(:attrs AS jsonb), CAST(:calc AS jsonb), :msg, :created)
+                        (id, correlation_id, operation_type, status, target_systems, account_id,
+                         input_attributes, calculated_attributes, error_message, created_at, updated_at)
+                        VALUES (:id, :correlation_id, CAST(:op_type AS operationtype), CAST(:status AS operationstatus), :target, :account_id,
+                                :attrs, :calc, :msg, :created, :created)
                         ON CONFLICT (id) DO UPDATE SET
-                            status = EXCLUDED.status,
+                            status = CAST(EXCLUDED.status AS operationstatus),
                             calculated_attributes = EXCLUDED.calculated_attributes,
                             error_message = EXCLUDED.error_message,
                             updated_at = CURRENT_TIMESTAMP
                     """), {
                         "id": operation_id,
-                        "request_id": operation_id[:8],
-                        "op_type": operation_data.get("operation", "create"),
-                        "status": status,
+                        "correlation_id": operation_id[:8],
+                        "op_type": op_type,
+                        "status": status_db,
                         "target": target_system,
-                        "identity": account_id,
-                        "identity_type": "employee",
+                        "account_id": account_id,
                         "attrs": json.dumps(attributes) if attributes else "{}",
                         "calc": json.dumps(calculated) if calculated else "{}",
                         "msg": message,
@@ -366,23 +411,46 @@ class MemoryStore:
         async def _save():
             try:
                 async with self.async_session() as session:
+                    # Mapper event_type vers les valeurs enum valides
+                    event_type_map = {
+                        "provision": "PROVISION",
+                        "reconciliation": "RECONCILIATION",
+                        "workflow": "WORKFLOW",
+                        "auth": "AUTH",
+                        "system": "SYSTEM",
+                        "error": "ERROR"
+                    }
+                    # Extraire le type de base
+                    event_base = event_type.split("_")[0].lower() if "_" in event_type else event_type.lower()
+                    event_type_db = event_type_map.get(event_base, "SYSTEM")
+
+                    # Mapper severity vers les valeurs enum valides
+                    severity_map = {
+                        "info": "INFO",
+                        "warning": "WARNING",
+                        "error": "ERROR",
+                        "critical": "CRITICAL",
+                        "debug": "DEBUG"
+                    }
+                    severity_db = severity_map.get(severity.lower(), "INFO")
+
                     await session.execute(text("""
                         INSERT INTO audit_logs
-                        (id, timestamp, event_type, target_system, identity_id, action, status, actor, details)
-                        VALUES (:id, :ts, :event_type, :target, :identity, :action, :status, :actor, CAST(:details AS jsonb))
+                        (id, created_at, event_type, target_system, account_id, action, severity, actor, details)
+                        VALUES (:id, :created_at, CAST(:event_type AS auditeventtype), :target, :account_id, :action, CAST(:severity AS auditseverity), :actor, :details)
                     """), {
                         "id": log_id,
-                        "ts": datetime.utcnow(),
-                        "event_type": event_type,
+                        "created_at": datetime.utcnow(),
+                        "event_type": event_type_db,
                         "target": target_system,
-                        "identity": log_entry.get("account_id", log_entry.get("job_id", "")),
+                        "account_id": log_entry.get("account_id", log_entry.get("job_id", "")),
                         "action": action or log_entry.get("action", "-"),
-                        "status": severity,
+                        "severity": severity_db,
                         "actor": log_entry.get("actor", "system"),
                         "details": json.dumps(log_entry)
                     })
                     await session.commit()
-                    logger.info("Audit log saved to database", event_type=event_type)
+                    logger.debug("Audit log saved to database", event_type=event_type_db)
             except Exception as e:
                 logger.error("Failed to save audit log to DB", error=str(e))
 

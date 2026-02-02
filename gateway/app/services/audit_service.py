@@ -328,13 +328,54 @@ class AuditService:
         # Upsert in DB
 
     async def get_metrics(self) -> Dict[str, Any]:
-        """Recupere les metriques."""
-        # Calculate from audit logs
+        """Recupere les metriques depuis le memory_store."""
+        from app.core.memory_store import memory_store
+        from datetime import datetime, timedelta
+
+        # Charger le cache si necessaire
+        await memory_store.ensure_cache_loaded()
+
+        # Date d'aujourd'hui
+        today = datetime.utcnow().date()
+        yesterday = datetime.utcnow() - timedelta(hours=24)
+
+        # Compter les operations d'aujourd'hui
+        operations = list(memory_store.operations.values())
+        operations_today = 0
+        success_count = 0
+        error_count_24h = 0
+        total_ops = len(operations)
+
+        for op in operations:
+            # Parser la date de l'operation
+            timestamp_str = op.get("timestamp", "")
+            try:
+                if timestamp_str:
+                    op_date = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                    if op_date.date() == today:
+                        operations_today += 1
+                    if op_date > yesterday and op.get("status", "").upper() in ["FAILED", "ERROR"]:
+                        error_count_24h += 1
+            except (ValueError, TypeError):
+                pass
+
+            # Compter les succes
+            if op.get("status", "").upper() == "SUCCESS":
+                success_count += 1
+
+        # Taux de succes
+        success_rate = success_count / total_ops if total_ops > 0 else 0.0
+
+        # Compter les approbations en attente
+        workflows = list(memory_store.workflows.values())
+        pending_approvals = sum(1 for w in workflows if w.get("status", "").lower() == "pending")
+        active_workflows = sum(1 for w in workflows if w.get("status", "").lower() in ["pending", "in_progress"])
+
         return {
-            "operations_today": 0,
-            "success_rate": 0.0,
+            "operations_today": operations_today,
+            "success_rate": success_rate,
             "avg_processing_time_ms": 0,
-            "pending_approvals": 0,
-            "active_workflows": 0,
-            "errors_last_24h": 0
+            "pending_approvals": pending_approvals,
+            "active_workflows": active_workflows,
+            "errors_last_24h": error_count_24h
         }

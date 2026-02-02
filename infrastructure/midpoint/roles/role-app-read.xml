@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Role: Application Read (app_read)
+    Accès lecture seule à l'application métier PostgreSQL
+-->
+<role xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+      xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+      oid="10000000-0000-0000-0000-000000000401">
+
+    <name>App-Read</name>
+    <displayName>Application Lecture</displayName>
+    <description>Accès en lecture seule à l'application métier PostgreSQL</description>
+
+    <requestable>true</requestable>
+    <riskLevel>low</riskLevel>
+
+    <inducement>
+        <construction>
+            <resourceRef oid="10000000-0000-0000-0000-000000000003" type="ResourceType"/>
+            <kind>account</kind>
+            <intent>default</intent>
+        </construction>
+    </inducement>
+</role>

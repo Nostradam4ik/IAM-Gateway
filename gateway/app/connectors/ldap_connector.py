@@ -82,9 +82,10 @@ class LDAPConnector(BaseConnector):
             if firstname:
                 ldap_attrs['givenName'] = firstname
 
-            # Add optional attributes
-            if attributes.get('mail'):
-                ldap_attrs['mail'] = attributes['mail']
+            # Add optional attributes - check both 'mail' and 'email' keys
+            email = attributes.get('mail') or attributes.get('email')
+            if email:
+                ldap_attrs['mail'] = email
             if attributes.get('userPassword'):
                 ldap_attrs['userPassword'] = attributes['userPassword']
             if attributes.get('employeeNumber'):

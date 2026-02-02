@@ -14,6 +14,8 @@ import AuditLogs from './pages/AuditLogs'
 import LiveComparison from './pages/LiveComparison'
 import Permissions from './pages/Permissions'
 import Connectors from './pages/Connectors'
+import MidpointUsers from './pages/MidpointUsers'
+import LDAPGroups from './pages/LDAPGroups'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -39,6 +41,8 @@ function App() {
                 <Route path="/live" element={<LiveComparison />} />
                 <Route path="/permissions" element={<Permissions />} />
                 <Route path="/connectors" element={<Connectors />} />
+                <Route path="/midpoint-users" element={<MidpointUsers />} />
+                <Route path="/ldap-groups" element={<LDAPGroups />} />
                 <Route path="/ai" element={<AIAssistant />} />
                 <Route path="/audit" element={<AuditLogs />} />
                 <Route path="/settings" element={<Settings />} />

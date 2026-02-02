@@ -7,11 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import structlog
 
-from app.api import provision, rules, workflow, reconcile, ai_assistant, admin, live_comparison, permissions, connectors, provision_via_midpoint, webhooks
+from app.api import provision, rules, workflow, reconcile, ai_assistant, admin, live_comparison, permissions, connectors, provision_via_midpoint, webhooks, midpoint, scheduler, ldap_groups
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.logging import setup_logging
 from app.core.memory_store import memory_store
+from app.services.scheduler_service import init_scheduler, shutdown_scheduler
 
 logger = structlog.get_logger()
 
@@ -25,7 +26,12 @@ async def lifespan(app: FastAPI):
     # Charger les donnees depuis PostgreSQL
     await memory_store.ensure_cache_loaded()
     logger.info("Database cache loaded successfully")
+    # Demarrer le scheduler pour les taches planifiees
+    init_scheduler()
+    logger.info("Scheduler initialized")
     yield
+    # Arreter le scheduler proprement
+    shutdown_scheduler()
     logger.info("Shutting down Gateway IAM")
 
 
@@ -67,6 +73,9 @@ app.include_router(permissions.router, prefix="/api/v1/permissions", tags=["Nive
 app.include_router(connectors.router, prefix="/api/v1/connectors", tags=["Connecteurs"])
 app.include_router(provision_via_midpoint.router, tags=["Provisionnement via MidPoint"])
 app.include_router(webhooks.router, tags=["Webhooks MidPoint"])
+app.include_router(midpoint.router, prefix="/api/v1", tags=["MidPoint Orchestration"])
+app.include_router(scheduler.router, prefix="/api/v1/scheduler", tags=["Planification Sync"])
+app.include_router(ldap_groups.router, prefix="/api/v1", tags=["Groupes LDAP"])
 
 
 @app.get("/health", tags=["Health"])

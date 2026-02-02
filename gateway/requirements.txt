@@ -38,5 +38,8 @@ email-validator
 # Logging
 structlog
 
+# Scheduler
+apscheduler>=3.10.0
+
 # Utils
 python-dotenv

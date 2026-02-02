@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { getSystemStatus, getMetrics, getConnectorsStatus } from '../lib/api'
+import { useNavigate } from 'react-router-dom'
+import { getSystemStatus, getMetrics, getConnectorsStatus, runHealthChecks } from '../lib/api'
 import {
   Activity,
   CheckCircle,
@@ -10,9 +11,13 @@ import {
   Database,
   Users,
   GitBranch,
+  RefreshCw,
 } from 'lucide-react'
+import { useState } from 'react'
 
 export default function Dashboard() {
+  const navigate = useNavigate()
+  const [testingConnectors, setTestingConnectors] = useState(false)
   const { data: status } = useQuery({
     queryKey: ['systemStatus'],
     queryFn: getSystemStatus,
@@ -184,21 +189,49 @@ export default function Dashboard() {
       <div className="card">
         <h2 className="text-lg font-semibold mb-4">Actions rapides</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button className="p-4 bg-blue-50 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors text-center">
+          <button
+            onClick={() => navigate('/dashboard/operations')}
+            className="p-4 bg-blue-50 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors text-center"
+          >
             <GitBranch className="w-6 h-6 mx-auto mb-2" />
             Nouvelle operation
           </button>
-          <button className="p-4 bg-green-50 rounded-lg text-green-600 hover:bg-green-100 transition-colors text-center">
+          <button
+            onClick={() => navigate('/dashboard/workflows')}
+            className="p-4 bg-green-50 rounded-lg text-green-600 hover:bg-green-100 transition-colors text-center"
+          >
             <CheckCircle className="w-6 h-6 mx-auto mb-2" />
             Approuver
           </button>
-          <button className="p-4 bg-purple-50 rounded-lg text-purple-600 hover:bg-purple-100 transition-colors text-center">
+          <button
+            onClick={() => navigate('/dashboard/reconciliation')}
+            className="p-4 bg-purple-50 rounded-lg text-purple-600 hover:bg-purple-100 transition-colors text-center"
+          >
             <Activity className="w-6 h-6 mx-auto mb-2" />
             Reconciliation
           </button>
-          <button className="p-4 bg-gray-50 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors text-center">
-            <Database className="w-6 h-6 mx-auto mb-2" />
-            Test connecteurs
+          <button
+            onClick={async () => {
+              setTestingConnectors(true)
+              try {
+                await runHealthChecks()
+                // Refetch connectors status after health check
+                window.location.reload()
+              } catch (error) {
+                console.error('Health check failed:', error)
+              } finally {
+                setTestingConnectors(false)
+              }
+            }}
+            disabled={testingConnectors}
+            className="p-4 bg-gray-50 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors text-center disabled:opacity-50"
+          >
+            {testingConnectors ? (
+              <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
+            ) : (
+              <Database className="w-6 h-6 mx-auto mb-2" />
+            )}
+            {testingConnectors ? 'Test en cours...' : 'Test connecteurs'}
           </button>
         </div>
       </div>

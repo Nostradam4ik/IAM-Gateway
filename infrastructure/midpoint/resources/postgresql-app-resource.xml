@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    MidPoint Resource: Application Métier PostgreSQL
+
+    Cette ressource connecte MidPoint à la base de données PostgreSQL
+    de l'application métier via le connecteur DatabaseTable.
+
+    Connection: gateway-db:5432 (Docker network)
+    Database: gateway
+    Table: app_users
+
+    Profils disponibles:
+    - app_read: Lecture seule
+    - app_write: Lecture/écriture
+    - app_admin_db: Administration (DROIT CRITIQUE)
+-->
+<resource xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+          xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+          xmlns:icfs="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/resource-schema-3"
+          xmlns:icfc="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/connector-schema-3"
+          xmlns:t="http://prism.evolveum.com/xml/ns/public/types-3"
+          oid="10000000-0000-0000-0000-000000000003">
+
+    <name>Application Metier PostgreSQL</name>
+    <description>Base de données PostgreSQL pour l'application métier - gestion des utilisateurs et permissions</description>
+
+    <!-- DatabaseTable Connector Reference -->
+    <connectorRef type="ConnectorType">
+        <filter>
+            <q:equal>
+                <q:path>connectorType</q:path>
+                <q:value>org.identityconnectors.databasetable.DatabaseTableConnector</q:value>
+            </q:equal>
+        </filter>
+    </connectorRef>
+
+    <!-- Connection Configuration -->
+    <connectorConfiguration>
+        <icfc:configurationProperties
+            xmlns:icscdbtable="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/com.evolveum.polygon.connector-databasetable/org.identityconnectors.databasetable.DatabaseTableConnector">
+
+            <!-- Database connection -->
+            <icscdbtable:host>gateway-db</icscdbtable:host>
+            <icscdbtable:port>5432</icscdbtable:port>
+            <icscdbtable:database>gateway</icscdbtable:database>
+            <icscdbtable:user>gateway</icscdbtable:user>
+            <icscdbtable:password>
+                <t:clearValue>gateway</t:clearValue>
+            </icscdbtable:password>
+            <icscdbtable:jdbcDriver>org.postgresql.Driver</icscdbtable:jdbcDriver>
+            <icscdbtable:jdbcUrlTemplate>jdbc:postgresql://%h:%p/%d</icscdbtable:jdbcUrlTemplate>
+
+            <!-- Table configuration -->
+            <icscdbtable:table>app_users</icscdbtable:table>
+            <icscdbtable:keyColumn>username</icscdbtable:keyColumn>
+            <icscdbtable:allNative>true</icscdbtable:allNative>
+            <icscdbtable:nativeTimestamps>true</icscdbtable:nativeTimestamps>
+            <icscdbtable:rethrowAllSQLExceptions>true</icscdbtable:rethrowAllSQLExceptions>
+            <icscdbtable:enableEmptyString>false</icscdbtable:enableEmptyString>
+        </icfc:configurationProperties>
+    </connectorConfiguration>
+
+    <!-- Schema Handling -->
+    <schemaHandling>
+        <objectType>
+            <kind>account</kind>
+            <intent>default</intent>
+            <displayName>Application User</displayName>
+            <default>true</default>
+            <objectClass>ri:AccountObjectClass</objectClass>
+
+            <!-- Username (Primary Key) -->
+            <attribute>
+                <ref>icfs:name</ref>
+                <displayName>Username</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>name</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- First Name -->
+            <attribute>
+                <ref>ri:firstname</ref>
+                <displayName>First Name</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>givenName</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Last Name -->
+            <attribute>
+                <ref>ri:lastname</ref>
+                <displayName>Last Name</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>familyName</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Common Name -->
+            <attribute>
+                <ref>ri:commonname</ref>
+                <displayName>Common Name</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>fullName</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Email -->
+            <attribute>
+                <ref>ri:email</ref>
+                <displayName>Email</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>emailAddress</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- LDAP DN Reference -->
+            <attribute>
+                <ref>ri:user_ldap_dn</ref>
+                <displayName>LDAP DN</displayName>
+                <outbound>
+                    <strength>weak</strength>
+                    <source>
+                        <path>name</path>
+                    </source>
+                    <expression>
+                        <script>
+                            <code>'uid=' + name + ',ou=users,dc=example,dc=com'</code>
+                        </script>
+                    </expression>
+                </outbound>
+            </attribute>
+
+            <!-- LDAP Class -->
+            <attribute>
+                <ref>ri:user_ldap_class</ref>
+                <displayName>LDAP Object Class</displayName>
+                <outbound>
+                    <strength>weak</strength>
+                    <expression>
+                        <value>inetOrgPerson</value>
+                    </expression>
+                </outbound>
+            </attribute>
+
+            <!-- Active Status -->
+            <attribute>
+                <ref>ri:active</ref>
+                <displayName>Active</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <expression>
+                        <value>true</value>
+                    </expression>
+                </outbound>
+            </attribute>
+
+            <!-- Activation -->
+            <activation>
+                <administrativeStatus>
+                    <outbound>
+                        <strength>strong</strength>
+                    </outbound>
+                </administrativeStatus>
+            </activation>
+        </objectType>
+    </schemaHandling>
+
+    <!-- Synchronization -->
+    <synchronization>
+        <objectSynchronization>
+            <kind>account</kind>
+            <intent>default</intent>
+            <enabled>true</enabled>
+            <correlation>
+                <q:equal>
+                    <q:path>name</q:path>
+                    <q:expression>
+                        <path>$account/attributes/icfs:name</path>
+                    </q:expression>
+                </q:equal>
+            </correlation>
+            <reaction>
+                <situation>linked</situation>
+                <synchronize>true</synchronize>
+            </reaction>
+            <reaction>
+                <situation>unlinked</situation>
+                <action>
+                    <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/action-3#link</handlerUri>
+                </action>
+            </reaction>
+            <reaction>
+                <situation>unmatched</situation>
+                <action>
+                    <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/action-3#addFocus</handlerUri>
+                </action>
+            </reaction>
+        </objectSynchronization>
+    </synchronization>
+</resource>

@@ -1,7 +1,7 @@
 """
 API de reconciliation avec MidPoint
 """
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Query
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
@@ -166,8 +166,8 @@ async def get_discrepancies(
 @router.post("/{job_id}/resolve")
 async def resolve_discrepancies(
     job_id: str,
-    action: str,  # "use_midpoint", "use_target", "manual"
-    discrepancy_ids: Optional[List[str]] = None,
+    action: str,  # "use_midpoint", "use_target", "delete_orphan", "ignore"
+    discrepancy_ids: Optional[List[str]] = Query(default=None),
     current_user: dict = Depends(require_role(["admin", "iam_engineer"])),
     session=Depends(get_session)
 ):
@@ -175,10 +175,10 @@ async def resolve_discrepancies(
     recon_service = ReconciliationService(session)
     audit_service = AuditService(session)
 
-    if action not in ["use_midpoint", "use_target", "manual", "ignore"]:
+    if action not in ["use_midpoint", "use_target", "delete_orphan", "manual", "ignore"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid action. Use: use_midpoint, use_target, manual, ignore"
+            detail="Invalid action. Use: use_midpoint, use_target, delete_orphan, ignore"
         )
 
     result = await recon_service.resolve_discrepancies(

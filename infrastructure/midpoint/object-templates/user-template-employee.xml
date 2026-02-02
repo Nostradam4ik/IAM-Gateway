@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Object Template: Employee Auto-Assignment
+
+    Ce template assigne automatiquement le rôle "employee" à tous les utilisateurs
+    nouvellement créés ou importés dans MidPoint.
+
+    Fonctionnalités:
+    - Auto-assignation du rôle Employee (LDAP + Odoo)
+    - Génération automatique du fullName si absent
+    - Calcul du nom d'utilisateur standardisé
+-->
+<objectTemplate xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+                xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+                xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+                oid="10000000-0000-0000-0000-000000000500">
+
+    <name>User Template - Employee Auto-Assignment</name>
+    <description>Template pour auto-assigner le rôle Employee à tous les nouveaux utilisateurs</description>
+
+    <!-- Génération automatique du fullName -->
+    <mapping>
+        <name>Generate fullName</name>
+        <strength>weak</strength>
+        <source>
+            <path>givenName</path>
+        </source>
+        <source>
+            <path>familyName</path>
+        </source>
+        <expression>
+            <script>
+                <code>
+                    if (givenName != null &amp;&amp; familyName != null) {
+                        return givenName + ' ' + familyName
+                    } else if (givenName != null) {
+                        return givenName
+                    } else if (familyName != null) {
+                        return familyName
+                    }
+                    return null
+                </code>
+            </script>
+        </expression>
+        <target>
+            <path>fullName</path>
+        </target>
+    </mapping>
+
+    <!-- Génération du nom d'utilisateur standardisé (prenom.nom) -->
+    <mapping>
+        <name>Generate username from names</name>
+        <strength>weak</strength>
+        <source>
+            <path>givenName</path>
+        </source>
+        <source>
+            <path>familyName</path>
+        </source>
+        <expression>
+            <script>
+                <code>
+                    if (givenName != null &amp;&amp; familyName != null) {
+                        def gn = givenName.toString().toLowerCase().replaceAll('[^a-z]', '')
+                        def fn = familyName.toString().toLowerCase().replaceAll('[^a-z]', '')
+                        return gn + '.' + fn
+                    }
+                    return null
+                </code>
+            </script>
+        </expression>
+        <target>
+            <path>name</path>
+        </target>
+    </mapping>
+
+    <!-- Auto-assignation du rôle Employee -->
+    <mapping>
+        <name>Auto-assign Employee role</name>
+        <description>Assigne automatiquement le rôle Employee à tous les utilisateurs actifs</description>
+        <strength>strong</strength>
+        <source>
+            <path>activation/administrativeStatus</path>
+        </source>
+        <expression>
+            <assignmentTargetSearch>
+                <targetType>RoleType</targetType>
+                <filter>
+                    <q:equal>
+                        <q:path>name</q:path>
+                        <q:value>employee</q:value>
+                    </q:equal>
+                </filter>
+            </assignmentTargetSearch>
+        </expression>
+        <target>
+            <path>assignment</path>
+        </target>
+        <condition>
+            <script>
+                <code>
+                    // Assigner seulement si l'utilisateur est actif ou si le statut n'est pas défini
+                    import com.evolveum.midpoint.xml.ns._public.common.common_3.ActivationStatusType
+
+                    administrativeStatus == null || administrativeStatus == ActivationStatusType.ENABLED
+                </code>
+            </script>
+        </condition>
+    </mapping>
+
+    <!-- Configuration de l'itération pour les noms en doublon -->
+    <iterationSpecification>
+        <maxIterations>99</maxIterations>
+        <tokenExpression>
+            <script>
+                <code>
+                    iteration == 0 ? "" : "" + iteration
+                </code>
+            </script>
+        </tokenExpression>
+    </iterationSpecification>
+
+</objectTemplate>

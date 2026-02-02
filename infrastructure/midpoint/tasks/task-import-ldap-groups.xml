@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Task: Import LDAP Groups (Entitlements)
+
+    Cette tâche importe tous les groupes LDAP (groupOfUniqueNames)
+    dans MidPoint comme entitlements pour permettre les associations.
+-->
+<task xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+      xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+      oid="10000000-0000-0000-0000-000000000600">
+
+    <name>Import LDAP Groups</name>
+    <description>Importe les groupes LDAP comme entitlements pour les associations de rôles</description>
+
+    <ownerRef oid="00000000-0000-0000-0000-000000000002" type="UserType"/>
+
+    <executionState>runnable</executionState>
+    <category>ImportingAccounts</category>
+    <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/synchronization/task/import/handler-3</handlerUri>
+
+    <objectRef oid="10000000-0000-0000-0000-000000000001" type="ResourceType"/>
+
+    <activity>
+        <work>
+            <import>
+                <resourceObjects>
+                    <resourceRef oid="10000000-0000-0000-0000-000000000001"/>
+                    <kind>entitlement</kind>
+                    <intent>ldapGroup</intent>
+                </resourceObjects>
+            </import>
+        </work>
+    </activity>
+
+    <recurrence>single</recurrence>
+    <binding>tight</binding>
+</task>

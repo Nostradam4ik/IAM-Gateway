@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
 import {
   LayoutDashboard,
@@ -17,6 +17,8 @@ import {
   Zap,
   Shield,
   Database,
+  Users,
+  ShieldCheck,
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -25,6 +27,8 @@ interface LayoutProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Utilisateurs', href: '/dashboard/midpoint-users', icon: Users },
+  { name: 'Groupes LDAP', href: '/dashboard/ldap-groups', icon: ShieldCheck },
   { name: 'Operations', href: '/dashboard/operations', icon: GitBranch },
   { name: 'Regles', href: '/dashboard/rules', icon: FileCode2 },
   { name: 'Workflows', href: '/dashboard/workflows', icon: GitPullRequest },
@@ -40,7 +44,13 @@ const navigation = [
 export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
   const { user, logout } = useAuthStore()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -124,7 +134,7 @@ export default function Layout({ children }: LayoutProps) {
               </div>
             </div>
             <button
-              onClick={logout}
+              onClick={handleLogout}
               className="flex items-center w-full px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-100"
             >
               <LogOut className="w-5 h-5 mr-3" />
@@ -151,6 +161,15 @@ export default function Layout({ children }: LayoutProps) {
           <button className="flex items-center px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
             <AlertTriangle className="w-5 h-5 mr-2" />
             Arret d'urgence
+          </button>
+
+          {/* Logout button */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center ml-4 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            <LogOut className="w-5 h-5 mr-2" />
+            Deconnexion
           </button>
         </header>
 

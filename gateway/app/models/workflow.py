@@ -46,10 +46,10 @@ class WorkflowDefinition(SQLModel):
 
 class ApprovalRequest(SQLModel):
     """Requete d'approbation."""
-    workflow_instance_id: str
-    decision: ApprovalStatus
+    workflow_instance_id: Optional[str] = None
+    decision: Optional[ApprovalStatus] = None
     comments: Optional[str] = None
-    approver_id: str
+    approver_id: Optional[str] = None
 
 
 class WorkflowInstanceResponse(SQLModel):

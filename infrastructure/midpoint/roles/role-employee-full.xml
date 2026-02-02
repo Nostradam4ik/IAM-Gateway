@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Role: Employee Full Access
+
+    Attribue automatiquement:
+    - Un compte LDAP
+    - Groupe Employee
+    - Groupe Internet
+    - Groupe Printer (Imprimantes)
+    - Groupe Public_Share_Folder_SharePoint
+
+    Ce rôle est utilisé pour le Scénario 1: Provisionnement manuel des accès LDAP
+-->
+<role xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+      xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+      oid="10000000-0000-0000-0000-000000000210">
+
+    <name>Employee-Full-Access</name>
+    <displayName>Employé - Accès Complet LDAP</displayName>
+    <description>Attribue un compte LDAP avec les groupes Employee, Internet, Printer et Public_Share_Folder_SharePoint</description>
+
+    <requestable>true</requestable>
+    <riskLevel>low</riskLevel>
+
+    <!-- Inducement: Compte LDAP + 4 groupes -->
+    <inducement>
+        <construction>
+            <resourceRef oid="10000000-0000-0000-0000-000000000001" type="ResourceType">
+                <!-- OpenLDAP Directory -->
+            </resourceRef>
+            <kind>account</kind>
+            <intent>default</intent>
+
+            <!-- Association au groupe Employee -->
+            <association>
+                <ref>ri:ldapGroup</ref>
+                <outbound>
+                    <expression>
+                        <associationTargetSearch>
+                            <filter>
+                                <q:equal>
+                                    <q:path>attributes/ri:cn</q:path>
+                                    <q:value>Employee</q:value>
+                                </q:equal>
+                            </filter>
+                            <searchStrategy>onResource</searchStrategy>
+                        </associationTargetSearch>
+                    </expression>
+                </outbound>
+            </association>
+
+            <!-- Association au groupe Internet -->
+            <association>
+                <ref>ri:ldapGroup</ref>
+                <outbound>
+                    <expression>
+                        <associationTargetSearch>
+                            <filter>
+                                <q:equal>
+                                    <q:path>attributes/ri:cn</q:path>
+                                    <q:value>Internet</q:value>
+                                </q:equal>
+                            </filter>
+                            <searchStrategy>onResource</searchStrategy>
+                        </associationTargetSearch>
+                    </expression>
+                </outbound>
+            </association>
+
+            <!-- Association au groupe Printer -->
+            <association>
+                <ref>ri:ldapGroup</ref>
+                <outbound>
+                    <expression>
+                        <associationTargetSearch>
+                            <filter>
+                                <q:equal>
+                                    <q:path>attributes/ri:cn</q:path>
+                                    <q:value>Printer</q:value>
+                                </q:equal>
+                            </filter>
+                            <searchStrategy>onResource</searchStrategy>
+                        </associationTargetSearch>
+                    </expression>
+                </outbound>
+            </association>
+
+            <!-- Association au groupe Public_Share_Folder_SharePoint -->
+            <association>
+                <ref>ri:ldapGroup</ref>
+                <outbound>
+                    <expression>
+                        <associationTargetSearch>
+                            <filter>
+                                <q:equal>
+                                    <q:path>attributes/ri:cn</q:path>
+                                    <q:value>Public_Share_Folder_SharePoint</q:value>
+                                </q:equal>
+                            </filter>
+                            <searchStrategy>onResource</searchStrategy>
+                        </associationTargetSearch>
+                    </expression>
+                </outbound>
+            </association>
+        </construction>
+    </inducement>
+
+    <!-- Inducement: Compte Odoo IAM -->
+    <inducement>
+        <construction>
+            <resourceRef oid="10000000-0000-0000-0000-000000000002" type="ResourceType">
+                <!-- Odoo ERP -->
+            </resourceRef>
+            <kind>account</kind>
+            <intent>default</intent>
+        </construction>
+    </inducement>
+
+    <!-- Inducement: Compte Application Métier PostgreSQL -->
+    <inducement>
+        <construction>
+            <resourceRef oid="10000000-0000-0000-0000-000000000003" type="ResourceType">
+                <!-- Application Metier PostgreSQL -->
+            </resourceRef>
+            <kind>account</kind>
+            <intent>default</intent>
+        </construction>
+    </inducement>
+</role>

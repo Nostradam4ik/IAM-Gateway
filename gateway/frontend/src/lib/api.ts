@@ -163,6 +163,20 @@ export const getDiscrepancies = async (jobId: string) => {
   return response.data
 }
 
+export const resolveDiscrepancies = async (
+  jobId: string,
+  action: 'use_midpoint' | 'use_target' | 'delete_orphan' | 'ignore',
+  discrepancyIds?: string[]
+) => {
+  const response = await api.post(`/reconcile/${jobId}/resolve`, null, {
+    params: {
+      action,
+      discrepancy_ids: discrepancyIds
+    }
+  })
+  return response.data
+}
+
 // AI Assistant
 export const queryAI = async (query: string, context?: any, conversationId?: string) => {
   const response = await api.post('/ai/query', {
@@ -258,6 +272,100 @@ export const getOdooContacts = async (limit?: number) => {
 
 export const checkSystemsHealth = async () => {
   const response = await api.get('/live/health-check')
+  return response.data
+}
+
+// LiveSync Odoo -> MidPoint
+export const getOdooEmployees = async () => {
+  const response = await api.get('/live/odoo/employees')
+  return response.data
+}
+
+export const compareOdooMidpoint = async () => {
+  const response = await api.get('/live/sync/odoo-midpoint/compare')
+  return response.data
+}
+
+export const syncOdooToMidpoint = async (employeeIds?: number[]) => {
+  const params = employeeIds ? { employee_ids: employeeIds } : {}
+  const response = await api.post('/live/sync/odoo-to-midpoint', null, { params })
+  return response.data
+}
+
+// ==================== Scheduler / Planification ====================
+
+export const getScheduledJobs = async () => {
+  const response = await api.get('/scheduler/jobs')
+  return response.data
+}
+
+export const getScheduledJob = async (jobId: string) => {
+  const response = await api.get(`/scheduler/jobs/${jobId}`)
+  return response.data
+}
+
+export const createDailySync = async (data: {
+  job_id: string
+  hour: number
+  minute?: number
+  enabled?: boolean
+}) => {
+  const response = await api.post('/scheduler/jobs/daily', data)
+  return response.data
+}
+
+export const createIntervalSync = async (data: {
+  job_id: string
+  hours?: number
+  minutes?: number
+  enabled?: boolean
+}) => {
+  const response = await api.post('/scheduler/jobs/interval', data)
+  return response.data
+}
+
+export const createCronSync = async (data: {
+  job_id: string
+  cron_expression: string
+  enabled?: boolean
+}) => {
+  const response = await api.post('/scheduler/jobs/cron', data)
+  return response.data
+}
+
+export const toggleScheduledJob = async (jobId: string, enabled: boolean) => {
+  const response = await api.post(`/scheduler/jobs/${jobId}/toggle`, { enabled })
+  return response.data
+}
+
+export const runJobNow = async (jobId: string) => {
+  const response = await api.post(`/scheduler/jobs/${jobId}/run`)
+  return response.data
+}
+
+export const deleteScheduledJob = async (jobId: string) => {
+  const response = await api.delete(`/scheduler/jobs/${jobId}`)
+  return response.data
+}
+
+export const getSyncHistory = async (limit?: number) => {
+  const response = await api.get('/scheduler/history', { params: { limit } })
+  return response.data
+}
+
+// Presets
+export const createWorkdaySync = async () => {
+  const response = await api.post('/scheduler/presets/workday')
+  return response.data
+}
+
+export const createNightlySync = async (hour?: number) => {
+  const response = await api.post('/scheduler/presets/nightly', null, { params: { hour } })
+  return response.data
+}
+
+export const createHourlySync = async () => {
+  const response = await api.post('/scheduler/presets/hourly')
   return response.data
 }
 
@@ -357,6 +465,97 @@ export const runHealthChecks = async () => {
 
 export const getConnectorsHealth = async () => {
   const response = await api.get('/connectors/health')
+  return response.data
+}
+
+// ==================== MidPoint API ====================
+
+// Users
+export const getMidpointUsers = async () => {
+  const response = await api.get('/midpoint/users')
+  return response.data
+}
+
+export const getMidpointUser = async (userId: string) => {
+  const response = await api.get(`/midpoint/users/${userId}`)
+  return response.data
+}
+
+export const createMidpointUser = async (data: {
+  username: string
+  firstname: string
+  lastname: string
+  email?: string
+  department?: string
+  title?: string
+  employee_id?: string
+  password?: string
+}) => {
+  const response = await api.post('/midpoint/users', data)
+  return response.data
+}
+
+export const updateMidpointUser = async (userId: string, data: {
+  firstname?: string
+  lastname?: string
+  email?: string
+  department?: string
+  title?: string
+}) => {
+  const response = await api.put(`/midpoint/users/${userId}`, data)
+  return response.data
+}
+
+export const deleteMidpointUser = async (userId: string) => {
+  const response = await api.delete(`/midpoint/users/${userId}`)
+  return response.data
+}
+
+export const disableMidpointUser = async (userId: string) => {
+  const response = await api.post(`/midpoint/users/${userId}/disable`)
+  return response.data
+}
+
+export const enableMidpointUser = async (userId: string) => {
+  const response = await api.post(`/midpoint/users/${userId}/enable`)
+  return response.data
+}
+
+// Roles
+export const getMidpointRoles = async () => {
+  const response = await api.get('/midpoint/roles')
+  return response.data
+}
+
+export const assignMidpointRole = async (userId: string, roleId: string) => {
+  const response = await api.post(`/midpoint/users/${userId}/roles/${roleId}`)
+  return response.data
+}
+
+export const removeMidpointRole = async (userId: string, roleId: string) => {
+  const response = await api.delete(`/midpoint/users/${userId}/roles/${roleId}`)
+  return response.data
+}
+
+export const getMidpointUserRoles = async (userId: string) => {
+  const response = await api.get(`/midpoint/users/${userId}/roles`)
+  return response.data
+}
+
+// Resources
+export const getMidpointResources = async () => {
+  const response = await api.get('/midpoint/resources')
+  return response.data
+}
+
+export const getMidpointUserShadows = async (userId: string) => {
+  const response = await api.get(`/midpoint/users/${userId}/shadows`)
+  return response.data
+}
+
+// Health
+export const getMidpointHealth = async () => {
+  const response = await api.get('/midpoint/health')
   return response.data
 }
 

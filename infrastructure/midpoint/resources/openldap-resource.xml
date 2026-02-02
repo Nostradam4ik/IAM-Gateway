@@ -2,12 +2,14 @@
 <!--
     MidPoint Resource: OpenLDAP
 
-    This resource connects MidPoint to the OpenLDAP directory.
-    Users provisioned with the 'ldap-user' role will get an account here.
-
     Connection: openldap:389 (inside Docker network)
     Base DN: dc=example,dc=com
     Admin: cn=admin,dc=example,dc=com
+
+    Groupes gérés: Employee, Internet, Printer, Public_Share_Folder_SharePoint
+
+    Note: Utilise ri:dn au lieu de icfs:name pour l'attribut DN
+    Les scripts Groovy utilisent .toString() pour convertir les PolyString
 -->
 <resource xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
           xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
@@ -15,12 +17,13 @@
           xmlns:icfs="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/resource-schema-3"
           xmlns:icfc="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/connector-schema-3"
           xmlns:t="http://prism.evolveum.com/xml/ns/public/types-3"
+          xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:mr="http://prism.evolveum.com/xml/ns/public/matching-rule-3"
           oid="10000000-0000-0000-0000-000000000001">
 
     <name>OpenLDAP Directory</name>
-    <description>OpenLDAP directory for user accounts - Gateway IAM target system</description>
+    <description>OpenLDAP avec gestion des groupes Employee, Internet, Printer, Public_Share_Folder_SharePoint</description>
 
-    <!-- LDAP Connector Reference -->
     <connectorRef type="ConnectorType">
         <filter>
             <q:equal>
@@ -30,58 +33,49 @@
         </filter>
     </connectorRef>
 
-    <!-- Connection Configuration -->
     <connectorConfiguration>
         <icfc:configurationProperties
             xmlns:icfcldap="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/com.evolveum.polygon.connector-ldap/com.evolveum.polygon.connector.ldap.LdapConnector">
-
-            <!-- Server connection -->
             <icfcldap:host>openldap</icfcldap:host>
             <icfcldap:port>389</icfcldap:port>
             <icfcldap:connectionSecurity>none</icfcldap:connectionSecurity>
-
-            <!-- Authentication -->
             <icfcldap:bindDn>cn=admin,dc=example,dc=com</icfcldap:bindDn>
-            <icfcldap:bindPassword>
-                <t:clearValue>secret</t:clearValue>
-            </icfcldap:bindPassword>
-
-            <!-- Base configuration -->
+            <icfcldap:bindPassword><t:clearValue>secret</t:clearValue></icfcldap:bindPassword>
             <icfcldap:baseContext>dc=example,dc=com</icfcldap:baseContext>
-
-            <!-- Pagination for large directories -->
             <icfcldap:pagingStrategy>auto</icfcldap:pagingStrategy>
             <icfcldap:vlvSortAttribute>uid</icfcldap:vlvSortAttribute>
-
-            <!-- Operational attributes -->
-            <icfcldap:operationalAttributes>createTimestamp</icfcldap:operationalAttributes>
-            <icfcldap:operationalAttributes>modifyTimestamp</icfcldap:operationalAttributes>
         </icfc:configurationProperties>
     </connectorConfiguration>
 
-    <!-- Schema Handling -->
     <schemaHandling>
-        <!-- Account (inetOrgPerson) -->
+        <!-- Comptes utilisateurs -->
         <objectType>
             <kind>account</kind>
             <intent>default</intent>
-            <displayName>Standard LDAP Account</displayName>
+            <displayName>Compte LDAP</displayName>
             <default>true</default>
-
             <objectClass>ri:inetOrgPerson</objectClass>
 
-            <!-- Attribute mappings -->
             <attribute>
                 <ref>ri:dn</ref>
                 <displayName>Distinguished Name</displayName>
+                <limitations>
+                    <minOccurs>0</minOccurs>
+                    <access>
+                        <read>true</read>
+                        <add>true</add>
+                        <modify>true</modify>
+                    </access>
+                </limitations>
                 <outbound>
-                    <strength>strong</strength>
                     <source>
-                        <path>name</path>
+                        <path>$user/name</path>
                     </source>
                     <expression>
                         <script>
-                            <code>'uid=' + name + ',ou=users,dc=example,dc=com'</code>
+                            <code>
+                                basic.composeDnWithSuffix('uid', name + iterationToken, 'ou=users,dc=example,dc=com')
+                            </code>
                         </script>
                     </expression>
                 </outbound>
@@ -91,11 +85,21 @@
                 <ref>ri:uid</ref>
                 <displayName>Login Name</displayName>
                 <outbound>
-                    <strength>strong</strength>
+                    <strength>weak</strength>
                     <source>
                         <path>name</path>
                     </source>
+                    <expression>
+                        <script>
+                            <code>name + iterationToken</code>
+                        </script>
+                    </expression>
                 </outbound>
+                <inbound>
+                    <target>
+                        <path>name</path>
+                    </target>
+                </inbound>
             </attribute>
 
             <attribute>
@@ -106,6 +110,11 @@
                     <source>
                         <path>fullName</path>
                     </source>
+                    <expression>
+                        <script>
+                            <code>fullName?.toString() ?: 'User'</code>
+                        </script>
+                    </expression>
                 </outbound>
             </attribute>
 
@@ -117,6 +126,11 @@
                     <source>
                         <path>familyName</path>
                     </source>
+                    <expression>
+                        <script>
+                            <code>familyName?.toString() ?: 'Unknown'</code>
+                        </script>
+                    </expression>
                 </outbound>
             </attribute>
 
@@ -128,6 +142,11 @@
                     <source>
                         <path>givenName</path>
                     </source>
+                    <expression>
+                        <script>
+                            <code>givenName?.toString()</code>
+                        </script>
+                    </expression>
                 </outbound>
             </attribute>
 
@@ -139,43 +158,25 @@
                     <source>
                         <path>emailAddress</path>
                     </source>
+                    <expression>
+                        <script>
+                            <code>emailAddress?.toString()</code>
+                        </script>
+                    </expression>
                 </outbound>
             </attribute>
 
-            <attribute>
-                <ref>ri:employeeNumber</ref>
-                <displayName>Employee Number</displayName>
-                <outbound>
-                    <strength>strong</strength>
-                    <source>
-                        <path>employeeNumber</path>
-                    </source>
-                </outbound>
-            </attribute>
+            <!-- Association aux groupes LDAP -->
+            <association>
+                <ref>ri:ldapGroup</ref>
+                <displayName>Groupe LDAP</displayName>
+                <kind>entitlement</kind>
+                <intent>ldapGroup</intent>
+                <direction>objectToSubject</direction>
+                <associationAttribute>ri:uniqueMember</associationAttribute>
+                <valueAttribute>ri:dn</valueAttribute>
+            </association>
 
-            <attribute>
-                <ref>ri:ou</ref>
-                <displayName>Department</displayName>
-                <outbound>
-                    <strength>strong</strength>
-                    <source>
-                        <path>organizationalUnit</path>
-                    </source>
-                </outbound>
-            </attribute>
-
-            <attribute>
-                <ref>ri:title</ref>
-                <displayName>Job Title</displayName>
-                <outbound>
-                    <strength>strong</strength>
-                    <source>
-                        <path>title</path>
-                    </source>
-                </outbound>
-            </attribute>
-
-            <!-- Activation (account enable/disable) -->
             <activation>
                 <administrativeStatus>
                     <outbound>
@@ -184,7 +185,6 @@
                 </administrativeStatus>
             </activation>
 
-            <!-- Password -->
             <credentials>
                 <password>
                     <outbound>
@@ -193,25 +193,39 @@
                 </password>
             </credentials>
         </objectType>
+
+        <!-- Groupes LDAP (entitlements) -->
+        <objectType>
+            <kind>entitlement</kind>
+            <intent>ldapGroup</intent>
+            <displayName>Groupe LDAP</displayName>
+            <default>true</default>
+            <objectClass>ri:groupOfUniqueNames</objectClass>
+            <attribute>
+                <ref>ri:dn</ref>
+                <matchingRule>mr:distinguishedName</matchingRule>
+            </attribute>
+            <attribute>
+                <ref>ri:cn</ref>
+                <matchingRule>mr:stringIgnoreCase</matchingRule>
+            </attribute>
+        </objectType>
     </schemaHandling>
 
-    <!-- Synchronization settings -->
     <synchronization>
         <objectSynchronization>
             <enabled>true</enabled>
             <kind>account</kind>
             <intent>default</intent>
             <focusType>UserType</focusType>
-
             <correlation>
                 <q:equal>
-                    <q:path>name</q:path>
+                    <q:path>c:emailAddress</q:path>
                     <expression>
-                        <path>$projection/attributes/ri:uid</path>
+                        <path>$projection/attributes/ri:mail</path>
                     </expression>
                 </q:equal>
             </correlation>
-
             <reaction>
                 <situation>linked</situation>
                 <synchronize>true</synchronize>
@@ -236,17 +250,4 @@
             </reaction>
         </objectSynchronization>
     </synchronization>
-
-    <!-- Capabilities -->
-    <capabilities>
-        <configured>
-            <cap:activation xmlns:cap="http://midpoint.evolveum.com/xml/ns/public/resource/capabilities-3">
-                <cap:status>
-                    <cap:attribute>ri:employeeType</cap:attribute>
-                    <cap:enableValue>active</cap:enableValue>
-                    <cap:disableValue>inactive</cap:disableValue>
-                </cap:status>
-            </cap:activation>
-        </configured>
-    </capabilities>
 </resource>

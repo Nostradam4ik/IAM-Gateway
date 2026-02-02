@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    MidPoint Resource: Odoo ERP (via ScriptedSQL)
+
+    This resource connects MidPoint to Odoo's PostgreSQL database using ScriptedSQL.
+    ScriptedSQL allows proper handling of auto-increment primary keys.
+
+    Connection: odoo-db:5432 (inside Docker network)
+    Database: odoo
+    Table: res_partner (contacts)
+
+    Scripts location: /opt/midpoint/var/scripts/odoo/
+-->
+<resource xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+          xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+          xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+          xmlns:icfs="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/resource-schema-3"
+          xmlns:icfc="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/connector-schema-3"
+          xmlns:t="http://prism.evolveum.com/xml/ns/public/types-3"
+          xmlns:cap="http://midpoint.evolveum.com/xml/ns/public/resource/capabilities-3"
+          oid="10000000-0000-0000-0000-000000000002">
+
+    <name>Odoo ERP</name>
+    <description>Odoo ERP system - contacts via ScriptedSQL connector</description>
+
+    <!-- ScriptedSQL Connector Reference -->
+    <connectorRef type="ConnectorType">
+        <filter>
+            <q:equal>
+                <q:path>connectorType</q:path>
+                <q:value>com.evolveum.polygon.connector.scripted.sql.ScriptedSQLConnector</q:value>
+            </q:equal>
+        </filter>
+    </connectorRef>
+
+    <!-- Connection Configuration -->
+    <connectorConfiguration>
+        <icfc:resultsHandlerConfiguration>
+            <icfc:enableNormalizingResultsHandler>false</icfc:enableNormalizingResultsHandler>
+            <icfc:enableFilteredResultsHandler>false</icfc:enableFilteredResultsHandler>
+            <icfc:filteredResultsHandlerInValidationMode>true</icfc:filteredResultsHandlerInValidationMode>
+            <icfc:enableAttributesToGetSearchResultsHandler>false</icfc:enableAttributesToGetSearchResultsHandler>
+        </icfc:resultsHandlerConfiguration>
+
+        <icfc:configurationProperties
+            xmlns:icscscriptedsql="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/com.evolveum.polygon.connector-scripted-sql/com.evolveum.polygon.connector.scripted.sql.ScriptedSQLConnector">
+
+            <!-- Script files -->
+            <icscscriptedsql:createScriptFileName>CreateScript.groovy</icscscriptedsql:createScriptFileName>
+            <icscscriptedsql:updateScriptFileName>UpdateScript.groovy</icscscriptedsql:updateScriptFileName>
+            <icscscriptedsql:deleteScriptFileName>DeleteScript.groovy</icscscriptedsql:deleteScriptFileName>
+            <icscscriptedsql:schemaScriptFileName>SchemaScript.groovy</icscscriptedsql:schemaScriptFileName>
+            <icscscriptedsql:searchScriptFileName>SearchScript.groovy</icscscriptedsql:searchScriptFileName>
+            <icscscriptedsql:testScriptFileName>TestScript.groovy</icscscriptedsql:testScriptFileName>
+            <icscscriptedsql:syncScriptFileName>SyncScript.groovy</icscscriptedsql:syncScriptFileName>
+
+            <!-- Script location -->
+            <icscscriptedsql:scriptRoots>/opt/midpoint/var/scripts/odoo/</icscscriptedsql:scriptRoots>
+            <icscscriptedsql:classpath>.</icscscriptedsql:classpath>
+
+            <!-- Database connection -->
+            <icscscriptedsql:user>odoo</icscscriptedsql:user>
+            <icscscriptedsql:password>
+                <t:clearValue>odoo</t:clearValue>
+            </icscscriptedsql:password>
+            <icscscriptedsql:jdbcDriver>org.postgresql.Driver</icscscriptedsql:jdbcDriver>
+            <icscscriptedsql:jdbcUrlTemplate>jdbc:postgresql://odoo-db:5432/odoo</icscscriptedsql:jdbcUrlTemplate>
+
+        </icfc:configurationProperties>
+    </connectorConfiguration>
+
+    <!-- Capabilities -->
+    <capabilities>
+        <configured>
+            <cap:create>
+                <cap:enabled>true</cap:enabled>
+            </cap:create>
+            <cap:read>
+                <cap:enabled>true</cap:enabled>
+            </cap:read>
+            <cap:update>
+                <cap:enabled>true</cap:enabled>
+            </cap:update>
+            <cap:delete>
+                <cap:enabled>true</cap:enabled>
+            </cap:delete>
+            <cap:liveSync>
+                <cap:enabled>true</cap:enabled>
+                <cap:preciseTokenValue>true</cap:preciseTokenValue>
+            </cap:liveSync>
+        </configured>
+    </capabilities>
+
+    <!-- Schema Handling -->
+    <schemaHandling>
+        <objectType>
+            <kind>account</kind>
+            <intent>contact</intent>
+            <displayName>Odoo Contact</displayName>
+            <default>true</default>
+            <objectClass>ri:AccountObjectClass</objectClass>
+
+            <!-- UID - database auto-increment ID -->
+            <attribute>
+                <ref>icfs:uid</ref>
+                <displayName>Database ID</displayName>
+            </attribute>
+
+            <!-- Name - email (used for lookups) -->
+            <attribute>
+                <ref>icfs:name</ref>
+                <displayName>Email (Identifier)</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>emailAddress</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Name attribute -->
+            <attribute>
+                <ref>ri:name</ref>
+                <displayName>Full Name</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>fullName</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Email -->
+            <attribute>
+                <ref>ri:email</ref>
+                <displayName>Email</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>emailAddress</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Phone -->
+            <attribute>
+                <ref>ri:phone</ref>
+                <displayName>Phone</displayName>
+                <outbound>
+                    <strength>weak</strength>
+                    <source>
+                        <path>telephoneNumber</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Job Title -->
+            <attribute>
+                <ref>ri:function</ref>
+                <displayName>Job Title</displayName>
+                <outbound>
+                    <strength>weak</strength>
+                    <source>
+                        <path>title</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Comment -->
+            <attribute>
+                <ref>ri:comment</ref>
+                <displayName>Comment</displayName>
+                <outbound>
+                    <strength>weak</strength>
+                    <expression>
+                        <value>Synced from MidPoint IAM</value>
+                    </expression>
+                </outbound>
+            </attribute>
+
+            <!-- Employee flag -->
+            <attribute>
+                <ref>ri:employee</ref>
+                <displayName>Is Employee</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <expression>
+                        <value>true</value>
+                    </expression>
+                </outbound>
+            </attribute>
+
+            <!-- Active status -->
+            <attribute>
+                <ref>ri:active</ref>
+                <displayName>Active</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <expression>
+                        <value>true</value>
+                    </expression>
+                </outbound>
+            </attribute>
+
+            <!-- Company ID -->
+            <attribute>
+                <ref>ri:company_id</ref>
+                <displayName>Company</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <expression>
+                        <value>1</value>
+                    </expression>
+                </outbound>
+            </attribute>
+
+            <!-- Activation handling -->
+            <activation>
+                <administrativeStatus>
+                    <outbound>
+                        <strength>strong</strength>
+                    </outbound>
+                </administrativeStatus>
+            </activation>
+        </objectType>
+    </schemaHandling>
+
+    <!-- Synchronization: Odoo -> MidPoint -->
+    <synchronization>
+        <objectSynchronization>
+            <kind>account</kind>
+            <intent>contact</intent>
+            <enabled>true</enabled>
+            <correlation>
+                <q:equal>
+                    <q:path>emailAddress</q:path>
+                    <expression>
+                        <path>$projection/attributes/ri:email</path>
+                    </expression>
+                </q:equal>
+            </correlation>
+            <reaction>
+                <situation>linked</situation>
+                <synchronize>true</synchronize>
+            </reaction>
+            <reaction>
+                <situation>unlinked</situation>
+                <action>
+                    <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/action-3#link</handlerUri>
+                </action>
+            </reaction>
+            <reaction>
+                <situation>unmatched</situation>
+                <action>
+                    <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/action-3#addFocus</handlerUri>
+                </action>
+            </reaction>
+        </objectSynchronization>
+    </synchronization>
+</resource>

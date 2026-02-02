@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    System Configuration Update
+
+    Configure le template utilisateur par défaut pour auto-assigner
+    le rôle Employee à tous les nouveaux utilisateurs.
+-->
+<systemConfiguration xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+                     oid="00000000-0000-0000-0000-000000000001">
+
+    <name>SystemConfiguration</name>
+
+    <!-- Associer le template aux utilisateurs -->
+    <defaultObjectPolicyConfiguration>
+        <type>UserType</type>
+        <objectTemplateRef oid="10000000-0000-0000-0000-000000000500" type="ObjectTemplateType">
+            <description>User Template - Employee Auto-Assignment</description>
+        </objectTemplateRef>
+    </defaultObjectPolicyConfiguration>
+
+</systemConfiguration>

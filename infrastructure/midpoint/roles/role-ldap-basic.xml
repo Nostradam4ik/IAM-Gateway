@@ -21,8 +21,8 @@
 
   <inducement>
     <construction>
-      <resourceRef oid="8a8b9c1d-0001-0000-0000-000000000001" type="c:ResourceType">
-        <!-- ApacheDS LDAP Resource -->
+      <resourceRef oid="10000000-0000-0000-0000-000000000001" type="c:ResourceType">
+        <!-- OpenLDAP Resource -->
       </resourceRef>
       <kind>account</kind>
       <intent>default</intent>

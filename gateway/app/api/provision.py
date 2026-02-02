@@ -81,6 +81,101 @@ async def _provision_via_midpoint(
     - Audit logging
     """
     try:
+        # Check if workflow approval is needed BEFORE sending to MidPoint
+        if request.require_approval:
+            workflow_service = WorkflowService(session)
+            manager_email = request.attributes.get("manager_email", "")
+
+            # Create operation ID for tracking
+            operation_id = f"op_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{request.account_id}"
+
+            if manager_email:
+                # Create approval workflow with email notification
+                user_data = {
+                    **request.attributes,
+                    "account_id": request.account_id,
+                }
+                workflow_result = await workflow_service.create_approval_workflow(
+                    operation_id=operation_id,
+                    user_data=user_data,
+                    manager_email=manager_email,
+                    requester=current_user["username"]
+                )
+
+                # Save operation with pending status (NOT yet sent to MidPoint)
+                memory_store.save_operation(operation_id, {
+                    "operation_id": operation_id,
+                    "account_id": request.account_id,
+                    "operation": request.operation.value,
+                    "status": "awaiting_approval",
+                    "target_systems": [t.value for t in request.target_systems],
+                    "user_data": request.attributes,
+                    "created_by": current_user["username"],
+                    "workflow_id": workflow_result.get("workflow_id"),
+                    "midpoint_pending": True,  # Flag to indicate MidPoint creation is pending
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+                # Add audit log
+                memory_store.add_audit_log({
+                    "type": "workflow",
+                    "action": "approval_requested",
+                    "account_id": request.account_id,
+                    "actor": current_user["username"],
+                    "target_systems": [t.value for t in request.target_systems],
+                    "status": "pending",
+                    "manager_email": manager_email
+                })
+
+                logger.info(
+                    "Approval workflow created, MidPoint provisioning pending",
+                    operation_id=operation_id,
+                    workflow_id=workflow_result.get("workflow_id"),
+                    manager_email=manager_email
+                )
+
+                return ProvisioningResponse(
+                    status=OperationStatus.AWAITING_APPROVAL,
+                    operation_id=operation_id,
+                    calculated_attributes={"workflow": workflow_result},
+                    message=f"Demande en attente d'approbation. Email envoye a {manager_email}",
+                    timestamp=datetime.utcnow()
+                )
+            else:
+                # Workflow without email (admin approval required)
+                workflow_instance = await workflow_service.start_pre_workflow(
+                    operation_id=operation_id,
+                    context={
+                        "account_id": request.account_id,
+                        "operation": request.operation,
+                        "requester": current_user["username"],
+                        **request.attributes
+                    }
+                )
+
+                # Save operation with pending status
+                memory_store.save_operation(operation_id, {
+                    "operation_id": operation_id,
+                    "account_id": request.account_id,
+                    "operation": request.operation.value,
+                    "status": "awaiting_approval",
+                    "target_systems": [t.value for t in request.target_systems],
+                    "user_data": request.attributes,
+                    "created_by": current_user["username"],
+                    "workflow_id": workflow_instance.id,
+                    "midpoint_pending": True,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+                return ProvisioningResponse(
+                    status=OperationStatus.AWAITING_APPROVAL,
+                    operation_id=operation_id,
+                    calculated_attributes={},
+                    message=f"Workflow d'approbation demarre. Instance: {workflow_instance.id}",
+                    timestamp=datetime.utcnow()
+                )
+
+        # No approval required - proceed directly to MidPoint
         midpoint_service = await get_midpoint_provision_service(session)
 
         result = await midpoint_service.provision(

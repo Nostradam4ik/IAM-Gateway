@@ -26,6 +26,9 @@ services:
   midpoint:
     image: evolveum/midpoint:4.4
     container_name: midpoint-core
+    depends_on:
+      midpoint-postgres:
+        condition: service_healthy
     ports:
       - "8080:8080"
     volumes:
@@ -33,10 +36,17 @@ services:
     networks:
       - iam-network
     environment:
-      - REPO_DATABASE_TYPE=h2
-      - REPO_JDBC_URL=jdbc:h2:tcp://localhost:5437/./midpoint
-      - REPO_HOST=localhost
-      - REPO_PORT=5437
+      - MP_SET_midpoint_repository_database=postgresql
+      - MP_SET_midpoint_repository_jdbcUrl=jdbc:postgresql://midpoint-postgres:5432/midpoint
+      - MP_SET_midpoint_repository_jdbcUsername=midpoint
+      - MP_SET_midpoint_repository_jdbcPassword=midpoint
+      - MP_SET_midpoint_repository_missingSchemaAction=create
+      - MP_SET_midpoint_repository_upgradeableSchemaAction=upgrade
+      - MP_SET_midpoint_keystore_keyStorePath=/opt/midpoint/var/keystore.jceks
+      - MP_SET_midpoint_keystore_keyStorePassword=changeit
+      - MP_MEM_MAX=2048m
+      - MP_MEM_INIT=1024m
+    restart: unless-stopped
 
   # ===========================================
   # Gateway IAM (FastAPI)

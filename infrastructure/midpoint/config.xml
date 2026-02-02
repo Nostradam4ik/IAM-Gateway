@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <midpoint>
+        <repository>
+            <type>native</type>
+            <database>postgresql</database>
+            <jdbcUrl>jdbc:postgresql://midpoint-postgres:5432/midpoint</jdbcUrl>
+            <jdbcUsername>midpoint</jdbcUsername>
+            <jdbcPassword>midpoint</jdbcPassword>
+            <missingSchemaAction>create</missingSchemaAction>
+            <upgradeableSchemaAction>upgrade</upgradeableSchemaAction>
+        </repository>
+        <keystore>
+            <keyStorePath>${midpoint.home}/keystore.jceks</keyStorePath>
+            <keyStorePassword>changeit</keyStorePassword>
+            <encryptionKeyAlias>default</encryptionKeyAlias>
+        </keystore>
+        <audit>
+            <auditService>
+                <auditServiceFactoryClass>com.evolveum.midpoint.audit.impl.LoggerAuditServiceFactory</auditServiceFactoryClass>
+            </auditService>
+        </audit>
+    </midpoint>
+</configuration>

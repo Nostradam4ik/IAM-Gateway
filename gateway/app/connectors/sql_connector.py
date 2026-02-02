@@ -214,7 +214,7 @@ class SQLConnector(BaseConnector):
         try:
             with self.engine.connect() as conn:
                 result = conn.execute(
-                    text("SELECT id, username, email, first_name, last_name, role, is_active FROM users")
+                    text("SELECT id, username, email, first_name, last_name, department, is_active FROM users")
                 )
 
                 return [dict(row._mapping) for row in result]

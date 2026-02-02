@@ -346,9 +346,17 @@ class MidPointConnector(BaseConnector):
             response.raise_for_status()
 
             data = response.json()
-            users = data.get("object", [])
+            # MidPoint JSON structure: { "object": { "object": [...] } }
+            obj = data.get("object", {})
+            if isinstance(obj, dict):
+                users = obj.get("object", [])
+            else:
+                users = obj
 
-            return [self._parse_user(u) for u in users]
+            if not isinstance(users, list):
+                users = [users] if users else []
+
+            return [self._parse_user(u) for u in users if u]
 
         except Exception as e:
             logger.error("Error listing users", error=str(e))
@@ -377,39 +385,59 @@ class MidPointConnector(BaseConnector):
             if not user_oid or not role_oid:
                 raise Exception(f"User or role not found: {account_id}, {role_id}")
 
-            # Create assignment
-            assignment = {
-                "@ns": "http://midpoint.evolveum.com/xml/ns/public/common/api-types-3",
-                "objectModification": {
-                    "itemDelta": [{
-                        "modificationType": "add",
-                        "path": "assignment",
-                        "value": [{
-                            "targetRef": {
-                                "oid": role_oid,
-                                "type": "RoleType"
-                            }
-                        }]
-                    }]
-                }
-            }
+            # MidPoint 4.4 requires XML format for modifications via POST
+            modify_xml = f'''<?xml version="1.0" encoding="UTF-8"?>
+<objectModification xmlns="http://midpoint.evolveum.com/xml/ns/public/common/api-types-3"
+                   xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+                   xmlns:t="http://prism.evolveum.com/xml/ns/public/types-3">
+    <itemDelta>
+        <t:modificationType>add</t:modificationType>
+        <t:path>c:assignment</t:path>
+        <t:value xsi:type="c:AssignmentType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <c:targetRef oid="{role_oid}" type="c:RoleType"/>
+        </t:value>
+    </itemDelta>
+</objectModification>'''
 
-            response = await client.patch(
+            response = await client.post(
                 f"/ws/rest/users/{user_oid}",
-                json=assignment
+                content=modify_xml.encode('utf-8'),
+                headers={"Content-Type": "application/xml"}
             )
 
             success = response.status_code in [200, 204]
             if success:
                 logger.info("Role assigned", user=account_id, role=role_id)
+                return True
             else:
-                logger.error("Failed to assign role", status=response.status_code, response=response.text[:200])
+                # Extract error message from MidPoint response
+                import re
+                error_msg = None
 
-            return success
+                # Try to find error message in XML response
+                resp_text = response.text
+
+                # Look for message tag
+                match = re.search(r'<message>([^<]+)</message>', resp_text)
+                if match:
+                    error_msg = match.group(1)
+
+                # If no message found, look for details
+                if not error_msg:
+                    match = re.search(r'Configuration error:[^<]+', resp_text)
+                    if match:
+                        error_msg = match.group(0)
+
+                # Fallback to generic error
+                if not error_msg:
+                    error_msg = f"Erreur MidPoint (HTTP {response.status_code})"
+
+                logger.error("Failed to assign role", status=response.status_code, response=error_msg)
+                raise Exception(error_msg)
 
         except Exception as e:
             logger.error("Error assigning role", error=str(e))
-            return False
+            raise
 
     async def remove_role(self, account_id: str, role_id: str) -> bool:
         """
@@ -431,26 +459,24 @@ class MidPointConnector(BaseConnector):
             if not user_oid or not role_oid:
                 return False
 
-            # Remove assignment
-            modification = {
-                "@ns": "http://midpoint.evolveum.com/xml/ns/public/common/api-types-3",
-                "objectModification": {
-                    "itemDelta": [{
-                        "modificationType": "delete",
-                        "path": "assignment",
-                        "value": [{
-                            "targetRef": {
-                                "oid": role_oid,
-                                "type": "RoleType"
-                            }
-                        }]
-                    }]
-                }
-            }
+            # MidPoint 4.4 requires XML format for modifications via POST
+            modify_xml = f'''<?xml version="1.0" encoding="UTF-8"?>
+<objectModification xmlns="http://midpoint.evolveum.com/xml/ns/public/common/api-types-3"
+                   xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+                   xmlns:t="http://prism.evolveum.com/xml/ns/public/types-3">
+    <itemDelta>
+        <t:modificationType>delete</t:modificationType>
+        <t:path>c:assignment</t:path>
+        <t:value xsi:type="c:AssignmentType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <c:targetRef oid="{role_oid}" type="c:RoleType"/>
+        </t:value>
+    </itemDelta>
+</objectModification>'''
 
             response = await client.post(
                 f"/ws/rest/users/{user_oid}",
-                json=modification
+                content=modify_xml.encode('utf-8'),
+                headers={"Content-Type": "application/xml"}
             )
 
             return response.status_code in [200, 204]
@@ -492,21 +518,39 @@ class MidPointConnector(BaseConnector):
             logger.error("Error getting roles", error=str(e))
             return []
 
-    async def get_user_roles(self, account_id: str) -> List[str]:
+    async def get_user_roles(self, account_id: str) -> List[Dict[str, Any]]:
         """
-        Get roles assigned to a user.
+        Get roles assigned to a user with full details.
 
         Args:
             account_id: User OID or name
 
         Returns:
-            List of role OIDs
+            List of role objects with oid and name
         """
         try:
             user = await self.get_account(account_id)
             if not user:
                 return []
-            return user.get("roles", [])
+
+            role_oids = user.get("roles", [])
+            if not role_oids:
+                return []
+
+            # Get all roles to map OIDs to names
+            all_roles = await self.get_roles()
+            role_map = {r["oid"]: r for r in all_roles}
+
+            # Return full role objects
+            result = []
+            for oid in role_oids:
+                if oid in role_map:
+                    result.append(role_map[oid])
+                else:
+                    # Role exists but not found in list - return OID as name
+                    result.append({"oid": oid, "name": oid})
+
+            return result
         except Exception as e:
             logger.error("Error getting user roles", error=str(e))
             return []
@@ -787,7 +831,9 @@ class MidPointConnector(BaseConnector):
         for a in assignments:
             if isinstance(a, dict):
                 target_ref = a.get("targetRef", {})
-                if target_ref.get("type") == "RoleType":
+                ref_type = target_ref.get("type", "")
+                # MidPoint uses prefixed types like "c:RoleType" or just "RoleType"
+                if ref_type and ("RoleType" in ref_type):
                     roles.append(target_ref.get("oid"))
 
         activation = props.get("activation", {})

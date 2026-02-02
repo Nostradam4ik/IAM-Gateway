@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Role: Marketing Department
+    Grants LDAP account + Marketing group
+-->
+<role xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
+      xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
+      xmlns:ri="http://midpoint.evolveum.com/xml/ns/public/resource/instance-3"
+      oid="10000000-0000-0000-0000-000000000306">
+
+    <name>Department-Marketing</name>
+    <displayName>Departement Marketing</displayName>
+    <description>Role pour le departement Marketing</description>
+
+    <requestable>true</requestable>
+    <riskLevel>low</riskLevel>
+
+    <inducement>
+        <construction>
+            <resourceRef oid="10000000-0000-0000-0000-000000000001" type="ResourceType"/>
+            <kind>account</kind>
+            <intent>default</intent>
+            <association>
+                <ref>ri:ldapGroup</ref>
+                <outbound>
+                    <expression>
+                        <associationTargetSearch>
+                            <filter>
+                                <q:equal>
+                                    <q:path>attributes/ri:cn</q:path>
+                                    <q:value>Marketing</q:value>
+                                </q:equal>
+                            </filter>
+                            <searchStrategy>onResource</searchStrategy>
+                        </associationTargetSearch>
+                    </expression>
+                </outbound>
+            </association>
+        </construction>
+    </inducement>
+</role>

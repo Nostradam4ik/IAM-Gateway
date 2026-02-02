@@ -46,13 +46,25 @@ class OdooConnector(BaseConnector):
         """Get Odoo models proxy."""
         return xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/object')
 
-    def _execute(self, model: str, method: str, *args):
-        """Execute Odoo RPC call."""
+    def _execute(self, model: str, method: str, args_list, kwargs_dict=None):
+        """Execute Odoo RPC call.
+
+        Args:
+            model: Odoo model name (e.g., 'res.users')
+            method: Method to call (e.g., 'search_read')
+            args_list: List of positional arguments for the method
+            kwargs_dict: Optional dictionary of keyword arguments
+        """
         uid = self._authenticate()
         models = self._get_models()
+        if kwargs_dict:
+            return models.execute_kw(
+                self.db, uid, self.password,
+                model, method, args_list, kwargs_dict
+            )
         return models.execute_kw(
             self.db, uid, self.password,
-            model, method, list(args)
+            model, method, args_list
         )
 
     async def test_connection(self) -> bool:
@@ -71,8 +83,17 @@ class OdooConnector(BaseConnector):
         account_id: str,
         attributes: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Create Odoo user account."""
+        """Create Odoo user account (or update if exists)."""
         try:
+            login = attributes.get('login') or attributes.get('email') or account_id
+
+            # Check if user already exists by login or email
+            existing_user = await self.get_account(login)
+            if existing_user:
+                # User exists, update instead of create
+                logger.info("Odoo user already exists, updating instead", login=login)
+                return await self.update_account(login, attributes)
+
             # First create a contact (res.partner)
             partner_data = {
                 'name': f"{attributes.get('firstname', '')} {attributes.get('lastname', '')}".strip() or account_id,
@@ -85,14 +106,14 @@ class OdooConnector(BaseConnector):
             if attributes.get('phone'):
                 partner_data['phone'] = attributes.get('phone')
 
-            partner_result = self._execute('res.partner', 'create', [partner_data])
+            partner_result = self._execute('res.partner', 'create', [[partner_data]])
             # Extract partner_id from result (can be int or list)
             partner_id = partner_result[0] if isinstance(partner_result, list) else partner_result
 
             # Then create user linked to partner
             user_data = {
                 'name': partner_data['name'],
-                'login': attributes.get('login') or attributes.get('email') or account_id,
+                'login': login,
                 'partner_id': partner_id,
                 'active': attributes.get('active', True),
             }
@@ -101,15 +122,19 @@ class OdooConnector(BaseConnector):
             if attributes.get('groups'):
                 user_data['groups_id'] = [(6, 0, attributes['groups'])]
 
-            user_result = self._execute('res.users', 'create', [user_data])
+            user_result = self._execute('res.users', 'create', [[user_data]])
             # Extract user_id from result (can be int or list)
             user_id = user_result[0] if isinstance(user_result, list) else user_result
 
             logger.info("Odoo account created", user_id=user_id, login=user_data['login'])
 
+            # Create employee linked to user
+            employee_id = await self._create_employee(user_id, partner_id, attributes)
+
             return {
                 "id": user_id,
                 "partner_id": partner_id,
+                "employee_id": employee_id,
                 "login": user_data['login'],
                 "status": "created"
             }
@@ -117,6 +142,82 @@ class OdooConnector(BaseConnector):
         except Exception as e:
             logger.error("Failed to create Odoo account", error=str(e))
             raise
+
+    async def _create_employee(
+        self,
+        user_id: int,
+        partner_id: int,
+        attributes: Dict[str, Any]
+    ) -> Optional[int]:
+        """Create Odoo employee linked to user."""
+        try:
+            # Check if employee already exists for this user
+            existing = self._execute(
+                'hr.employee', 'search_read',
+                [[('user_id', '=', user_id)]],
+                {'fields': ['id']}
+            )
+            if existing:
+                logger.info("Employee already exists for user", user_id=user_id)
+                return existing[0]['id']
+
+            # Build employee name
+            name = f"{attributes.get('firstname', '')} {attributes.get('lastname', '')}".strip()
+            if not name:
+                name = attributes.get('name', attributes.get('login', f'User {user_id}'))
+
+            employee_data = {
+                'name': name,
+                'user_id': user_id,
+            }
+
+            # Add optional fields
+            if attributes.get('email') or attributes.get('login'):
+                employee_data['work_email'] = attributes.get('email') or attributes.get('login')
+            if attributes.get('phone'):
+                employee_data['work_phone'] = attributes.get('phone')
+            if attributes.get('mobile'):
+                employee_data['mobile_phone'] = attributes.get('mobile')
+            if attributes.get('job_title') or attributes.get('title'):
+                employee_data['job_title'] = attributes.get('job_title') or attributes.get('title')
+            if attributes.get('department'):
+                # Try to find or create department
+                dept_id = await self._get_or_create_department(attributes['department'])
+                if dept_id:
+                    employee_data['department_id'] = dept_id
+
+            employee_result = self._execute('hr.employee', 'create', [[employee_data]])
+            employee_id = employee_result[0] if isinstance(employee_result, list) else employee_result
+
+            logger.info("Odoo employee created", employee_id=employee_id, user_id=user_id)
+            return employee_id
+
+        except Exception as e:
+            logger.warning("Failed to create Odoo employee", error=str(e), user_id=user_id)
+            # Don't fail the whole operation if employee creation fails
+            return None
+
+    async def _get_or_create_department(self, department_name: str) -> Optional[int]:
+        """Get or create department by name."""
+        try:
+            # Search for existing department
+            departments = self._execute(
+                'hr.department', 'search_read',
+                [[('name', '=', department_name)]],
+                {'fields': ['id']}
+            )
+            if departments:
+                return departments[0]['id']
+
+            # Create new department
+            result = self._execute('hr.department', 'create', [[{'name': department_name}]])
+            dept_id = result[0] if isinstance(result, list) else result
+            logger.info("Odoo department created", name=department_name, id=dept_id)
+            return dept_id
+
+        except Exception as e:
+            logger.warning("Failed to get/create department", error=str(e))
+            return None
 
     async def update_account(
         self,
@@ -159,12 +260,66 @@ class OdooConnector(BaseConnector):
                 if partner_data:
                     self._execute('res.partner', 'write', [[user['partner_id']], partner_data])
 
+            # Update or create employee
+            employee_id = await self._update_or_create_employee(user_id, user.get('partner_id'), attributes)
+
             logger.info("Odoo account updated", user_id=user_id)
-            return {"id": user_id, "status": "updated"}
+            return {"id": user_id, "employee_id": employee_id, "status": "updated"}
 
         except Exception as e:
             logger.error("Failed to update Odoo account", error=str(e))
             raise
+
+    async def _update_or_create_employee(
+        self,
+        user_id: int,
+        partner_id: Optional[int],
+        attributes: Dict[str, Any]
+    ) -> Optional[int]:
+        """Update existing employee or create new one."""
+        try:
+            # Check if employee exists for this user
+            existing = self._execute(
+                'hr.employee', 'search_read',
+                [[('user_id', '=', user_id)]],
+                {'fields': ['id']}
+            )
+
+            if existing:
+                # Update existing employee
+                employee_id = existing[0]['id']
+                update_data = {}
+
+                if 'firstname' in attributes or 'lastname' in attributes:
+                    name = f"{attributes.get('firstname', '')} {attributes.get('lastname', '')}".strip()
+                    if name:
+                        update_data['name'] = name
+
+                if attributes.get('email'):
+                    update_data['work_email'] = attributes['email']
+                if attributes.get('phone'):
+                    update_data['work_phone'] = attributes['phone']
+                if attributes.get('mobile'):
+                    update_data['mobile_phone'] = attributes['mobile']
+                if attributes.get('job_title') or attributes.get('title'):
+                    update_data['job_title'] = attributes.get('job_title') or attributes.get('title')
+                if attributes.get('department'):
+                    dept_id = await self._get_or_create_department(attributes['department'])
+                    if dept_id:
+                        update_data['department_id'] = dept_id
+
+                if update_data:
+                    self._execute('hr.employee', 'write', [[employee_id], update_data])
+                    logger.info("Odoo employee updated", employee_id=employee_id)
+
+                return employee_id
+            else:
+                # Create new employee
+                return await self._create_employee(user_id, partner_id or 0, attributes)
+
+        except Exception as e:
+            logger.warning("Failed to update/create employee", error=str(e))
+            return None
 
     async def delete_account(self, account_id: str) -> bool:
         """Delete Odoo user account."""
@@ -187,8 +342,11 @@ class OdooConnector(BaseConnector):
     async def get_account(self, account_id: str) -> Optional[Dict[str, Any]]:
         """Get Odoo user account."""
         try:
-            # Search by login or ID
-            domain = ['|', ('login', '=', account_id), ('id', '=', int(account_id) if account_id.isdigit() else 0)]
+            # Search by login or ID - use simple domain first
+            if account_id.isdigit():
+                domain = [('id', '=', int(account_id))]
+            else:
+                domain = [('login', '=', account_id)]
 
             users = self._execute(
                 'res.users', 'search_read',
@@ -216,6 +374,7 @@ class OdooConnector(BaseConnector):
     async def list_accounts(self) -> List[Dict[str, Any]]:
         """List all Odoo user accounts."""
         try:
+            # Get all users without domain filter (empty list = all records)
             users = self._execute(
                 'res.users', 'search_read',
                 [[]],
@@ -314,3 +473,68 @@ class OdooConnector(BaseConnector):
         except Exception as e:
             logger.error("Failed to get Odoo groups", error=str(e))
             return []
+
+    async def list_employees(self) -> List[Dict[str, Any]]:
+        """List all Odoo employees with their details."""
+        try:
+            employees = self._execute(
+                'hr.employee', 'search_read',
+                [[]],
+                {'fields': [
+                    'id', 'name', 'work_email', 'work_phone', 'mobile_phone',
+                    'job_title', 'department_id', 'user_id', 'active'
+                ]}
+            )
+
+            result = []
+            for emp in employees:
+                result.append({
+                    "id": emp['id'],
+                    "name": emp['name'],
+                    "email": emp.get('work_email'),
+                    "phone": emp.get('work_phone'),
+                    "mobile": emp.get('mobile_phone'),
+                    "job_title": emp.get('job_title'),
+                    "department": emp['department_id'][1] if emp.get('department_id') else None,
+                    "department_id": emp['department_id'][0] if emp.get('department_id') else None,
+                    "user_id": emp['user_id'][0] if emp.get('user_id') else None,
+                    "active": emp.get('active', True)
+                })
+
+            return result
+
+        except Exception as e:
+            logger.error("Failed to list Odoo employees", error=str(e))
+            return []
+
+    async def get_employee(self, employee_id: int) -> Optional[Dict[str, Any]]:
+        """Get a specific Odoo employee by ID."""
+        try:
+            employees = self._execute(
+                'hr.employee', 'search_read',
+                [[('id', '=', employee_id)]],
+                {'fields': [
+                    'id', 'name', 'work_email', 'work_phone', 'mobile_phone',
+                    'job_title', 'department_id', 'user_id', 'active'
+                ]}
+            )
+
+            if employees:
+                emp = employees[0]
+                return {
+                    "id": emp['id'],
+                    "name": emp['name'],
+                    "email": emp.get('work_email'),
+                    "phone": emp.get('work_phone'),
+                    "mobile": emp.get('mobile_phone'),
+                    "job_title": emp.get('job_title'),
+                    "department": emp['department_id'][1] if emp.get('department_id') else None,
+                    "department_id": emp['department_id'][0] if emp.get('department_id') else None,
+                    "user_id": emp['user_id'][0] if emp.get('user_id') else None,
+                    "active": emp.get('active', True)
+                }
+            return None
+
+        except Exception as e:
+            logger.error("Failed to get Odoo employee", error=str(e), employee_id=employee_id)
+            return None

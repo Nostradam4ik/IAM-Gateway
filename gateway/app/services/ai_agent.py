@@ -1,15 +1,41 @@
 """
 Agent IA pour assistance au provisionnement
+Supporte plusieurs fournisseurs: OpenAI, DeepSeek, Anthropic, Mistral
 """
 from typing import List, Dict, Any, Optional
 import json
 import uuid
 import structlog
+from sqlalchemy import text
 
 from app.core.config import settings
 from app.models.ai import AIQueryResponse, MappingSuggestion
 
 logger = structlog.get_logger()
+
+# Configuration des providers
+PROVIDER_CONFIG = {
+    "openai": {
+        "base_url": "https://api.openai.com/v1",
+        "default_model": "gpt-4o-mini"
+    },
+    "deepseek": {
+        "base_url": "https://api.deepseek.com",
+        "default_model": "deepseek-chat"
+    },
+    "anthropic": {
+        "base_url": None,  # Uses native Anthropic client
+        "default_model": "claude-3-haiku-20240307"
+    },
+    "mistral": {
+        "base_url": "https://api.mistral.ai/v1",
+        "default_model": "mistral-small-latest"
+    },
+    "azure": {
+        "base_url": None,  # Configured via environment
+        "default_model": "gpt-4"
+    }
+}
 
 
 class AIAgent:
@@ -22,19 +48,116 @@ class AIAgent:
     - Generation de code de connecteurs
     - Analyse d'erreurs
     - Explication de regles
+
+    Supporte plusieurs fournisseurs IA:
+    - OpenAI (GPT-4, GPT-3.5)
+    - DeepSeek (deepseek-chat, deepseek-coder)
+    - Anthropic (Claude)
+    - Mistral AI
+    - Azure OpenAI
     """
 
     def __init__(self, session):
         self.session = session
         self._conversations = {}  # In-memory store, replace with Redis
         self._client = None
+        self._config = None
+        self._config_loaded = False
 
-    def _get_client(self):
-        """Get OpenAI client lazily."""
-        if self._client is None and settings.OPENAI_API_KEY:
-            from openai import AsyncOpenAI
-            self._client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        return self._client
+    async def _load_config(self) -> Optional[Dict[str, Any]]:
+        """Charge la configuration IA depuis la base de donnees."""
+        if self._config_loaded:
+            return self._config
+
+        try:
+            result = await self.session.execute(text("""
+                SELECT provider, model, api_key
+                FROM ai_configuration
+                WHERE id = 'default'
+            """))
+            row = result.fetchone()
+
+            if row and row[2]:  # Si api_key existe
+                self._config = {
+                    "provider": row[0],
+                    "model": row[1],
+                    "api_key": row[2]
+                }
+                logger.info(
+                    "AI configuration loaded from database",
+                    provider=row[0],
+                    model=row[1]
+                )
+            else:
+                # Fallback sur les settings si pas de config en DB
+                if settings.OPENAI_API_KEY:
+                    self._config = {
+                        "provider": "openai",
+                        "model": settings.OPENAI_MODEL,
+                        "api_key": settings.OPENAI_API_KEY
+                    }
+                    logger.info("AI configuration loaded from settings (OpenAI)")
+                else:
+                    self._config = None
+                    logger.warning("No AI configuration found")
+
+            self._config_loaded = True
+            return self._config
+
+        except Exception as e:
+            logger.warning("Failed to load AI config from DB", error=str(e))
+            # Fallback sur settings
+            if settings.OPENAI_API_KEY:
+                self._config = {
+                    "provider": "openai",
+                    "model": settings.OPENAI_MODEL,
+                    "api_key": settings.OPENAI_API_KEY
+                }
+            self._config_loaded = True
+            return self._config
+
+    async def _get_client(self):
+        """Get AI client based on configuration."""
+        config = await self._load_config()
+
+        if not config:
+            return None
+
+        provider = config.get("provider", "openai")
+        api_key = config.get("api_key")
+
+        if not api_key:
+            return None
+
+        if self._client is not None:
+            return self._client
+
+        try:
+            if provider == "anthropic":
+                # Client Anthropic natif
+                from anthropic import AsyncAnthropic
+                self._client = AsyncAnthropic(api_key=api_key)
+                self._client_type = "anthropic"
+            else:
+                # Client OpenAI compatible (OpenAI, DeepSeek, Mistral)
+                from openai import AsyncOpenAI
+
+                provider_config = PROVIDER_CONFIG.get(provider, PROVIDER_CONFIG["openai"])
+                base_url = provider_config.get("base_url")
+
+                if base_url:
+                    self._client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+                else:
+                    self._client = AsyncOpenAI(api_key=api_key)
+
+                self._client_type = "openai_compatible"
+
+            logger.info(f"AI client initialized", provider=provider)
+            return self._client
+
+        except Exception as e:
+            logger.error("Failed to initialize AI client", error=str(e))
+            return None
 
     async def process_query(
         self,
@@ -64,9 +187,9 @@ class AIAgent:
             "content": query
         })
 
-        client = self._get_client()
+        client = await self._get_client()
         if client is None:
-            # Mock response when no API key
+            # Mock response when no API key configured
             return AIQueryResponse(
                 response=self._mock_response(query),
                 suggested_actions=None,
@@ -75,18 +198,38 @@ class AIAgent:
             )
 
         try:
-            # Call OpenAI
-            response = await client.chat.completions.create(
-                model=settings.OPENAI_MODEL,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    *conversation["messages"]
-                ],
-                temperature=0.7,
-                max_tokens=2000
-            )
+            config = await self._load_config()
+            model = config.get("model", "gpt-4o-mini")
+            provider = config.get("provider", "openai")
 
-            assistant_message = response.choices[0].message.content
+            if self._client_type == "anthropic":
+                # Appel API Anthropic
+                response = await client.messages.create(
+                    model=model,
+                    max_tokens=2000,
+                    system=system_prompt,
+                    messages=conversation["messages"]
+                )
+                assistant_message = response.content[0].text
+            else:
+                # Appel API OpenAI compatible (OpenAI, DeepSeek, Mistral)
+                response = await client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        *conversation["messages"]
+                    ],
+                    temperature=0.7,
+                    max_tokens=2000
+                )
+                assistant_message = response.choices[0].message.content
+
+            logger.info(
+                "AI query successful",
+                provider=provider,
+                model=model,
+                response_length=len(assistant_message)
+            )
 
             # Store response
             conversation["messages"].append({
@@ -105,7 +248,7 @@ class AIAgent:
             )
 
         except Exception as e:
-            logger.error("AI query failed", error=str(e))
+            logger.error("AI query failed", error=str(e), provider=config.get("provider") if config else "unknown")
             return AIQueryResponse(
                 response=f"Erreur lors du traitement de la requete: {str(e)}",
                 suggested_actions=None,

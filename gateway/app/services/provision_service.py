@@ -273,18 +273,71 @@ class ProvisionService:
         # operation est un dictionnaire
         calculated_attrs = operation.get("calculated_attributes", {})
         if isinstance(calculated_attrs, str):
-            calculated_attrs = json.loads(calculated_attrs)
+            try:
+                calculated_attrs = json.loads(calculated_attrs)
+            except:
+                calculated_attrs = {}
 
         # Executer le provisionnement avec les donnees du dictionnaire
         target_systems = operation.get("target_systems", [])
         account_id = operation.get("account_id", "")
+
+        # Recuperer user_data depuis plusieurs sources possibles
         user_data = operation.get("user_data", {})
+        if not user_data:
+            user_data = operation.get("input_attributes", {})
+        if isinstance(user_data, str):
+            try:
+                user_data = json.loads(user_data)
+            except:
+                user_data = {}
+
+        logger.info(
+            "User data for provisioning",
+            operation_id=operation_id,
+            user_data=user_data
+        )
+
         results = {}
 
         # Mettre a jour le statut
         memory_store.update_operation(operation_id, {"status": "in_progress"})
 
         try:
+            # D'abord creer dans MidPoint (hub central)
+            try:
+                from app.services.midpoint_provision_service import get_midpoint_provision_service
+                from app.models.provision import ProvisioningRequest, OperationType, TargetSystem
+
+                midpoint_service = await get_midpoint_provision_service(self.session)
+
+                # Creer la requete pour MidPoint
+                midpoint_request = ProvisioningRequest(
+                    operation=OperationType.CREATE,
+                    target_systems=[TargetSystem(t) for t in target_systems],
+                    account_id=account_id,
+                    attributes=user_data
+                )
+
+                midpoint_result = await midpoint_service.provision(
+                    request=midpoint_request,
+                    created_by="workflow_approval"
+                )
+                results["MIDPOINT"] = midpoint_result
+
+                logger.info(
+                    "User created in MidPoint after approval",
+                    operation_id=operation_id,
+                    account_id=account_id,
+                    midpoint_result=midpoint_result
+                )
+            except Exception as mp_error:
+                logger.warning(
+                    "MidPoint provisioning failed, continuing with direct provisioning",
+                    error=str(mp_error)
+                )
+
+            # Ensuite provisionner vers les systemes cibles
             for target in target_systems:
                 logger.info(
                     "Provisioning to target after approval",
@@ -293,7 +346,8 @@ class ProvisionService:
                 )
 
                 connector = self.connector_factory.get_connector(target)
-                attrs = calculated_attrs.get(target, user_data)
+                # Utiliser user_data directement si calculated_attrs est vide pour ce target
+                attrs = calculated_attrs.get(target) if calculated_attrs.get(target) else user_data
 
                 result = await connector.create_account(
                     account_id=account_id,

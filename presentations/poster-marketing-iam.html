@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IAM Gateway - Passerelle de Provisionnement Intelligente</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #7c3aed;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --dark: #0f172a;
+            --dark-light: #1e293b;
+            --gray: #94a3b8;
+            --light: #f8fafc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 297mm;
+            height: 420mm;
+            font-family: 'Inter', sans-serif;
+            background: var(--dark);
+            color: var(--light);
+            overflow: hidden;
+        }
+
+        .poster {
+            width: 297mm;
+            height: 420mm;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Background decoration removed for print compatibility */
+
+        /* Header */
+        .header {
+            padding: 40px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--primary);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg {
+            width: 35px;
+            height: 35px;
+            fill: white;
+        }
+
+        .logo-text {
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .badge {
+            background: #1a3a4a;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main {
+            padding: 20px 50px 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Left side - Hero */
+        .hero {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .hero h1 {
+            font-size: 3.8rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 25px;
+            letter-spacing: -2px;
+        }
+
+        .hero h1 span {
+            color: white;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            color: var(--gray);
+            line-height: 1.7;
+            margin-bottom: 35px;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 40px;
+        }
+
+        .hero-stat {
+            text-align: center;
+        }
+
+        .hero-stat .number {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--accent);
+        }
+
+        .hero-stat .label {
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-top: 5px;
+        }
+
+        /* Right side - Visual */
+        .visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .central-graphic {
+            width: 100%;
+            max-width: 450px;
+            aspect-ratio: 1;
+            position: relative;
+        }
+
+        .orbit {
+            position: absolute;
+            border: 2px dashed #2a3a4a;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .orbit-1 { width: 200px; height: 200px; }
+        .orbit-2 { width: 320px; height: 320px; }
+        .orbit-3 { width: 440px; height: 440px; }
+
+        .center-hub {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            background: var(--primary);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .center-hub svg {
+            width: 60px;
+            height: 60px;
+            fill: white;
+        }
+
+        .satellite {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background: var(--dark-light);
+            border: 2px solid #3a4a5a;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+        }
+
+        .satellite-1 { top: 5%; left: 50%; transform: translateX(-50%); }
+        .satellite-2 { top: 25%; right: 5%; }
+        .satellite-3 { bottom: 25%; right: 5%; }
+        .satellite-4 { bottom: 5%; left: 50%; transform: translateX(-50%); }
+        .satellite-5 { bottom: 25%; left: 5%; }
+        .satellite-6 { top: 25%; left: 5%; }
+
+        /* Features Section */
+        .features {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: var(--dark-light);
+            border: 1px solid #3a4a5a;
+            border-radius: 20px;
+            padding: 30px;
+        }
+
+        .feature-card .icon {
+            width: 55px;
+            height: 55px;
+            background: var(--primary);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .feature-card p {
+            font-size: 0.95rem;
+            color: var(--gray);
+            line-height: 1.5;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 30px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--primary);
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-content h3 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .footer-content p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .tech-logos {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .tech-logo {
+            text-align: center;
+            opacity: 0.9;
+        }
+
+        .tech-logo .icon {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .tech-logo span {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Print */
+        @page {
+            size: A3 portrait;
+            margin: 0;
+        }
+
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="poster">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4a3 3 0 110 6 3 3 0 010-6zm0 8c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                </div>
+                <div class="logo-text">IAM Gateway</div>
+            </div>
+            <div class="badge">Projet SAE 2025</div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main">
+            <!-- Hero Section -->
+            <div class="hero">
+                <h1>Gérez vos <span>identités</span> en toute simplicité</h1>
+                <p>La solution complète pour automatiser le provisionnement des comptes, centraliser la gestion des accès et garantir la conformité de votre organisation.</p>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <div class="number">90%</div>
+                        <div class="label">Gain de temps</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="number">100%</div>
+                        <div class="label">Traçabilité</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="number">24/7</div>
+                        <div class="label">Disponibilité</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Section -->
+            <div class="visual">
+                <div class="central-graphic">
+                    <div class="orbit orbit-1"></div>
+                    <div class="orbit orbit-2"></div>
+                    <div class="orbit orbit-3"></div>
+
+                    <div class="center-hub">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                        </svg>
+                    </div>
+
+                    <div class="satellite satellite-1">&#128100;</div>
+                    <div class="satellite satellite-2">&#128193;</div>
+                    <div class="satellite satellite-3">&#128274;</div>
+                    <div class="satellite satellite-4">&#128202;</div>
+                    <div class="satellite satellite-5">&#9881;</div>
+                    <div class="satellite satellite-6">&#127760;</div>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div class="features">
+                <div class="feature-card">
+                    <div class="icon">&#128274;</div>
+                    <h3>Provisionnement Automatique</h3>
+                    <p>Synchronisation automatique des comptes avec votre SIRH. Création, modification et suppression en temps réel.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">&#9881;</div>
+                    <h3>Règles Dynamiques</h3>
+                    <p>Attribution intelligente des droits basée sur le département, la fonction et la localisation de l'employé.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">&#128279;</div>
+                    <h3>Multi-Connecteurs</h3>
+                    <p>Intégration native avec LDAP, Active Directory, Odoo, Keycloak, bases SQL et bien plus encore.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">&#128202;</div>
+                    <h3>Tableaux de Bord</h3>
+                    <p>Visualisation en temps réel de vos identités, accès et opérations de provisionnement.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">&#128221;</div>
+                    <h3>Audit & Conformité</h3>
+                    <p>Traçabilité complète pour répondre aux exigences RGPD et aux audits de sécurité.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">&#128640;</div>
+                    <h3>API REST Complète</h3>
+                    <p>Interface programmatique pour une intégration et une automatisation avancées.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <h3>Prêt à simplifier votre IAM ?</h3>
+                <p>Découvrez notre démonstration live</p>
+            </div>
+            <div class="tech-logos">
+                <div class="tech-logo">
+                    <div class="icon">&#127760;</div>
+                    <span>MidPoint</span>
+                </div>
+                <div class="tech-logo">
+                    <div class="icon">&#9889;</div>
+                    <span>FastAPI</span>
+                </div>
+                <div class="tech-logo">
+                    <div class="icon">&#9883;</div>
+                    <span>React</span>
+                </div>
+                <div class="tech-logo">
+                    <div class="icon">&#128193;</div>
+                    <span>LDAP</span>
+                </div>
+                <div class="tech-logo">
+                    <div class="icon">&#128273;</div>
+                    <span>Keycloak</span>
+                </div>
+                <div class="tech-logo">
+                    <div class="icon">&#128230;</div>
+                    <span>Docker</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

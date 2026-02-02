@@ -1,8 +1,9 @@
 """
 API de comparaison en temps reel entre systemes.
 Fonctionnalite innovante pour visualiser l'etat de synchronisation.
+Inclut LiveSync Odoo -> MidPoint.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
@@ -14,6 +15,7 @@ from app.core.database import get_session
 from app.connectors.ldap_connector import LDAPConnector
 from app.connectors.sql_connector import SQLConnector
 from app.connectors.odoo_connector import OdooConnector
+from app.services.midpoint_client import MidPointClient
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -556,3 +558,295 @@ async def check_all_systems_health(
         health["overall_status"] = "degraded"
 
     return health
+
+
+# ==================== LiveSync Odoo -> MidPoint ====================
+
+@router.get("/odoo/employees", response_model=Dict[str, Any])
+async def get_odoo_employees(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Liste tous les employes Odoo avec leurs informations.
+    Utilise pour la synchronisation vers MidPoint.
+    """
+    try:
+        odoo = OdooConnector()
+        employees = await odoo.list_employees()
+
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "count": len(employees),
+            "employees": employees
+        }
+
+    except Exception as e:
+        logger.error("Failed to get Odoo employees", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Odoo error: {str(e)[:200]}")
+
+
+@router.get("/midpoint/users", response_model=Dict[str, Any])
+async def get_midpoint_users_for_sync(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Liste tous les utilisateurs MidPoint pour la comparaison.
+    """
+    try:
+        client = MidPointClient()
+        users = await client.get_all_accounts()
+
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "count": len(users),
+            "users": users
+        }
+
+    except Exception as e:
+        logger.error("Failed to get MidPoint users", error=str(e))
+        raise HTTPException(status_code=500, detail=f"MidPoint error: {str(e)[:200]}")
+
+
+@router.get("/sync/odoo-midpoint/compare", response_model=Dict[str, Any])
+async def compare_odoo_midpoint(
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"]))
+):
+    """
+    Compare les employes Odoo avec les utilisateurs MidPoint.
+    Identifie les employes a synchroniser.
+    """
+    try:
+        # Get Odoo employees
+        odoo = OdooConnector()
+        odoo_employees = await odoo.list_employees()
+
+        # Get MidPoint users
+        client = MidPointClient()
+        midpoint_users = await client.get_all_accounts()
+
+        # Build lookup by email/name
+        midpoint_by_email = {}
+        midpoint_by_name = {}
+        for user in midpoint_users:
+            email = user.get("email", "").lower() if user.get("email") else None
+            full_name = user.get("fullName", "").lower() if user.get("fullName") else None
+            # MidPointClient._parse_user retourne 'name' pour le username
+            username = user.get("name", "").lower() if user.get("name") else None
+
+            if email:
+                midpoint_by_email[email] = user
+            if full_name:
+                midpoint_by_name[full_name] = user
+            if username:
+                midpoint_by_name[username] = user
+
+        # Compare
+        synced = []
+        to_sync = []
+        odoo_only = []
+
+        for emp in odoo_employees:
+            email = emp.get("email", "").lower() if emp.get("email") else None
+            name = emp.get("name", "").lower() if emp.get("name") else None
+
+            found_in_midpoint = None
+            if email and email in midpoint_by_email:
+                found_in_midpoint = midpoint_by_email[email]
+            elif name and name in midpoint_by_name:
+                found_in_midpoint = midpoint_by_name[name]
+
+            if found_in_midpoint:
+                synced.append({
+                    "odoo": emp,
+                    "midpoint": found_in_midpoint,
+                    "status": "synced"
+                })
+            else:
+                to_sync.append(emp)
+                odoo_only.append(emp)
+
+        # Users only in MidPoint (not in Odoo)
+        odoo_emails = {e.get("email", "").lower() for e in odoo_employees if e.get("email")}
+        odoo_names = {e.get("name", "").lower() for e in odoo_employees if e.get("name")}
+        midpoint_only = []
+
+        for user in midpoint_users:
+            email = user.get("email", "").lower() if user.get("email") else None
+            name = user.get("fullName", "").lower() if user.get("fullName") else None
+
+            if email and email in odoo_emails:
+                continue
+            if name and name in odoo_names:
+                continue
+            midpoint_only.append(user)
+
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "summary": {
+                "odoo_employees": len(odoo_employees),
+                "midpoint_users": len(midpoint_users),
+                "synced": len(synced),
+                "to_sync_from_odoo": len(to_sync),
+                "midpoint_only": len(midpoint_only)
+            },
+            "to_sync": to_sync[:50],  # Limit for response size
+            "synced": synced[:20],
+            "midpoint_only": midpoint_only[:20]
+        }
+
+    except Exception as e:
+        logger.error("Failed to compare Odoo-MidPoint", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Comparison error: {str(e)[:200]}")
+
+
+@router.post("/sync/odoo-to-midpoint", response_model=Dict[str, Any])
+async def sync_odoo_employees_to_midpoint(
+    employee_ids: List[int] = Query(default=None, description="List of Odoo employee IDs to sync. If empty, syncs all."),
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"]))
+):
+    """
+    Synchronise les employes Odoo vers MidPoint.
+    Cree les utilisateurs MidPoint correspondants.
+    """
+    try:
+        odoo = OdooConnector()
+        client = MidPointClient()
+
+        # Get employees to sync
+        if employee_ids:
+            employees = []
+            for emp_id in employee_ids:
+                emp = await odoo.get_employee(emp_id)
+                if emp:
+                    employees.append(emp)
+        else:
+            employees = await odoo.list_employees()
+
+        if not employees:
+            return {
+                "timestamp": datetime.utcnow().isoformat(),
+                "message": "Aucun employe a synchroniser",
+                "synced": 0,
+                "results": []
+            }
+
+        # Get existing MidPoint users for duplicate check
+        midpoint_users = await client.get_all_accounts()
+        existing_emails = {u.get("email", "").lower() for u in midpoint_users if u.get("email")}
+        # MidPointClient._parse_user retourne 'name' pour le username
+        existing_usernames = {u.get("name", "").lower() for u in midpoint_users if u.get("name")}
+
+        results = []
+        synced_count = 0
+        skipped_count = 0
+        error_count = 0
+
+        for emp in employees:
+            emp_name = emp.get("name", "")
+            emp_email = emp.get("email", "")
+
+            # Generate username from name
+            name_parts = emp_name.split()
+            if len(name_parts) >= 2:
+                firstname = name_parts[0]
+                lastname = " ".join(name_parts[1:])
+                username = f"{firstname.lower()}{lastname.lower().replace(' ', '')}"
+            else:
+                firstname = emp_name
+                lastname = ""
+                username = emp_name.lower().replace(" ", "")
+
+            # Check if already exists
+            if emp_email and emp_email.lower() in existing_emails:
+                results.append({
+                    "employee_id": emp.get("id"),
+                    "name": emp_name,
+                    "status": "skipped",
+                    "reason": "Email already exists in MidPoint"
+                })
+                skipped_count += 1
+                continue
+
+            if username.lower() in existing_usernames:
+                results.append({
+                    "employee_id": emp.get("id"),
+                    "name": emp_name,
+                    "status": "skipped",
+                    "reason": "Username already exists in MidPoint"
+                })
+                skipped_count += 1
+                continue
+
+            # Create in MidPoint
+            try:
+                user_data = {
+                    "username": username,
+                    "firstname": firstname,
+                    "lastname": lastname,
+                    "email": emp_email or f"{username}@example.com",
+                    "department": emp.get("department"),
+                    "title": emp.get("job_title"),
+                }
+
+                midpoint_result = await client.create_account(user_data)
+
+                # Check if user already exists (returned by improved create_account)
+                if midpoint_result and midpoint_result.get("status") == "already_exists":
+                    results.append({
+                        "employee_id": emp.get("id"),
+                        "name": emp_name,
+                        "username": username,
+                        "status": "skipped",
+                        "reason": "User already exists in MidPoint"
+                    })
+                    skipped_count += 1
+                else:
+                    results.append({
+                        "employee_id": emp.get("id"),
+                        "name": emp_name,
+                        "username": username,
+                        "status": "created",
+                        "midpoint_oid": midpoint_result.get("oid") if midpoint_result else None
+                    })
+                    synced_count += 1
+
+                # Add to existing set to prevent duplicates in same batch
+                if emp_email:
+                    existing_emails.add(emp_email.lower())
+                existing_usernames.add(username.lower())
+
+            except Exception as create_error:
+                error_msg = str(create_error)
+                # Check for common "already exists" error patterns
+                if "409" in error_msg or "already" in error_msg.lower() or "conflict" in error_msg.lower():
+                    results.append({
+                        "employee_id": emp.get("id"),
+                        "name": emp_name,
+                        "username": username,
+                        "status": "skipped",
+                        "reason": "User already exists in MidPoint"
+                    })
+                    skipped_count += 1
+                else:
+                    results.append({
+                        "employee_id": emp.get("id"),
+                        "name": emp_name,
+                        "status": "error",
+                        "error": error_msg[:100]
+                    })
+                    error_count += 1
+
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "summary": {
+                "total_employees": len(employees),
+                "synced": synced_count,
+                "skipped": skipped_count,
+                "errors": error_count
+            },
+            "results": results
+        }
+
+    except Exception as e:
+        logger.error("Failed to sync Odoo to MidPoint", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Sync error: {str(e)[:200]}")

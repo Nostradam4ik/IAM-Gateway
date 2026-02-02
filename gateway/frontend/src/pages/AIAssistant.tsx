@@ -23,10 +23,41 @@ interface Message {
   timestamp: Date
 }
 
+// Cle de stockage pour localStorage
+const CHAT_STORAGE_KEY = 'ai_assistant_chat'
+const CONVERSATION_ID_KEY = 'ai_assistant_conversation_id'
+
+// Charger les messages depuis localStorage
+const loadMessagesFromStorage = (): Message[] => {
+  try {
+    const stored = localStorage.getItem(CHAT_STORAGE_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      // Convertir les timestamps string en Date
+      return parsed.map((m: any) => ({
+        ...m,
+        timestamp: new Date(m.timestamp)
+      }))
+    }
+  } catch (e) {
+    console.error('Failed to load messages from storage:', e)
+  }
+  return []
+}
+
+// Charger le conversation_id depuis localStorage
+const loadConversationIdFromStorage = (): string | null => {
+  try {
+    return localStorage.getItem(CONVERSATION_ID_KEY)
+  } catch (e) {
+    return null
+  }
+}
+
 export default function AIAssistant() {
   const [input, setInput] = useState('')
-  const [messages, setMessages] = useState<Message[]>([])
-  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [messages, setMessages] = useState<Message[]>(loadMessagesFromStorage)
+  const [conversationId, setConversationId] = useState<string | null>(loadConversationIdFromStorage)
   const [showTokenModal, setShowTokenModal] = useState(false)
   const [tokenConfig, setTokenConfig] = useState({
     provider: 'openai',
@@ -44,6 +75,28 @@ export default function AIAssistant() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Sauvegarder les messages dans localStorage quand ils changent
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages))
+    } catch (e) {
+      console.error('Failed to save messages to storage:', e)
+    }
+  }, [messages])
+
+  // Sauvegarder le conversationId dans localStorage quand il change
+  useEffect(() => {
+    try {
+      if (conversationId) {
+        localStorage.setItem(CONVERSATION_ID_KEY, conversationId)
+      } else {
+        localStorage.removeItem(CONVERSATION_ID_KEY)
+      }
+    } catch (e) {
+      console.error('Failed to save conversationId to storage:', e)
+    }
+  }, [conversationId])
 
   // Charger la config actuelle
   const { data: aiConfig } = useQuery({
@@ -147,6 +200,9 @@ export default function AIAssistant() {
             onClick={() => {
               setMessages([])
               setConversationId(null)
+              // Effacer aussi le localStorage
+              localStorage.removeItem(CHAT_STORAGE_KEY)
+              localStorage.removeItem(CONVERSATION_ID_KEY)
             }}
             className="btn-secondary"
           >

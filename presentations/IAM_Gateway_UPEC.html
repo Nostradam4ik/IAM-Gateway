@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plateforme No-Code & Gateway IAM - UPEC 2026</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .slide {
+            width: 100%;
+            min-height: 100vh;
+            padding: 40px 60px;
+            page-break-after: always;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            position: relative;
+        }
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #0f4c75, #3282b8, #bbe1fa);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #3282b8;
+        }
+        .logo-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #1a1a2e;
+            font-size: 12px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5em;
+            color: #bbe1fa;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 1.8em;
+            color: #3282b8;
+            margin: 20px 0 15px 0;
+        }
+        h3 {
+            font-size: 1.3em;
+            color: #bbe1fa;
+            margin: 15px 0 10px 0;
+        }
+        p, li {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        ul {
+            margin-left: 30px;
+        }
+        .title-slide {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .title-slide h1 {
+            font-size: 3.5em;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 1.5em;
+            color: #3282b8;
+            margin-bottom: 40px;
+        }
+        .authors {
+            font-size: 1.3em;
+            margin: 30px 0;
+        }
+        .university {
+            font-size: 1.1em;
+            color: #888;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border: 1px solid #3282b8;
+        }
+        th {
+            background: #0f4c75;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background: rgba(50, 130, 184, 0.1);
+        }
+        .highlight-box {
+            background: rgba(50, 130, 184, 0.2);
+            border-left: 4px solid #3282b8;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+        .card {
+            background: rgba(50, 130, 184, 0.15);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #3282b8;
+        }
+        .card h3 {
+            margin-top: 0;
+        }
+        .status-complete {
+            color: #4caf50;
+        }
+        .status-partial {
+            color: #ff9800;
+        }
+        .status-todo {
+            color: #f44336;
+        }
+        .architecture-box {
+            background: #0d1117;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        .progress-bar {
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0f4c75, #3282b8);
+            transition: width 0.3s;
+        }
+        .slide-number {
+            position: absolute;
+            bottom: 20px;
+            right: 40px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .code-block {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        .metric-box {
+            text-align: center;
+            padding: 20px;
+            background: rgba(50, 130, 184, 0.2);
+            border-radius: 10px;
+        }
+        .metric-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #bbe1fa;
+        }
+        .metric-label {
+            font-size: 0.9em;
+            color: #888;
+        }
+        @media print {
+            .slide {
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SLIDE 1: TITRE -->
+<div class="slide title-slide">
+    <div class="logo-container" style="margin-bottom: 40px;">
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC IUT Creteil-Vitry Departement Informatique" style="max-width:500px;height:auto;border-radius:10px;background:white;padding:15px;">
+    </div>
+    <h1>Plateforme No-Code & Gateway IAM</h1>
+    <div class="subtitle">Orchestration intelligente des identites multi-systemes</div>
+    <div class="authors">
+        <strong>Zhmuryk Andrii & Aydin Ibrahim</strong>
+    </div>
+    <div class="university">
+        BUT Informatique 3eme annee<br>
+        Universite Paris-Est Creteil<br>
+        Departement Informatique<br>
+        Janvier 2026
+    </div>
+    <div class="slide-number">1 / 24</div>
+</div>
+
+<!-- SLIDE 2: PROBLEMATIQUE -->
+<div class="slide">
+    <div class="header">
+        <h1>Problematique</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <h2>Le probleme de la gestion des identites en entreprise</h2>
+
+    <div class="grid-2">
+        <div>
+            <h3>Situation actuelle</h3>
+            <ul>
+                <li>Active Directory / LDAP (authentification)</li>
+                <li>ERP Odoo, SAP (gestion RH)</li>
+                <li>Applications metier (bases SQL)</li>
+                <li>Services Cloud (Keycloak, OAuth)</li>
+            </ul>
+
+            <div class="highlight-box" style="margin-top:20px;">
+                <strong>1 employe = 5 a 10 comptes differents</strong>
+            </div>
+        </div>
+        <div>
+            <h3>Problemes rencontres</h3>
+            <ul>
+                <li>Creation manuelle = erreurs + temps perdu</li>
+                <li>Depart employe = comptes oublies</li>
+                <li>Aucune tracabilite des modifications</li>
+                <li>Failles de securite (comptes orphelins)</li>
+            </ul>
+
+            <div class="highlight-box" style="margin-top:20px;background:rgba(244,67,54,0.2);border-color:#f44336;">
+                <strong>30%</strong> des violations de donnees liees aux comptes orphelins<br>
+                <strong>4h</strong> en moyenne pour creer tous les acces d'un nouvel employe
+            </div>
+        </div>
+    </div>
+    <div class="slide-number">2 / 24</div>
+</div>
+
+<!-- SLIDE 3: SOLUTION & INNOVATION -->
+<div class="slide">
+    <div class="header">
+        <h1>Notre Solution - Innovation</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <h2>Gateway IAM: Orchestration Intelligente</h2>
+
+    <div class="grid-3">
+        <div class="card">
+            <h3>1. Interface No-Code</h3>
+            <p>MidPoint est puissant MAIS complexe (XML, concepts techniques)</p>
+            <p><strong>Notre solution:</strong> Interface simple, visuelle, accessible aux non-techniciens</p>
+        </div>
+        <div class="card">
+            <h3>2. Automatisation</h3>
+            <p>Regles dynamiques en YAML (pas de code Java)</p>
+            <p>Moteur de calcul automatique (login, email, groupes)</p>
+            <p>Workflows d'approbation multi-niveaux</p>
+        </div>
+        <div class="card">
+            <h3>3. Centralisation</h3>
+            <p>Un seul point d'entree pour tous les systemes</p>
+            <p>Vue temps reel de la synchronisation</p>
+            <p>Reconciliation automatique</p>
+        </div>
+    </div>
+
+    <div class="highlight-box" style="text-align:center;margin-top:30px;">
+        <h3 style="color:#bbe1fa;">Innovation cle</h3>
+        <p style="font-size:1.3em;">Rendre l'IAM accessible a tous, pas seulement aux experts MidPoint</p>
+    </div>
+    <div class="slide-number">3 / 24</div>
+</div>
+
+<!-- SLIDE 4: BACKLOG 1 -->
+<div class="slide">
+    <div class="header">
+        <h1>Backlog - Fonctionnalites Initiales (1/2)</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <h2>Epic 1: Gestion des Utilisateurs</h2>
+    <table>
+        <tr><th>User Story</th><th>Priorite</th><th>Points</th></tr>
+        <tr><td>Creer un utilisateur dans tous les systemes</td><td>Must</td><td>8</td></tr>
+        <tr><td>Modifier les attributs d'un utilisateur</td><td>Must</td><td>5</td></tr>
+        <tr><td>Desactiver/supprimer un compte</td><td>Must</td><td>5</td></tr>
+        <tr><td>Voir l'historique des modifications</td><td>Should</td><td>3</td></tr>
+    </table>
+
+    <h2>Epic 2: Moteur de Regles</h2>
+    <table>
+        <tr><th>User Story</th><th>Priorite</th><th>Points</th></tr>
+        <tr><td>Definir des regles de mapping d'attributs</td><td>Must</td><td>8</td></tr>
+        <tr><td>Tester une regle avec des donnees fictives</td><td>Must</td><td>5</td></tr>
+        <tr><td>Versionner les regles</td><td>Should</td><td>3</td></tr>
+    </table>
+
+    <h2>Epic 3: Workflows d'Approbation</h2>
+    <table>
+        <tr><th>User Story</th><th>Priorite</th><th>Points</th></tr>
+        <tr><td>Configurer des workflows multi-niveaux</td><td>Must</td><td>8</td></tr>
+        <tr><td>Approuver/rejeter une demande</td><td>Must</td><td>5</td></tr>
+        <tr><td>Notifications par email</td><td>Should</td><td>5</td></tr>
+    </table>
+    <div class="slide-number">4 / 24</div>
+</div>
+
+<!-- SLIDE 5: BACKLOG 2 -->
+<div class="slide">
+    <div class="header">
+        <h1>Backlog - Fonctionnalites Initiales (2/2)</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <h2>Epic 4: Connecteurs Systemes</h2>
+    <table>
+        <tr><th>User Story</th><th>Priorite</th><th>Points</th></tr>
+        <tr><td>Connecteur LDAP (OpenLDAP, Active Directory)</td><td>Must</td><td>8</td></tr>
+        <tr><td>Connecteur Odoo (ERP)</td><td>Must</td><td>8</td></tr>
+        <tr><td>Connecteur SQL (PostgreSQL)</td><td>Must</td><td>5</td></tr>
+        <tr><td>Connecteur MidPoint (REST API)</td><td>Must</td><td>13</td></tr>
+        <tr><td>Connecteur Keycloak (OIDC)</td><td>Should</td><td>8</td></tr>
+    </table>
+
+    <h2>Epic 5: Reconciliation & Audit</h2>
+    <table>
+        <tr><th>User Story</th><th>Priorite</th><th>Points</th></tr>
+        <tr><td>Comparer l'etat des systemes</td><td>Must</td><td>8</td></tr>
+        <tr><td>Detecter les ecarts (orphelins, drift)</td><td>Must</td><td>5</td></tr>
+        <tr><td>Recherche semantique dans les logs</td><td>Should</td><td>8</td></tr>
+    </table>
+
+    <div class="highlight-box">
+        <strong>Total initial: ~120 points</strong> (sprints de 2 semaines, velocite ~20 pts/sprint)
+    </div>
+    <div class="slide-number">5 / 24</div>
+</div>
+
+<!-- SLIDE 6: ARCHITECTURE SCHEMA -->
+<div class="slide">
+    <div class="header">
+        <h1>Architecture Globale</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <div class="architecture-box">
++------------------------------------------------------------------+
+|                      UTILISATEUR (Navigateur)                     |
++--------------------------------+---------------------------------+
+                                 | HTTPS (Port 3000)
+                                 v
++------------------------------------------------------------------+
+|                    FRONTEND REACT                                 |
+|            TypeScript + Tailwind CSS + Vite                       |
+|     [Dashboard] [Users] [Rules] [Workflows] [Audit] [AI]         |
++--------------------------------+---------------------------------+
+                                 | REST API (Port 8000)
+                                 v
++------------------------------------------------------------------+
+|                    GATEWAY API (FastAPI)                          |
+|  +---------------+ +---------------+ +---------------+            |
+|  | Rule Engine   | | Workflow Mgr  | | AI Assistant  |            |
+|  |   (Jinja2)    | | (Approvals)   | |   (OpenAI)    |            |
+|  +---------------+ +---------------+ +---------------+            |
+|  +----------------------------------------------------------+    |
+|  |              CONNECTOR LAYER                              |    |
+|  |  MidPoint | LDAP | Odoo | SQL | Keycloak                 |    |
+|  +----------------------------------------------------------+    |
++-------+---------------+---------------+---------------+----------+
+        |               |               |               |
+        v               v               v               v
+   +---------+    +---------+    +---------+    +---------+
+   |MidPoint |    |OpenLDAP |    |  Odoo   |    |Keycloak |
+   |  (IAM)  |    |(Annuaire|    |  (ERP)  |    | (OIDC)  |
+   +---------+    +---------+    +---------+    +---------+
+    </div>
+    <div class="slide-number">6 / 24</div>
+</div>
+
+<!-- SLIDE 7: ARCHITECTURE TECHNIQUE -->
+<div class="slide">
+    <div class="header">
+        <h1>Architecture Technique - 15 Services Docker</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <div class="grid-2">
+        <div>
+            <h3>Services Applicatifs</h3>
+            <table style="font-size:0.9em;">
+                <tr><th>Service</th><th>Tech</th><th>Port</th></tr>
+                <tr><td>gateway</td><td>FastAPI/Python</td><td>8000</td></tr>
+                <tr><td>gateway-frontend</td><td>React/TS</td><td>3000</td></tr>
+                <tr><td>gateway-db</td><td>PostgreSQL</td><td>5434</td></tr>
+                <tr><td>redis</td><td>Redis 7</td><td>6379</td></tr>
+                <tr><td>qdrant</td><td>Qdrant</td><td>6333</td></tr>
+            </table>
+        </div>
+        <div>
+            <h3>Services IAM</h3>
+            <table style="font-size:0.9em;">
+                <tr><th>Service</th><th>Tech</th><th>Port</th></tr>
+                <tr><td>midpoint</td><td>MidPoint 4.4</td><td>8080</td></tr>
+                <tr><td>midpoint-postgres</td><td>PostgreSQL</td><td>5433</td></tr>
+                <tr><td>openldap</td><td>OpenLDAP</td><td>10389</td></tr>
+                <tr><td>odoo</td><td>Odoo 17</td><td>8069</td></tr>
+                <tr><td>keycloak</td><td>Keycloak 23</td><td>8081</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top:20px;">
+        <strong>Reseau:</strong> Tous les services sur <code>iam-network</code> (bridge Docker)<br>
+        <strong>Persistance:</strong> Volumes Docker nommes pour chaque base de donnees
+    </div>
+    <div class="slide-number">7 / 24</div>
+</div>
+
+<!-- SLIDE 8: STACK TECHNOLOGIQUE -->
+<div class="slide">
+    <div class="header">
+        <h1>Stack Technologique</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <div class="grid-3">
+        <div class="card">
+            <h3>Backend (Python)</h3>
+            <ul>
+                <li><strong>FastAPI</strong> 0.109</li>
+                <li><strong>SQLModel</strong> (ORM)</li>
+                <li><strong>JWT</strong> + OAuth2</li>
+                <li><strong>ldap3</strong> (LDAP)</li>
+                <li><strong>APScheduler</strong></li>
+                <li><strong>structlog</strong></li>
+                <li><strong>OpenAI</strong> API</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Frontend (TypeScript)</h3>
+            <ul>
+                <li><strong>React 18</strong> + Vite</li>
+                <li><strong>React Router</strong> v6</li>
+                <li><strong>Zustand</strong> (state)</li>
+                <li><strong>Tailwind CSS</strong></li>
+                <li><strong>Lucide</strong> (icons)</li>
+                <li><strong>Axios</strong> (HTTP)</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Infrastructure</h3>
+            <ul>
+                <li><strong>Docker</strong> Compose</li>
+                <li><strong>PostgreSQL</strong> 15</li>
+                <li><strong>Redis</strong> 7</li>
+                <li><strong>Qdrant</strong> (vector)</li>
+                <li><strong>MidPoint</strong> 4.4</li>
+                <li><strong>Keycloak</strong> 23</li>
+            </ul>
+        </div>
+    </div>
+    <div class="slide-number">8 / 24</div>
+</div>
+
+<!-- SLIDE 9: FONCTIONNALITES - DASHBOARD -->
+<div class="slide">
+    <div class="header">
+        <h1>Fonctionnalites Implementees - Dashboard</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <div class="grid-2">
+        <div>
+            <h2 class="status-complete">Dashboard Principal - 100%</h2>
+            <ul>
+                <li>Vue d'ensemble en temps reel</li>
+                <li>Statistiques cles (utilisateurs, operations)</li>
+                <li>Etat de sante des connecteurs</li>
+                <li>Graphiques de performance</li>
+                <li>Alertes et notifications</li>
+            </ul>
+
+            <h3>Endpoints API</h3>
+            <div class="code-block">
+GET /api/v1/admin/status
+GET /api/v1/admin/metrics
+GET /api/v1/connectors/health
+            </div>
+        </div>
+        <div>
+            <div style="background:#1e1e1e;border-radius:10px;padding:10px;border:2px solid #3282b8;overflow:hidden;">
+                <img src="screenshots/dashboard.png" alt="Dashboard Gateway IAM" style="width:100%;height:auto;border-radius:5px;" onerror="this.style.display='none';this.parentElement.innerHTML='<p style=color:#666;text-align:center;padding:50px;>Capture Dashboard<br><br>- Operations: 0<br>- Taux succes: 100%<br>- Connecteurs: OK<br>- Services: Healthy</p>';">
+            </div>
+            <p style="font-size:0.8em;color:#888;text-align:center;margin-top:10px;">Interface Dashboard - Vue temps reel</p>
+        </div>
+    </div>
+    <div class="slide-number">9 / 24</div>
+</div>
+
+<!-- SLIDE 10: FONCTIONNALITES - PROVISIONING -->
+<div class="slide">
+    <div class="header">
+        <h1>Fonctionnalites - Provisioning</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <h2 class="status-complete">Gestion des Operations - 100%</h2>
+
+    <div class="grid-2">
+        <div>
+            <h3>Fonctionnalites</h3>
+            <ul>
+                <li>Creation utilisateur multi-systeme</li>
+                <li>Modification des attributs</li>
+                <li>Suppression/desactivation</li>
+                <li>Rollback des operations</li>
+                <li>Suivi statut temps reel</li>
+            </ul>
+
+            <h3>Systemes cibles</h3>
+            <ul>
+                <li>LDAP (comptes + groupes)</li>
+                <li>Odoo (res.users, res.partner)</li>
+                <li>PostgreSQL (tables custom)</li>
+                <li>MidPoint (utilisateurs, roles)</li>
+            </ul>
+        </div>
+        <div>
+            <h3>Workflow type</h3>
+            <div class="architecture-box" style="font-size:0.8em;">
+1. Creation demande
+       |
+       v
+2. Validation regles
+       |
+       v
+3. Workflow approbation
+       |
+       v
+4. Execution multi-systeme
+       |
+       v
+5. Audit & notification
+            </div>
+        </div>
+    </div>
+    <div class="slide-number">10 / 24</div>
+</div>
+
+<!-- SLIDE 11: FONCTIONNALITES - REGLES -->
+<div class="slide">
+    <div class="header">
+        <h1>Fonctionnalites - Moteur de Regles</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <h2 class="status-complete">Regles Dynamiques - 100%</h2>
+
+    <div class="grid-2">
+        <div>
+            <h3>Fonctionnalites</h3>
+            <ul>
+                <li>Definition en YAML/JSON</li>
+                <li>Expressions Jinja2 sandboxees</li>
+                <li>Filtres integres (normalize_name, slugify)</li>
+                <li>Test avec donnees fictives</li>
+                <li>Versionnage</li>
+            </ul>
+
+            <h3>Cas d'usage</h3>
+            <ul>
+                <li>Generation automatique de login</li>
+                <li>Calcul email selon departement</li>
+                <li>Attribution groupes selon poste</li>
+            </ul>
+        </div>
+        <div>
+            <h3>Exemple de regle</h3>
+            <div class="code-block">
+target_system: LDAP
+rule_type: MAPPING
+definition: |
+  {%- set login = (firstname ~ '.'
+      ~ lastname) | normalize_name -%}
+  {
+    "uid": "{{ login }}",
+    "mail": "{{ login }}@example.com",
+    "cn": "{{ firstname }} {{ lastname }}"
+  }
+            </div>
+        </div>
+    </div>
+    <div class="slide-number">11 / 24</div>
+</div>
+
+<!-- SLIDE 12: FONCTIONNALITES - WORKFLOWS -->
+<div class="slide">
+    <div class="header">
+        <h1>Fonctionnalites - Workflows</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <h2 class="status-complete">Workflows d'Approbation - 100%</h2>
+
+    <div class="grid-2">
+        <div>
+            <h3>Fonctionnalites</h3>
+            <ul>
+                <li>Configuration multi-niveaux (jusqu'a 5)</li>
+                <li>Approbation/rejet avec commentaires</li>
+                <li>Timeout configurable (72h)</li>
+                <li>Notifications email</li>
+                <li>Historique des decisions</li>
+            </ul>
+
+            <h3>Endpoints API</h3>
+            <div class="code-block">
+GET  /workflow/instances/pending
+POST /workflow/instances/{id}/approve
+POST /workflow/instances/{id}/reject
+            </div>
+        </div>
+        <div>
+            <h3>Niveaux type</h3>
+            <div class="architecture-box" style="font-size:0.85em;">
+Niveau 1: Manager direct
+    |
+    v
+Niveau 2: Chef departement
+    |
+    v
+Niveau 3: Proprietaire app
+    |
+    v
+Niveau 4: RSSI (si sensible)
+    |
+    v
+[EXECUTION]
+            </div>
+        </div>
+    </div>
+    <div class="slide-number">12 / 24</div>
+</div>
+
+<!-- SLIDE 13: FONCTIONNALITES - GROUPES LDAP -->
+<div class="slide">
+    <div class="header">
+        <h1>Fonctionnalites - Groupes LDAP</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <h2 class="status-complete">Gestion des Groupes LDAP - 100%</h2>
+
+    <div class="grid-2">
+        <div>
+            <h3>Fonctionnalites</h3>
+            <ul>
+                <li>Liste de tous les groupes LDAP</li>
+                <li>Visualisation des membres</li>
+                <li>Ajout de membres (avec autocomplete)</li>
+                <li>Suppression de membres</li>
+                <li>Support groupOfUniqueNames</li>
+            </ul>
+
+            <h3>Interface</h3>
+            <ul>
+                <li>Recherche utilisateurs temps reel</li>
+                <li>Autocompletion intelligente</li>
+                <li>Filtrage des OIDs MidPoint</li>
+            </ul>
+        </div>
+        <div>
+            <div style="background:#1e1e1e;border-radius:10px;padding:10px;border:2px solid #3282b8;overflow:hidden;">
+                <img src="screenshots/ldap-groups.png" alt="Groupes LDAP" style="width:100%;height:auto;border-radius:5px;">
+            </div>
+            <p style="font-size:0.8em;color:#888;text-align:center;margin-top:10px;">Interface Groupes LDAP</p>
+        </div>
+    </div>
+    <div class="slide-number">13 / 24</div>
+</div>
+
+<!-- SLIDE 14: FONCTIONNALITES - COMPARAISON LIVE -->
+<div class="slide">
+    <div class="header">
+        <h1>Fonctionnalites - Comparaison Live</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <h2 class="status-complete">Comparaison Temps Reel - 100%</h2>
+
+    <div class="grid-2">
+        <div>
+            <h3>Fonctionnalites</h3>
+            <ul>
+                <li>Statistiques live de chaque systeme</li>
+                <li>Comparaison croisee des populations</li>
+                <li>Detection des ecarts</li>
+                <li>Synchronisation Odoo -> MidPoint</li>
+                <li>Planification des syncs</li>
+            </ul>
+
+            <h3>Metriques affichees</h3>
+            <ul>
+                <li>Nombre utilisateurs par systeme</li>
+                <li>Utilisateurs communs vs orphelins</li>
+                <li>Etat derniere synchronisation</li>
+            </ul>
+        </div>
+        <div>
+            <div style="background:#1e1e1e;border-radius:10px;padding:10px;border:2px solid #3282b8;overflow:hidden;">
+                <img src="screenshots/comparaison-live.png" alt="Comparaison Live" style="width:100%;height:auto;border-radius:5px;">
+            </div>
+            <p style="font-size:0.8em;color:#888;text-align:center;margin-top:10px;">Interface Comparaison Live - Planification</p>
+        </div>
+    </div>
+    <div class="slide-number">14 / 24</div>
+</div>
+
+<!-- SLIDE 15: FONCTIONNALITES - AUDIT & IA -->
+<div class="slide">
+    <div class="header">
+        <h1>Fonctionnalites - Audit & IA</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <div class="grid-2">
+        <div>
+            <h2 class="status-complete">Audit & Logs - 100%</h2>
+            <ul>
+                <li>Logging structure (JSON)</li>
+                <li>Recherche full-text</li>
+                <li>Recherche semantique (Qdrant)</li>
+                <li>Filtrage par date, type, utilisateur</li>
+                <li>Export des rapports</li>
+            </ul>
+
+            <h3>Endpoints</h3>
+            <div class="code-block">
+POST /admin/audit/search
+GET  /admin/audit/recent
+            </div>
+        </div>
+        <div>
+            <h2 class="status-complete">Assistant IA - 100%</h2>
+            <ul>
+                <li>Chat avec GPT-4</li>
+                <li>Suggestions de regles</li>
+                <li>Aide au diagnostic d'erreurs</li>
+                <li>Generation de code connecteur</li>
+            </ul>
+
+            <h3>Endpoints</h3>
+            <div class="code-block">
+POST /ai/query
+POST /ai/suggest-mapping
+POST /ai/analyze-error
+            </div>
+        </div>
+    </div>
+    <div class="slide-number">15 / 24</div>
+</div>
+
+<!-- SLIDE 16: FONCTIONNALITES PARTIELLES -->
+<div class="slide">
+    <div class="header">
+        <h1>Fonctionnalites Partiellement Implementees</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <table>
+        <tr><th>Fonctionnalite</th><th>Progression</th><th>Reste a faire</th></tr>
+        <tr>
+            <td>Integration Keycloak</td>
+            <td>
+                <div class="progress-bar" style="width:200px;"><div class="progress-fill" style="width:70%;background:linear-gradient(90deg,#ff9800,#ffc107);"></div></div>
+                <span class="status-partial">70%</span>
+            </td>
+            <td>Sync groupes, mapping roles</td>
+        </tr>
+        <tr>
+            <td>Notifications Email</td>
+            <td>
+                <div class="progress-bar" style="width:200px;"><div class="progress-fill" style="width:50%;background:linear-gradient(90deg,#ff9800,#ffc107);"></div></div>
+                <span class="status-partial">50%</span>
+            </td>
+            <td>Templates HTML, personnalisation</td>
+        </tr>
+        <tr>
+            <td>Recherche Vectorielle</td>
+            <td>
+                <div class="progress-bar" style="width:200px;"><div class="progress-fill" style="width:80%;background:linear-gradient(90deg,#ff9800,#ffc107);"></div></div>
+                <span class="status-partial">80%</span>
+            </td>
+            <td>Rafraichissement auto embeddings</td>
+        </tr>
+        <tr>
+            <td>Rollback Complet</td>
+            <td>
+                <div class="progress-bar" style="width:200px;"><div class="progress-fill" style="width:60%;background:linear-gradient(90deg,#ff9800,#ffc107);"></div></div>
+                <span class="status-partial">60%</span>
+            </td>
+            <td>Nettoyage etats intermediaires</td>
+        </tr>
+        <tr>
+            <td>Versionnage Git Regles</td>
+            <td>
+                <div class="progress-bar" style="width:200px;"><div class="progress-fill" style="width:40%;background:linear-gradient(90deg,#ff9800,#ffc107);"></div></div>
+                <span class="status-partial">40%</span>
+            </td>
+            <td>Integration Git bare repo</td>
+        </tr>
+        <tr>
+            <td>Multi-langue UI</td>
+            <td>
+                <div class="progress-bar" style="width:200px;"><div class="progress-fill" style="width:10%;background:linear-gradient(90deg,#ff9800,#ffc107);"></div></div>
+                <span class="status-partial">10%</span>
+            </td>
+            <td>Traduction anglais, i18n React</td>
+        </tr>
+    </table>
+    <div class="slide-number">16 / 24</div>
+</div>
+
+<!-- SLIDE 17: FONCTIONNALITES A IMPLEMENTER -->
+<div class="slide">
+    <div class="header">
+        <h1>Fonctionnalites a Implementer</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <div class="grid-2">
+        <div>
+            <h2>Priorite Haute (Should)</h2>
+            <table style="font-size:0.9em;">
+                <tr><th>Fonctionnalite</th><th>Est.</th></tr>
+                <tr><td>Deploiement Kubernetes</td><td>8 pts</td></tr>
+                <tr><td>Masquage donnees PII (RGPD)</td><td>3 pts</td></tr>
+                <tr><td>Migration Alembic</td><td>5 pts</td></tr>
+            </table>
+
+            <h2 style="margin-top:20px;">Priorite Moyenne (Could)</h2>
+            <table style="font-size:0.9em;">
+                <tr><th>Fonctionnalite</th><th>Est.</th></tr>
+                <tr><td>Connecteur Firebase</td><td>8 pts</td></tr>
+                <tr><td>Connecteur GLPI</td><td>5 pts</td></tr>
+                <tr><td>Detection SoD</td><td>8 pts</td></tr>
+                <tr><td>App Mobile</td><td>21 pts</td></tr>
+            </table>
+        </div>
+        <div>
+            <h2>Won't (cette version)</h2>
+            <ul>
+                <li>Multi-tenancy (multi-organisations)</li>
+                <li>MFA Biometrique</li>
+                <li>Machine Learning (detection anomalies)</li>
+            </ul>
+
+            <div class="highlight-box" style="margin-top:30px;">
+                <h3>Estimation totale restante</h3>
+                <p><strong>~60 points</strong> pour fonctionnalites prioritaires</p>
+                <p>Soit environ 3 sprints supplementaires</p>
+            </div>
+        </div>
+    </div>
+    <div class="slide-number">17 / 24</div>
+</div>
+
+<!-- SLIDE 18: DIFFICULTES 1 -->
+<div class="slide">
+    <div class="header">
+        <h1>Difficultes Rencontrees (1/2)</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>1. Complexite de MidPoint</h3>
+            <p><strong>Probleme:</strong> XML complexe, concepts avances (shadows, projections)</p>
+            <p><strong>Solution:</strong> Abstraction via notre API REST simplifiee</p>
+            <p><strong>Apprentissage:</strong> Importance de l'encapsulation</p>
+        </div>
+        <div class="card">
+            <h3>2. Transactions Distribuees</h3>
+            <p><strong>Probleme:</strong> 1 operation = 4 systemes. Si un echoue?</p>
+            <p><strong>Solution:</strong> Pattern Saga avec compensations</p>
+            <p><strong>Apprentissage:</strong> ACID ne fonctionne pas en distribue</p>
+        </div>
+        <div class="card">
+            <h3>3. Securite Moteur Regles</h3>
+            <p><strong>Probleme:</strong> Jinja2 peut executer du code arbitraire</p>
+            <p><strong>Solution:</strong> SandboxedEnvironment + whitelist</p>
+            <p><strong>Apprentissage:</strong> Ne jamais faire confiance aux entrees</p>
+        </div>
+        <div class="card">
+            <h3>4. Synchronisation Temps Reel</h3>
+            <p><strong>Probleme:</strong> Coherence eventuelle entre systemes</p>
+            <p><strong>Solution:</strong> Cache invalidation + polling</p>
+            <p><strong>Apprentissage:</strong> CAP theorem en pratique</p>
+        </div>
+    </div>
+    <div class="slide-number">18 / 24</div>
+</div>
+
+<!-- SLIDE 19: DIFFICULTES 2 -->
+<div class="slide">
+    <div class="header">
+        <h1>Difficultes Rencontrees (2/2)</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>5. Mapping Attributs LDAP</h3>
+            <p><strong>Probleme:</strong> Schemas differents (uid vs sAMAccountName)</p>
+            <p><strong>Solution:</strong> Configuration mappings par connecteur</p>
+            <p><strong>Apprentissage:</strong> Standards != implementations</p>
+        </div>
+        <div class="card">
+            <h3>6. Couts & Latence IA</h3>
+            <p><strong>Probleme:</strong> Chaque requete OpenAI = $$ + latence</p>
+            <p><strong>Solution:</strong> Cache reponses, rate limiting</p>
+            <p><strong>Apprentissage:</strong> L'IA a un cout operationnel</p>
+        </div>
+        <div class="card">
+            <h3>7. Gestion des Secrets</h3>
+            <p><strong>Probleme:</strong> 20+ variables d'environnement sensibles</p>
+            <p><strong>Solution:</strong> Fichier .env + validation demarrage</p>
+            <p><strong>Apprentissage:</strong> Configuration != Code</p>
+        </div>
+        <div class="card">
+            <h3>8. Tests d'Integration</h3>
+            <p><strong>Probleme:</strong> Tester avec 15 services = complexe</p>
+            <p><strong>Solution:</strong> Mocks unitaires + env dedie integration</p>
+            <p><strong>Apprentissage:</strong> Pyramide des tests</p>
+        </div>
+    </div>
+    <div class="slide-number">19 / 24</div>
+</div>
+
+<!-- SLIDE 20: APPRENTISSAGES -->
+<div class="slide">
+    <div class="header">
+        <h1>Ce que nous avons appris</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <div class="grid-3">
+        <div class="card">
+            <h3>Competences Techniques</h3>
+            <ul>
+                <li>Architecture microservices</li>
+                <li>API REST avec FastAPI</li>
+                <li>React moderne (hooks)</li>
+                <li>Docker & orchestration</li>
+                <li>Securite (JWT, RBAC)</li>
+                <li>Bases de donnees</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Competences Projet</h3>
+            <ul>
+                <li>Gestion backlog Agile</li>
+                <li>Travail en binome</li>
+                <li>Documentation technique</li>
+                <li>Versionnage Git</li>
+                <li>Code review</li>
+                <li>Tests automatises</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Concepts IAM</h3>
+            <ul>
+                <li>Provisionnement identites</li>
+                <li>Reconciliation</li>
+                <li>Workflows approbation</li>
+                <li>Audit et conformite</li>
+                <li>RBAC / ABAC</li>
+                <li>SSO / OIDC</li>
+            </ul>
+        </div>
+    </div>
+    <div class="slide-number">20 / 24</div>
+</div>
+
+<!-- SLIDE 21: VIDEO DEMO -->
+<div class="slide">
+    <div class="header">
+        <h1>Demonstration Video</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <div class="grid-2">
+        <div>
+            <h2>Scenario 1: Creation Employe (5 min)</h2>
+            <ol>
+                <li>Creation dans Odoo (RH)</li>
+                <li>Synchronisation vers MidPoint</li>
+                <li>Attribution role "Employe Complet"</li>
+                <li>Verification compte LDAP cree</li>
+                <li>Ajout a un groupe LDAP</li>
+            </ol>
+
+            <h2>Scenario 2: Gestion Regles (3 min)</h2>
+            <ol>
+                <li>Visualisation regles existantes</li>
+                <li>Test regle avec donnees</li>
+                <li>Modification d'une regle</li>
+            </ol>
+        </div>
+        <div>
+            <h2>Scenario 3: Workflow (3 min)</h2>
+            <ol>
+                <li>Demande creation compte sensible</li>
+                <li>Notification manager</li>
+                <li>Approbation avec commentaire</li>
+                <li>Execution automatique</li>
+            </ol>
+
+            <h2>Scenario 4: Reconciliation (2 min)</h2>
+            <ol>
+                <li>Comparaison live des systemes</li>
+                <li>Detection compte orphelin</li>
+                <li>Resolution</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="highlight-box" style="text-align:center;margin-top:20px;">
+        <p style="font-size:1.3em;">[VIDEO DE DEMONSTRATION]</p>
+    </div>
+    <div class="slide-number">21 / 24</div>
+</div>
+
+<!-- SLIDE 22: ROADMAP -->
+<div class="slide">
+    <div class="header">
+        <h1>Roadmap Future</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <div class="grid-3">
+        <div class="card">
+            <h3>Court terme (1-2 mois)</h3>
+            <ul>
+                <li>Finaliser Keycloak</li>
+                <li>Templates email</li>
+                <li>Tests automatises</li>
+                <li>Documentation complete</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Moyen terme (3-6 mois)</h3>
+            <ul>
+                <li>Deploiement Kubernetes</li>
+                <li>Azure AD connector</li>
+                <li>Google Workspace</li>
+                <li>Dashboard analytics</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Long terme (6-12 mois)</h3>
+            <ul>
+                <li>Application mobile</li>
+                <li>Machine Learning</li>
+                <li>Multi-tenancy SaaS</li>
+                <li>Marketplace connecteurs</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="highlight-box" style="text-align:center;margin-top:30px;">
+        <h3>Vision</h3>
+        <p style="font-size:1.2em;">Devenir une plateforme IAM No-Code complete,<br>accessible aux PME sans experts MidPoint</p>
+    </div>
+    <div class="slide-number">22 / 24</div>
+</div>
+
+<!-- SLIDE 23: CONCLUSION -->
+<div class="slide">
+    <div class="header">
+        <h1>Conclusion</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <h2>Ce que nous avons realise</h2>
+    <p><strong>Objectif:</strong> Simplifier MidPoint avec une interface No-Code</p>
+    <p><strong>Resultat:</strong> Plateforme complete avec 12+ fonctionnalites operationnelles</p>
+
+    <div class="grid-3" style="margin-top:30px;">
+        <div class="metric-box">
+            <div class="metric-number">16,000+</div>
+            <div class="metric-label">Lignes Python (Backend)</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-number">5,000+</div>
+            <div class="metric-label">Lignes TypeScript (Frontend)</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-number">15</div>
+            <div class="metric-label">Services Docker</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-number">80+</div>
+            <div class="metric-label">Endpoints API REST</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-number">6</div>
+            <div class="metric-label">Connecteurs Systemes</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-number">14</div>
+            <div class="metric-label">Pages Frontend</div>
+        </div>
+    </div>
+
+    <div class="highlight-box" style="text-align:center;margin-top:30px;">
+        <h2 style="color:#bbe1fa;">Merci de votre attention!</h2>
+        <p style="font-size:1.3em;">Questions?</p>
+    </div>
+    <div class="slide-number">23 / 24</div>
+</div>
+
+<!-- SLIDE 24: ANNEXES -->
+<div class="slide">
+    <div class="header">
+        <h1>Annexes - Ressources</h1>
+        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    </div>
+
+    <div class="grid-2">
+        <div>
+            <h2>Acces au projet</h2>
+            <ul>
+                <li><strong>Code source:</strong> [Repository Git]</li>
+                <li><strong>Documentation:</strong> /docs/</li>
+                <li><strong>Video demo:</strong> [Lien video]</li>
+            </ul>
+
+            <h2>Technologies utilisees</h2>
+            <ul>
+                <li>MidPoint: evolveum.com/midpoint/</li>
+                <li>FastAPI: fastapi.tiangolo.com</li>
+                <li>React: react.dev</li>
+                <li>Docker: docker.com</li>
+            </ul>
+        </div>
+        <div>
+            <h2>Contact</h2>
+            <ul>
+                <li><strong>Zhmuryk Andrii:</strong> [email]</li>
+                <li><strong>Aydin Ibrahim:</strong> [email]</li>
+            </ul>
+
+            <h2>Remerciements</h2>
+            <ul>
+                <li>Professeur encadrant</li>
+                <li>Departement Informatique UPEC</li>
+                <li>Communaute Open Source</li>
+            </ul>
+
+            <div class="highlight-box" style="margin-top:20px;">
+                <p><strong>Projet realise dans le cadre du BUT Informatique 3eme annee</strong></p>
+                <p>Universite Paris-Est Creteil - 2025/2026</p>
+            </div>
+        </div>
+    </div>
+    <div class="slide-number">24 / 24</div>
+</div>
+
+</body>
+</html>

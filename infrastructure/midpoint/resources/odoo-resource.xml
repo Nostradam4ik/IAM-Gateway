@@ -3,14 +3,14 @@
     MidPoint Resource: Odoo ERP (via Database)
 
     This resource connects MidPoint to Odoo's PostgreSQL database directly.
-    We use the DatabaseTable connector to manage res_partner table.
-
-    Note: For production, consider using Odoo's XML-RPC API via REST connector.
-    Direct database access is simpler but bypasses Odoo's business logic.
+    We use the DatabaseTable connector to manage a custom iam_users table.
 
     Connection: odoo-db:5432 (inside Docker network)
     Database: odoo
-    Table: res_partner
+    Table: iam_users (custom table for IAM integration)
+
+    IMPORTANT: keyColumn is 'username' which is a unique VARCHAR field (PRIMARY KEY).
+    This avoids auto-increment ID issues with the DatabaseTable connector.
 -->
 <resource xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
           xmlns:q="http://prism.evolveum.com/xml/ns/public/query-3"
@@ -21,7 +21,7 @@
           oid="10000000-0000-0000-0000-000000000002">
 
     <name>Odoo ERP</name>
-    <description>Odoo ERP system - contacts via database connector</description>
+    <description>Odoo ERP system - IAM users via database connector</description>
 
     <!-- DatabaseTable Connector Reference -->
     <connectorRef type="ConnectorType">
@@ -49,9 +49,10 @@
             <icscdbtable:jdbcDriver>org.postgresql.Driver</icscdbtable:jdbcDriver>
             <icscdbtable:jdbcUrlTemplate>jdbc:postgresql://%h:%p/%d</icscdbtable:jdbcUrlTemplate>
 
-            <!-- Table configuration for res_partner (contacts) -->
-            <icscdbtable:table>res_partner</icscdbtable:table>
-            <icscdbtable:keyColumn>id</icscdbtable:keyColumn>
+            <!-- Table configuration for iam_users -->
+            <icscdbtable:table>iam_users</icscdbtable:table>
+            <!-- Use username as the key column - it's VARCHAR PRIMARY KEY -->
+            <icscdbtable:keyColumn>username</icscdbtable:keyColumn>
             <icscdbtable:allNative>true</icscdbtable:allNative>
             <icscdbtable:nativeTimestamps>true</icscdbtable:nativeTimestamps>
             <icscdbtable:rethrowAllSQLExceptions>true</icscdbtable:rethrowAllSQLExceptions>
@@ -59,5 +60,140 @@
         </icfc:configurationProperties>
     </connectorConfiguration>
 
-    <!-- Let MidPoint discover schema automatically, then add schemaHandling later -->
+    <!-- Schema Handling - Map MidPoint users to Odoo iam_users table -->
+    <schemaHandling>
+        <objectType>
+            <kind>account</kind>
+            <intent>default</intent>
+            <displayName>Odoo IAM User</displayName>
+            <default>true</default>
+            <objectClass>ri:AccountObjectClass</objectClass>
+
+            <!-- icfs:name - Username as the identifier -->
+            <attribute>
+                <ref>icfs:name</ref>
+                <displayName>Username</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>name</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Email -->
+            <attribute>
+                <ref>ri:email</ref>
+                <displayName>Email</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>emailAddress</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Full Name -->
+            <attribute>
+                <ref>ri:full_name</ref>
+                <displayName>Full Name</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <source>
+                        <path>fullName</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Phone -->
+            <attribute>
+                <ref>ri:phone</ref>
+                <displayName>Phone</displayName>
+                <outbound>
+                    <strength>weak</strength>
+                    <source>
+                        <path>telephoneNumber</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Department -->
+            <attribute>
+                <ref>ri:department</ref>
+                <displayName>Department</displayName>
+                <outbound>
+                    <strength>weak</strength>
+                    <source>
+                        <path>organizationalUnit</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Job Title -->
+            <attribute>
+                <ref>ri:job_title</ref>
+                <displayName>Job Title</displayName>
+                <outbound>
+                    <strength>weak</strength>
+                    <source>
+                        <path>title</path>
+                    </source>
+                </outbound>
+            </attribute>
+
+            <!-- Active status -->
+            <attribute>
+                <ref>ri:active</ref>
+                <displayName>Active</displayName>
+                <outbound>
+                    <strength>strong</strength>
+                    <expression>
+                        <value>true</value>
+                    </expression>
+                </outbound>
+            </attribute>
+
+            <!-- Activation handling -->
+            <activation>
+                <administrativeStatus>
+                    <outbound>
+                        <strength>strong</strength>
+                    </outbound>
+                </administrativeStatus>
+            </activation>
+        </objectType>
+    </schemaHandling>
+
+    <!-- Synchronization: Odoo -> MidPoint (optional, for reconciliation) -->
+    <synchronization>
+        <objectSynchronization>
+            <kind>account</kind>
+            <intent>default</intent>
+            <enabled>true</enabled>
+            <correlation>
+                <q:equal>
+                    <q:path>name</q:path>
+                    <q:expression>
+                        <path>$account/attributes/icfs:name</path>
+                    </q:expression>
+                </q:equal>
+            </correlation>
+            <reaction>
+                <situation>linked</situation>
+                <synchronize>true</synchronize>
+            </reaction>
+            <reaction>
+                <situation>unlinked</situation>
+                <action>
+                    <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/action-3#link</handlerUri>
+                </action>
+            </reaction>
+            <reaction>
+                <situation>unmatched</situation>
+                <action>
+                    <handlerUri>http://midpoint.evolveum.com/xml/ns/public/model/action-3#addFocus</handlerUri>
+                </action>
+            </reaction>
+        </objectSynchronization>
+    </synchronization>
 </resource>
