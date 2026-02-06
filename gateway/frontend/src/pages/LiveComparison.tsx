@@ -8,6 +8,7 @@ import {
   checkSystemsHealth,
   compareOdooMidpoint,
   syncOdooToMidpoint,
+  syncOdooToMidpointWithApproval,
   getScheduledJobs,
   createDailySync,
   createIntervalSync,
@@ -40,6 +41,8 @@ import {
   Trash2,
   Plus,
   History,
+  Shield,
+  Mail,
 } from 'lucide-react'
 
 export default function LiveComparison() {
@@ -47,6 +50,9 @@ export default function LiveComparison() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'stats' | 'compare' | 'odoo' | 'search' | 'sync' | 'schedule'>('stats')
   const [selectedEmployees, setSelectedEmployees] = useState<number[]>([])
+  const [syncWithApproval, setSyncWithApproval] = useState(false)
+  const [managerEmail, setManagerEmail] = useState('')
+  const [workflowType, setWorkflowType] = useState<'full' | 'manager_only' | 'rh_it'>('full')
   const [showAddJobModal, setShowAddJobModal] = useState(false)
   const [newJobType, setNewJobType] = useState<'daily' | 'interval' | 'multi'>('daily')
   const [newJobConfig, setNewJobConfig] = useState({
@@ -98,12 +104,24 @@ export default function LiveComparison() {
     enabled: activeTab === 'sync',
   })
 
-  // Sync mutation
+  // Sync mutation (direct)
   const syncMutation = useMutation({
     mutationFn: (employeeIds?: number[]) => syncOdooToMidpoint(employeeIds),
     onSuccess: () => {
       refetchOdooMidpoint()
       setSelectedEmployees([])
+    },
+  })
+
+  // Sync mutation with approval workflow
+  const syncWithApprovalMutation = useMutation({
+    mutationFn: (data: { employee_ids?: number[], manager_email: string, workflow_type: 'full' | 'manager_only' | 'rh_it' }) =>
+      syncOdooToMidpointWithApproval(data),
+    onSuccess: () => {
+      refetchOdooMidpoint()
+      setSelectedEmployees([])
+      setManagerEmail('')
+      setSyncWithApproval(false)
     },
   })
 
@@ -799,31 +817,164 @@ export default function LiveComparison() {
                 <p className="text-gray-500 text-sm">Synchronisez les employes Odoo vers MidPoint</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => refetchOdooMidpoint()}
-                disabled={odooMidpointLoading}
-                className="btn-secondary flex items-center gap-2"
-              >
-                <RefreshCw className={`w-4 h-4 ${odooMidpointLoading ? 'animate-spin' : ''}`} />
-                Actualiser
-              </button>
-              <button
-                onClick={() => syncMutation.mutate(selectedEmployees.length > 0 ? selectedEmployees : undefined)}
-                disabled={syncMutation.isPending}
-                className="btn-primary flex items-center gap-2"
-              >
-                {syncMutation.isPending ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
+            <button
+              onClick={() => refetchOdooMidpoint()}
+              disabled={odooMidpointLoading}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${odooMidpointLoading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </button>
+          </div>
+
+          {/* Mode de synchronisation */}
+          <div className="card border-2 border-blue-200 bg-blue-50/30">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-blue-600" />
+              Mode de Synchronisation
+            </h3>
+
+            <div className="space-y-4">
+              {/* Toggle approbation */}
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="syncMode"
+                    checked={!syncWithApproval}
+                    onChange={() => setSyncWithApproval(false)}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <div>
+                    <span className="font-medium">Synchronisation Directe</span>
+                    <p className="text-sm text-gray-500">Creation immediate des comptes MidPoint</p>
+                  </div>
+                </label>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="syncMode"
+                    checked={syncWithApproval}
+                    onChange={() => setSyncWithApproval(true)}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <div>
+                    <span className="font-medium">Avec Workflow d'Approbation</span>
+                    <p className="text-sm text-gray-500">Approbation multi-niveaux avant creation</p>
+                  </div>
+                </label>
+              </div>
+
+              {/* Options d'approbation */}
+              {syncWithApproval && (
+                <div className="mt-4 p-4 bg-white rounded-lg border border-blue-200 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <Mail className="w-4 h-4 inline mr-1" />
+                      Email du Manager (premier approbateur)
+                    </label>
+                    <input
+                      type="email"
+                      value={managerEmail}
+                      onChange={(e) => setManagerEmail(e.target.value)}
+                      placeholder="manager@entreprise.com"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Type de workflow
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => setWorkflowType('full')}
+                        className={`p-3 rounded-lg border text-sm transition-colors ${
+                          workflowType === 'full'
+                            ? 'bg-blue-500 text-white border-blue-500'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-300'
+                        }`}
+                      >
+                        <div className="font-medium">Complet</div>
+                        <div className="text-xs opacity-75 mt-1">Manager → RH → IT</div>
+                      </button>
+                      <button
+                        onClick={() => setWorkflowType('manager_only')}
+                        className={`p-3 rounded-lg border text-sm transition-colors ${
+                          workflowType === 'manager_only'
+                            ? 'bg-blue-500 text-white border-blue-500'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-300'
+                        }`}
+                      >
+                        <div className="font-medium">Manager seul</div>
+                        <div className="text-xs opacity-75 mt-1">1 niveau</div>
+                      </button>
+                      <button
+                        onClick={() => setWorkflowType('rh_it')}
+                        className={`p-3 rounded-lg border text-sm transition-colors ${
+                          workflowType === 'rh_it'
+                            ? 'bg-blue-500 text-white border-blue-500'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-300'
+                        }`}
+                      >
+                        <div className="font-medium">RH + IT</div>
+                        <div className="text-xs opacity-75 mt-1">2 niveaux</div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm">
+                    <p className="text-yellow-800">
+                      <strong>Info:</strong> Les approbateurs recevront un email avec un lien securise pour approuver ou rejeter la demande.
+                      Le compte MidPoint sera cree automatiquement apres approbation complete.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Boutons d'action */}
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                {syncWithApproval ? (
+                  <button
+                    onClick={() => syncWithApprovalMutation.mutate({
+                      employee_ids: selectedEmployees.length > 0 ? selectedEmployees : undefined,
+                      manager_email: managerEmail,
+                      workflow_type: workflowType
+                    })}
+                    disabled={syncWithApprovalMutation.isPending || !managerEmail.trim()}
+                    className="btn-primary flex items-center gap-2"
+                  >
+                    {syncWithApprovalMutation.isPending ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Shield className="w-4 h-4" />
+                    )}
+                    {selectedEmployees.length > 0
+                      ? `Demander approbation (${selectedEmployees.length})`
+                      : 'Demander approbation pour tous'}
+                  </button>
                 ) : (
-                  <Upload className="w-4 h-4" />
+                  <button
+                    onClick={() => syncMutation.mutate(selectedEmployees.length > 0 ? selectedEmployees : undefined)}
+                    disabled={syncMutation.isPending}
+                    className="btn-primary flex items-center gap-2"
+                  >
+                    {syncMutation.isPending ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    {selectedEmployees.length > 0 ? `Synchroniser (${selectedEmployees.length})` : 'Synchroniser tout'}
+                  </button>
                 )}
-                {selectedEmployees.length > 0 ? `Synchroniser (${selectedEmployees.length})` : 'Synchroniser tout'}
-              </button>
+              </div>
             </div>
           </div>
 
-          {/* Sync Result */}
+          {/* Sync Result - Direct */}
           {syncMutation.data && (
             <div className="card bg-green-50 border-green-200">
               <h3 className="font-semibold text-green-800 mb-2">Synchronisation terminee</h3>
@@ -850,6 +1001,46 @@ export default function LiveComparison() {
                   {syncMutation.data.results.map((r: any, i: number) => (
                     <div key={i} className={`text-sm py-1 ${r.status === 'created' ? 'text-green-700' : r.status === 'error' ? 'text-red-700' : 'text-yellow-700'}`}>
                       {r.name}: {r.status} {r.error && `- ${r.error}`}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Sync Result - With Approval */}
+          {syncWithApprovalMutation.data && (
+            <div className="card bg-blue-50 border-blue-200">
+              <h3 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                Workflows d'approbation crees
+              </h3>
+              <div className="grid grid-cols-3 gap-4 text-center mb-4">
+                <div>
+                  <div className="text-2xl font-bold text-gray-700">{syncWithApprovalMutation.data.summary?.total || 0}</div>
+                  <p className="text-xs text-gray-500">Total</p>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">{syncWithApprovalMutation.data.summary?.workflows_created || 0}</div>
+                  <p className="text-xs text-gray-500">Workflows crees</p>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-red-600">{syncWithApprovalMutation.data.summary?.errors || 0}</div>
+                  <p className="text-xs text-gray-500">Erreurs</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg p-3 border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <strong>Prochaine etape:</strong> Un email a ete envoye a <strong>{syncWithApprovalMutation.data.summary?.first_approver}</strong> pour
+                  demarrer le processus d'approbation. Suivez les workflows dans l'onglet <strong>Workflows</strong>.
+                </p>
+              </div>
+              {syncWithApprovalMutation.data.workflows?.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-blue-200 max-h-40 overflow-y-auto">
+                  {syncWithApprovalMutation.data.workflows.map((w: any, i: number) => (
+                    <div key={i} className="text-sm py-1 text-blue-700 flex items-center gap-2">
+                      <Shield className="w-3 h-3" />
+                      {w.employee_name}: Workflow #{w.workflow_id?.substring(0, 8)}... ({w.levels} niveaux)
                     </div>
                   ))}
                 </div>
@@ -1014,6 +1205,12 @@ export default function LiveComparison() {
           {syncMutation.isError && (
             <div className="card bg-red-50 border-red-200">
               <p className="text-red-600">Erreur lors de la synchronisation: {(syncMutation.error as any)?.message}</p>
+            </div>
+          )}
+
+          {syncWithApprovalMutation.isError && (
+            <div className="card bg-red-50 border-red-200">
+              <p className="text-red-600">Erreur lors de la creation des workflows: {(syncWithApprovalMutation.error as any)?.message}</p>
             </div>
           )}
         </div>

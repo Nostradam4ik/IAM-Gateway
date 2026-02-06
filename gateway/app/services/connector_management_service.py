@@ -11,7 +11,7 @@ import structlog
 from sqlalchemy import text
 
 from app.models.connector import (
-    ConnectorType, ConnectorSubtype, HealthStatus,
+    ConnectorType, ConnectorSubtype, HealthStatus, MidPointSyncStatus,
     ConnectorCreate, ConnectorUpdate, ConnectorResponse,
     ConnectorListResponse, ConnectorTestResult, ConnectorTypeInfo,
     CONNECTOR_CONFIG_SCHEMAS, CONNECTOR_TYPE_SUBTYPES, CONNECTOR_TYPE_INFO
@@ -48,7 +48,10 @@ class ConnectorManagementService:
         is_active: Optional[bool] = None
     ) -> List[ConnectorListResponse]:
         """Liste tous les connecteurs."""
-        query = "SELECT id, name, connector_type, connector_subtype, display_name, description, is_active, configuration, last_health_status, last_health_check FROM connector_configurations WHERE 1=1"
+        query = """SELECT id, name, connector_type, connector_subtype, display_name, description,
+                   is_active, configuration, last_health_status, last_health_check,
+                   midpoint_resource_oid, midpoint_sync_status
+                   FROM connector_configurations WHERE 1=1"""
         params = {}
 
         if connector_type:
@@ -71,7 +74,7 @@ class ConnectorManagementService:
             masked_config = self._mask_credentials(config, subtype)
 
             connectors.append(ConnectorListResponse(
-                id=row[0],
+                id=str(row[0]),
                 name=row[1],
                 connector_type=ConnectorType(row[2]),
                 connector_subtype=subtype,
@@ -80,7 +83,9 @@ class ConnectorManagementService:
                 is_active=row[6],
                 configuration=masked_config,
                 last_health_status=HealthStatus(row[8]) if row[8] else HealthStatus.UNKNOWN,
-                last_health_check=row[9]
+                last_health_check=row[9],
+                midpoint_resource_oid=row[10],
+                midpoint_sync_status=MidPointSyncStatus(row[11]) if row[11] else MidPointSyncStatus.NOT_SYNCED
             ))
 
         return connectors
@@ -90,7 +95,8 @@ class ConnectorManagementService:
         result = await self.session.execute(text("""
             SELECT id, name, connector_type, connector_subtype, display_name, description,
                    is_active, configuration, last_health_status, last_health_check,
-                   last_health_error, created_at, updated_at, created_by
+                   last_health_error, created_at, updated_at, created_by,
+                   midpoint_resource_oid, midpoint_sync_status, midpoint_last_sync, midpoint_sync_error
             FROM connector_configurations
             WHERE id = :id
         """), {"id": connector_id})
@@ -104,7 +110,7 @@ class ConnectorManagementService:
         masked_config = self._mask_credentials(config, subtype)
 
         return ConnectorResponse(
-            id=row[0],
+            id=str(row[0]),
             name=row[1],
             connector_type=ConnectorType(row[2]),
             connector_subtype=subtype,
@@ -117,7 +123,11 @@ class ConnectorManagementService:
             last_health_error=row[10],
             created_at=row[11],
             updated_at=row[12],
-            created_by=row[13]
+            created_by=row[13],
+            midpoint_resource_oid=row[14],
+            midpoint_sync_status=MidPointSyncStatus(row[15]) if row[15] else MidPointSyncStatus.NOT_SYNCED,
+            midpoint_last_sync=row[16],
+            midpoint_sync_error=row[17]
         )
 
     async def get_connector_config(self, connector_id: str) -> Optional[Dict[str, Any]]:
@@ -511,6 +521,36 @@ class ConnectorManagementService:
             "error": error
         })
         await self.session.commit()
+
+    async def update_midpoint_sync_status(
+        self,
+        connector_id: str,
+        resource_oid: Optional[str],
+        sync_status: MidPointSyncStatus,
+        error: Optional[str] = None
+    ) -> None:
+        """Met a jour le statut de synchronisation MidPoint d'un connecteur."""
+        await self.session.execute(text("""
+            UPDATE connector_configurations
+            SET midpoint_resource_oid = :resource_oid,
+                midpoint_sync_status = :sync_status,
+                midpoint_last_sync = :last_sync,
+                midpoint_sync_error = :error
+            WHERE id = :id
+        """), {
+            "id": connector_id,
+            "resource_oid": resource_oid,
+            "sync_status": sync_status.value,
+            "last_sync": datetime.utcnow(),
+            "error": error
+        })
+        await self.session.commit()
+        logger.info(
+            "MidPoint sync status updated",
+            connector_id=connector_id,
+            resource_oid=resource_oid,
+            sync_status=sync_status.value
+        )
 
     def get_connector_types(self) -> List[ConnectorTypeInfo]:
         """Retourne la liste des types de connecteurs disponibles."""

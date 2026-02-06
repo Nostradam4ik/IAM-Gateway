@@ -139,6 +139,11 @@ export const rejectWorkflow = async (instanceId: string, comments: string) => {
   return response.data
 }
 
+export const getWorkflowDetails = async (instanceId: string) => {
+  const response = await api.get(`/workflow/instances/${instanceId}/details`)
+  return response.data
+}
+
 // Reconciliation
 export const startReconciliation = async (targetSystems?: string[], fullSync?: boolean) => {
   const response = await api.post('/reconcile/start', {
@@ -292,6 +297,20 @@ export const syncOdooToMidpoint = async (employeeIds?: number[]) => {
   return response.data
 }
 
+export const syncOdooToMidpointWithApproval = async (data: {
+  employee_ids?: number[]
+  manager_email: string
+  workflow_type?: 'full' | 'manager_only' | 'rh_it'
+}) => {
+  const response = await api.post('/live/sync/odoo-to-midpoint/with-approval', data)
+  return response.data
+}
+
+export const executeApprovedSync = async (workflowId: string) => {
+  const response = await api.post(`/live/sync/execute-approved/${workflowId}`)
+  return response.data
+}
+
 // ==================== Scheduler / Planification ====================
 
 export const getScheduledJobs = async () => {
@@ -419,6 +438,7 @@ export const createConnector = async (data: {
   description?: string
   configuration: Record<string, any>
   is_active?: boolean
+  auto_create_in_midpoint?: boolean
 }) => {
   const response = await api.post('/connectors/', data)
   return response.data
@@ -465,6 +485,33 @@ export const runHealthChecks = async () => {
 
 export const getConnectorsHealth = async () => {
   const response = await api.get('/connectors/health')
+  return response.data
+}
+
+// ==================== Connector MidPoint Sync ====================
+
+export const syncConnectorToMidpoint = async (id: string) => {
+  const response = await api.post(`/connectors/${id}/sync-to-midpoint`)
+  return response.data
+}
+
+export const getConnectorMidpointStatus = async (id: string) => {
+  const response = await api.get(`/connectors/${id}/midpoint-status`)
+  return response.data
+}
+
+export const testMidpointResource = async (id: string) => {
+  const response = await api.post(`/connectors/${id}/test-midpoint-resource`)
+  return response.data
+}
+
+export const deleteMidpointResource = async (id: string) => {
+  const response = await api.delete(`/connectors/${id}/midpoint-resource`)
+  return response.data
+}
+
+export const listMidpointResources = async () => {
+  const response = await api.get('/connectors/midpoint/resources')
   return response.data
 }
 
@@ -556,6 +603,123 @@ export const getMidpointUserShadows = async (userId: string) => {
 // Health
 export const getMidpointHealth = async () => {
   const response = await api.get('/midpoint/health')
+  return response.data
+}
+
+// ==================== Account Activation/Deactivation ====================
+
+export const disableUserAccount = async (username: string, systems?: string[]) => {
+  const params = systems ? { systems } : {}
+  const response = await api.post(`/live/account/${username}/disable`, null, { params })
+  return response.data
+}
+
+export const enableUserAccount = async (username: string, systems?: string[]) => {
+  const params = systems ? { systems } : {}
+  const response = await api.post(`/live/account/${username}/enable`, null, { params })
+  return response.data
+}
+
+// ==================== Contract Management ====================
+
+export const getExpiredContracts = async () => {
+  const response = await api.get('/live/contracts/expired')
+  return response.data
+}
+
+export const getExpiringContracts = async (days?: number) => {
+  const params = days ? { days } : {}
+  const response = await api.get('/live/contracts/expiring', { params })
+  return response.data
+}
+
+export const getOdooEmployeesWithContracts = async () => {
+  const response = await api.get('/live/odoo/employees-with-contracts')
+  return response.data
+}
+
+// ==================== Contract Check Scheduler ====================
+
+export const createContractCheck = async (data: {
+  job_id: string
+  hour?: number
+  minute?: number
+  enabled?: boolean
+}) => {
+  const response = await api.post('/scheduler/jobs/contract-check', data)
+  return response.data
+}
+
+// ==================== User Management ====================
+
+export interface GatewayUser {
+  id: string
+  username: string
+  email: string
+  full_name: string | null
+  role: string
+  roles: string[]
+  is_active: boolean
+  created_at: string | null
+  last_login: string | null
+}
+
+export interface ApprovalRole {
+  name: string
+  display_name: string
+  description: string
+  level: number
+  category: 'access' | 'approval'
+}
+
+export const listGatewayUsers = async () => {
+  const response = await api.get('/users/')
+  return response.data as GatewayUser[]
+}
+
+export const getGatewayUser = async (username: string) => {
+  const response = await api.get(`/users/${username}`)
+  return response.data as GatewayUser
+}
+
+export const createGatewayUser = async (data: {
+  username: string
+  email: string
+  password: string
+  full_name?: string
+  roles?: string[]
+}) => {
+  const response = await api.post('/users/', data)
+  return response.data as GatewayUser
+}
+
+export const updateUserRoles = async (username: string, roles: string[]) => {
+  const response = await api.put(`/users/${username}/roles`, roles)
+  return response.data
+}
+
+export const deleteGatewayUser = async (username: string) => {
+  const response = await api.delete(`/users/${username}`)
+  return response.data
+}
+
+export const getAvailableRoles = async () => {
+  const response = await api.get('/users/roles')
+  return response.data as ApprovalRole[]
+}
+
+export const getUsersByRole = async (role: string) => {
+  const response = await api.get(`/users/by-role/${role}`)
+  return response.data as GatewayUser[]
+}
+
+export const getEmailsByRole = async (role: string) => {
+  const response = await api.get(`/users/emails-by-role/${role}`)
+  return response.data as { role: string; count: number; emails: string[] }
+}
+
+export const getApprovalChain = async (workflowType: 'full' | 'manager_only' | 'rh_it') => {
+  const response = await api.get(`/users/approval-chain/${workflowType}`)
   return response.data
 }
 

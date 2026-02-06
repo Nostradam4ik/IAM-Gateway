@@ -488,6 +488,10 @@ class OdooConnector(BaseConnector):
 
             result = []
             for emp in employees:
+                # Normalize department name for mapping
+                dept_name = emp['department_id'][1] if emp.get('department_id') else None
+                dept_normalized = self._normalize_department(dept_name) if dept_name else None
+
                 result.append({
                     "id": emp['id'],
                     "name": emp['name'],
@@ -495,7 +499,8 @@ class OdooConnector(BaseConnector):
                     "phone": emp.get('work_phone'),
                     "mobile": emp.get('mobile_phone'),
                     "job_title": emp.get('job_title'),
-                    "department": emp['department_id'][1] if emp.get('department_id') else None,
+                    "department": dept_name,
+                    "department_normalized": dept_normalized,
                     "department_id": emp['department_id'][0] if emp.get('department_id') else None,
                     "user_id": emp['user_id'][0] if emp.get('user_id') else None,
                     "active": emp.get('active', True)
@@ -506,6 +511,64 @@ class OdooConnector(BaseConnector):
         except Exception as e:
             logger.error("Failed to list Odoo employees", error=str(e))
             return []
+
+    def _normalize_department(self, department: str) -> str:
+        """Normalize department name for role/group mapping."""
+        if not department:
+            return "default"
+
+        dept_lower = department.lower().strip()
+
+        # Mapping of department variations to normalized names
+        mappings = {
+            # IT / Informatique variations
+            "it": "it", "informatique": "it", "information technology": "it",
+            "systemes d'information": "it", "si": "it", "dsi": "it",
+            "developpement": "it", "development": "it",
+            # HR / RH variations
+            "hr": "hr", "rh": "hr", "human resources": "hr",
+            "ressources humaines": "hr", "personnel": "hr",
+            # Finance / Comptabilite variations
+            "finance": "finance", "comptabilite": "finance",
+            "accounting": "finance", "comptable": "finance",
+            "tresorerie": "finance", "treasury": "finance",
+            # Sales / Commercial variations
+            "sales": "sales", "ventes": "sales", "commercial": "sales",
+            "commerciaux": "sales", "business development": "sales",
+            # Marketing / Communication variations
+            "marketing": "marketing", "communication": "marketing",
+            "publicite": "marketing", "advertising": "marketing",
+            # Management / Direction variations
+            "management": "management", "direction": "management",
+            "executive": "management", "direction generale": "management",
+            "administration": "management",
+            # R&D / Recherche variations
+            "r&d": "rd", "rd": "rd", "recherche": "rd", "research": "rd",
+            "recherche et developpement": "rd", "innovation": "rd",
+            # Support / Helpdesk variations
+            "support": "support", "helpdesk": "support", "assistance": "support",
+            "service client": "support", "customer service": "support",
+            # Juridique / Legal variations
+            "juridique": "juridique", "legal": "juridique",
+            "contentieux": "juridique", "conformite": "juridique",
+            # Production / Operations variations
+            "production": "production", "operations": "production",
+            "fabrication": "production", "manufacturing": "production",
+            # Qualite variations
+            "qualite": "qualite", "quality": "qualite",
+            "controle qualite": "qualite", "qc": "qualite",
+            # Logistique variations
+            "logistique": "logistique", "logistics": "logistique",
+            "supply chain": "logistique", "approvisionnement": "logistique",
+            # Achats variations
+            "achats": "achats", "purchasing": "achats", "procurement": "achats",
+        }
+
+        for key, value in mappings.items():
+            if key in dept_lower:
+                return value
+
+        return dept_lower.replace(" ", "-")
 
     async def get_employee(self, employee_id: int) -> Optional[Dict[str, Any]]:
         """Get a specific Odoo employee by ID."""
@@ -521,7 +584,7 @@ class OdooConnector(BaseConnector):
 
             if employees:
                 emp = employees[0]
-                return {
+                result = {
                     "id": emp['id'],
                     "name": emp['name'],
                     "email": emp.get('work_email'),
@@ -533,8 +596,174 @@ class OdooConnector(BaseConnector):
                     "user_id": emp['user_id'][0] if emp.get('user_id') else None,
                     "active": emp.get('active', True)
                 }
+
+                # Get contract info
+                contract = await self.get_employee_contract(emp['id'])
+                if contract:
+                    result["contract"] = contract
+
+                return result
             return None
 
         except Exception as e:
             logger.error("Failed to get Odoo employee", error=str(e), employee_id=employee_id)
             return None
+
+    async def get_employee_contract(self, employee_id: int) -> Optional[Dict[str, Any]]:
+        """Get active contract for an employee."""
+        try:
+            contracts = self._execute(
+                'hr.contract', 'search_read',
+                [[('employee_id', '=', employee_id), ('state', '=', 'open')]],
+                {'fields': [
+                    'id', 'name', 'date_start', 'date_end', 'state',
+                    'contract_type_id', 'wage'
+                ], 'limit': 1}
+            )
+
+            if contracts:
+                contract = contracts[0]
+                return {
+                    "id": contract['id'],
+                    "name": contract['name'],
+                    "date_start": contract.get('date_start'),
+                    "date_end": contract.get('date_end'),
+                    "state": contract.get('state'),
+                    "type": contract['contract_type_id'][1] if contract.get('contract_type_id') else None,
+                    "type_id": contract['contract_type_id'][0] if contract.get('contract_type_id') else None,
+                }
+            return None
+
+        except Exception as e:
+            logger.warning("Failed to get employee contract", error=str(e), employee_id=employee_id)
+            return None
+
+    async def list_employees_with_contracts(self) -> List[Dict[str, Any]]:
+        """List all employees with their contract information."""
+        try:
+            employees = await self.list_employees()
+
+            # Get all active contracts
+            contracts = self._execute(
+                'hr.contract', 'search_read',
+                [[('state', 'in', ['draft', 'open'])]],
+                {'fields': [
+                    'id', 'name', 'employee_id', 'date_start', 'date_end',
+                    'state', 'contract_type_id'
+                ]}
+            )
+
+            # Map contracts by employee_id
+            contracts_by_employee = {}
+            for contract in contracts:
+                emp_id = contract['employee_id'][0] if contract.get('employee_id') else None
+                if emp_id:
+                    contracts_by_employee[emp_id] = {
+                        "id": contract['id'],
+                        "name": contract['name'],
+                        "date_start": contract.get('date_start'),
+                        "date_end": contract.get('date_end'),
+                        "state": contract.get('state'),
+                        "type": contract['contract_type_id'][1] if contract.get('contract_type_id') else None,
+                    }
+
+            # Merge contracts with employees
+            for emp in employees:
+                emp["contract"] = contracts_by_employee.get(emp["id"])
+
+            return employees
+
+        except Exception as e:
+            logger.error("Failed to list employees with contracts", error=str(e))
+            return []
+
+    async def get_expired_contracts(self) -> List[Dict[str, Any]]:
+        """Get employees with expired contracts (date_end < today)."""
+        from datetime import date
+
+        try:
+            today = date.today().isoformat()
+
+            # Find contracts that have expired
+            expired_contracts = self._execute(
+                'hr.contract', 'search_read',
+                [[('date_end', '<', today), ('state', '=', 'open')]],
+                {'fields': [
+                    'id', 'name', 'employee_id', 'date_start', 'date_end',
+                    'state', 'contract_type_id'
+                ]}
+            )
+
+            result = []
+            for contract in expired_contracts:
+                emp_id = contract['employee_id'][0] if contract.get('employee_id') else None
+                if emp_id:
+                    emp = await self.get_employee(emp_id)
+                    if emp:
+                        result.append({
+                            "employee": emp,
+                            "contract": {
+                                "id": contract['id'],
+                                "name": contract['name'],
+                                "date_start": contract.get('date_start'),
+                                "date_end": contract.get('date_end'),
+                                "type": contract['contract_type_id'][1] if contract.get('contract_type_id') else None,
+                            }
+                        })
+
+            return result
+
+        except Exception as e:
+            logger.error("Failed to get expired contracts", error=str(e))
+            return []
+
+    async def get_expiring_contracts(self, days: int = 30) -> List[Dict[str, Any]]:
+        """Get employees with contracts expiring within X days."""
+        from datetime import date, timedelta
+
+        try:
+            today = date.today()
+            future_date = (today + timedelta(days=days)).isoformat()
+            today_str = today.isoformat()
+
+            # Find contracts expiring soon
+            expiring_contracts = self._execute(
+                'hr.contract', 'search_read',
+                [[
+                    ('date_end', '>=', today_str),
+                    ('date_end', '<=', future_date),
+                    ('state', '=', 'open')
+                ]],
+                {'fields': [
+                    'id', 'name', 'employee_id', 'date_start', 'date_end',
+                    'state', 'contract_type_id'
+                ]}
+            )
+
+            result = []
+            for contract in expiring_contracts:
+                emp_id = contract['employee_id'][0] if contract.get('employee_id') else None
+                if emp_id:
+                    emp = await self.get_employee(emp_id)
+                    if emp:
+                        # Calculate days until expiration
+                        end_date = date.fromisoformat(contract['date_end'])
+                        days_remaining = (end_date - today).days
+
+                        result.append({
+                            "employee": emp,
+                            "contract": {
+                                "id": contract['id'],
+                                "name": contract['name'],
+                                "date_start": contract.get('date_start'),
+                                "date_end": contract.get('date_end'),
+                                "type": contract['contract_type_id'][1] if contract.get('contract_type_id') else None,
+                                "days_remaining": days_remaining
+                            }
+                        })
+
+            return result
+
+        except Exception as e:
+            logger.error("Failed to get expiring contracts", error=str(e))
+            return []

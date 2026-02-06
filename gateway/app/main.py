@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import structlog
 
-from app.api import provision, rules, workflow, reconcile, ai_assistant, admin, live_comparison, permissions, connectors, provision_via_midpoint, webhooks, midpoint, scheduler, ldap_groups
+from app.api import provision, rules, workflow, reconcile, ai_assistant, admin, live_comparison, permissions, connectors, provision_via_midpoint, webhooks, midpoint, scheduler, ldap_groups, users
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.logging import setup_logging
@@ -76,6 +76,7 @@ app.include_router(webhooks.router, tags=["Webhooks MidPoint"])
 app.include_router(midpoint.router, prefix="/api/v1", tags=["MidPoint Orchestration"])
 app.include_router(scheduler.router, prefix="/api/v1/scheduler", tags=["Planification Sync"])
 app.include_router(ldap_groups.router, prefix="/api/v1", tags=["Groupes LDAP"])
+app.include_router(users.router, prefix="/api/v1/users", tags=["Gestion Utilisateurs"])
 
 
 @app.get("/health", tags=["Health"])

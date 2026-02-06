@@ -16,6 +16,7 @@ import Permissions from './pages/Permissions'
 import Connectors from './pages/Connectors'
 import MidpointUsers from './pages/MidpointUsers'
 import LDAPGroups from './pages/LDAPGroups'
+import Users from './pages/Users'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -43,6 +44,7 @@ function App() {
                 <Route path="/connectors" element={<Connectors />} />
                 <Route path="/midpoint-users" element={<MidpointUsers />} />
                 <Route path="/ldap-groups" element={<LDAPGroups />} />
+                <Route path="/gateway-users" element={<Users />} />
                 <Route path="/ai" element={<AIAssistant />} />
                 <Route path="/audit" element={<AuditLogs />} />
                 <Route path="/settings" element={<Settings />} />

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/auth'
+import LanguageSelector from './LanguageSelector'
 import {
   LayoutDashboard,
-  GitBranch,
   FileCode2,
   GitPullRequest,
   RefreshCw,
@@ -15,33 +16,34 @@ import {
   X,
   AlertTriangle,
   Zap,
-  Shield,
   Database,
   Users,
   ShieldCheck,
+  FlaskConical,
+  UserCog,
 } from 'lucide-react'
 
 interface LayoutProps {
   children: React.ReactNode
 }
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Utilisateurs', href: '/dashboard/midpoint-users', icon: Users },
-  { name: 'Groupes LDAP', href: '/dashboard/ldap-groups', icon: ShieldCheck },
-  { name: 'Operations', href: '/dashboard/operations', icon: GitBranch },
-  { name: 'Regles', href: '/dashboard/rules', icon: FileCode2 },
-  { name: 'Workflows', href: '/dashboard/workflows', icon: GitPullRequest },
-  { name: 'Reconciliation', href: '/dashboard/reconciliation', icon: RefreshCw },
-  { name: 'Comparaison Live', href: '/dashboard/live', icon: Zap },
-  { name: 'Niveaux Droits', href: '/dashboard/permissions', icon: Shield },
-  { name: 'Connecteurs', href: '/dashboard/connectors', icon: Database },
-  { name: 'Assistant IA', href: '/dashboard/ai', icon: Bot },
-  { name: 'Audit', href: '/dashboard/audit', icon: FileText },
-  { name: 'Parametres', href: '/dashboard/settings', icon: Settings },
+const navigationKeys = [
+  { key: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { key: 'nav.users', href: '/dashboard/midpoint-users', icon: Users },
+  { key: 'nav.ldapGroups', href: '/dashboard/ldap-groups', icon: ShieldCheck },
+  { key: 'nav.rules', href: '/dashboard/rules', icon: FileCode2 },
+  { key: 'nav.workflows', href: '/dashboard/workflows', icon: GitPullRequest },
+  { key: 'nav.reconciliation', href: '/dashboard/reconciliation', icon: RefreshCw },
+  { key: 'nav.liveComparison', href: '/dashboard/live', icon: Zap },
+  { key: 'nav.connectors', href: '/dashboard/connectors', icon: Database },
+  { key: 'nav.gatewayUsers', href: '/dashboard/gateway-users', icon: UserCog },
+  { key: 'nav.aiAssistant', href: '/dashboard/ai', icon: Bot },
+  { key: 'nav.audit', href: '/dashboard/audit', icon: FileText },
+  { key: 'nav.settings', href: '/dashboard/settings', icon: Settings },
 ]
 
 export default function Layout({ children }: LayoutProps) {
+  const { t } = useTranslation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
@@ -72,11 +74,11 @@ export default function Layout({ children }: LayoutProps) {
             </button>
           </div>
           <nav className="p-4 space-y-1">
-            {navigation.map((item) => {
+            {navigationKeys.map((item) => {
               const isActive = location.pathname === item.href
               return (
                 <Link
-                  key={item.name}
+                  key={item.key}
                   to={item.href}
                   className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
                     isActive
@@ -86,7 +88,7 @@ export default function Layout({ children }: LayoutProps) {
                   onClick={() => setSidebarOpen(false)}
                 >
                   <item.icon className="w-5 h-5 mr-3" />
-                  {item.name}
+                  {t(item.key)}
                 </Link>
               )
             })}
@@ -101,11 +103,11 @@ export default function Layout({ children }: LayoutProps) {
             <span className="text-xl font-bold text-blue-600">Gateway IAM</span>
           </div>
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {navigation.map((item) => {
+            {navigationKeys.map((item) => {
               const isActive = location.pathname === item.href
               return (
                 <Link
-                  key={item.name}
+                  key={item.key}
                   to={item.href}
                   className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
                     isActive
@@ -114,7 +116,7 @@ export default function Layout({ children }: LayoutProps) {
                   }`}
                 >
                   <item.icon className="w-5 h-5 mr-3" />
-                  {item.name}
+                  {t(item.key)}
                 </Link>
               )
             })}
@@ -138,7 +140,7 @@ export default function Layout({ children }: LayoutProps) {
               className="flex items-center w-full px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-100"
             >
               <LogOut className="w-5 h-5 mr-3" />
-              Deconnexion
+              {t('common.logout')}
             </button>
           </div>
         </div>
@@ -157,19 +159,32 @@ export default function Layout({ children }: LayoutProps) {
 
           <div className="flex-1" />
 
+          {/* Language selector */}
+          <LanguageSelector />
+
+          {/* Test/Operations button */}
+          <Link
+            to="/dashboard/operations"
+            className="flex items-center px-4 py-2 ml-2 text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+            title="Test - Operations"
+          >
+            <FlaskConical className="w-5 h-5 mr-2" />
+            {t('nav.test')}
+          </Link>
+
           {/* Emergency stop button */}
-          <button className="flex items-center px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+          <button className="flex items-center px-4 py-2 ml-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
             <AlertTriangle className="w-5 h-5 mr-2" />
-            Arret d'urgence
+            {t('nav.emergencyStop')}
           </button>
 
           {/* Logout button */}
           <button
             onClick={handleLogout}
-            className="flex items-center ml-4 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            className="flex items-center ml-2 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
           >
             <LogOut className="w-5 h-5 mr-2" />
-            Deconnexion
+            {t('common.logout')}
           </button>
         </header>
 

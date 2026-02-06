@@ -40,6 +40,14 @@ class CronSyncConfig(BaseModel):
     enabled: bool = Field(True, description="Activer le job")
 
 
+class ContractCheckConfig(BaseModel):
+    """Configuration pour la verification des contrats expires."""
+    job_id: str = Field(..., description="Identifiant unique du job")
+    hour: int = Field(6, ge=0, le=23, description="Heure d'execution (0-23)")
+    minute: int = Field(0, ge=0, le=59, description="Minute d'execution (0-59)")
+    enabled: bool = Field(True, description="Activer le job")
+
+
 class ToggleJobRequest(BaseModel):
     """Request pour activer/desactiver un job."""
     enabled: bool
@@ -412,3 +420,60 @@ async def create_hourly_sync(
     except Exception as e:
         logger.error("Failed to create hourly preset", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Contract Check ====================
+
+@router.post("/jobs/contract-check", response_model=Dict[str, Any])
+async def create_contract_check(
+    config: ContractCheckConfig,
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"]))
+):
+    """
+    Cree une verification quotidienne des contrats expires.
+
+    Cette tache verifie les contrats expires et desactive automatiquement
+    les comptes des employes dont le contrat a expire.
+    """
+    try:
+        result = sync_scheduler.add_contract_check(
+            job_id=config.job_id,
+            hour=config.hour,
+            minute=config.minute,
+            enabled=config.enabled
+        )
+
+        logger.info(
+            "Contract check job created",
+            job_id=config.job_id,
+            time=f"{config.hour:02d}:{config.minute:02d}",
+            user=current_user.get("username")
+        )
+
+        return {
+            "message": f"Verification des contrats configuree pour {config.hour:02d}:{config.minute:02d}",
+            "job": result
+        }
+
+    except Exception as e:
+        logger.error("Failed to create contract check", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/contracts/history", response_model=Dict[str, Any])
+async def get_contract_check_history(
+    limit: int = Query(20, ge=1, le=100),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Recupere l'historique des verifications de contrats.
+    """
+    from app.services.scheduler_service import scheduler_store
+
+    history = scheduler_store.get("contract_check_history", [])
+
+    return {
+        "timestamp": datetime.utcnow().isoformat(),
+        "count": len(history[:limit]),
+        "history": history[:limit]
+    }

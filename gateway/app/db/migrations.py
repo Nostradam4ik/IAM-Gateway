@@ -169,11 +169,33 @@ async def create_tables():
                 password_hash VARCHAR(255) NOT NULL,
                 full_name VARCHAR(255),
                 role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+                roles JSONB DEFAULT '[]'::jsonb,
                 is_active BOOLEAN DEFAULT true,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 last_login TIMESTAMP WITH TIME ZONE
             )
         """))
+
+        # Approval Roles Table (pour definir les roles d'approbation)
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS approval_roles (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                role_name VARCHAR(100) NOT NULL UNIQUE,
+                display_name VARCHAR(255) NOT NULL,
+                description TEXT,
+                approval_level INTEGER NOT NULL DEFAULT 1,
+                is_active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+
+        # Add roles column if it doesn't exist
+        try:
+            await conn.execute(text("""
+                ALTER TABLE gateway_users ADD COLUMN IF NOT EXISTS roles JSONB DEFAULT '[]'::jsonb
+            """))
+        except Exception:
+            pass
 
         # API Keys Table
         await conn.execute(text("""
@@ -190,6 +212,43 @@ async def create_tables():
             )
         """))
 
+        # Connector Configurations Table
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS connector_configurations (
+                id VARCHAR(100) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL UNIQUE,
+                connector_type VARCHAR(50) NOT NULL,
+                connector_subtype VARCHAR(50) NOT NULL,
+                display_name VARCHAR(255) NOT NULL,
+                description TEXT,
+                is_active BOOLEAN DEFAULT true,
+                configuration JSONB NOT NULL DEFAULT '{}',
+                last_health_status VARCHAR(50) DEFAULT 'unknown',
+                last_health_check TIMESTAMP WITH TIME ZONE,
+                last_health_error TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                created_by VARCHAR(100),
+                midpoint_resource_oid VARCHAR(255),
+                midpoint_sync_status VARCHAR(50) DEFAULT 'not_synced',
+                midpoint_last_sync TIMESTAMP WITH TIME ZONE,
+                midpoint_sync_error TEXT
+            )
+        """))
+
+        # Add MidPoint columns if they don't exist (for existing installations)
+        midpoint_columns = [
+            "ALTER TABLE connector_configurations ADD COLUMN IF NOT EXISTS midpoint_resource_oid VARCHAR(255)",
+            "ALTER TABLE connector_configurations ADD COLUMN IF NOT EXISTS midpoint_sync_status VARCHAR(50) DEFAULT 'not_synced'",
+            "ALTER TABLE connector_configurations ADD COLUMN IF NOT EXISTS midpoint_last_sync TIMESTAMP WITH TIME ZONE",
+            "ALTER TABLE connector_configurations ADD COLUMN IF NOT EXISTS midpoint_sync_error TEXT"
+        ]
+        for alter_sql in midpoint_columns:
+            try:
+                await conn.execute(text(alter_sql))
+            except Exception:
+                pass  # Column already exists
+
         # Create indexes
         indexes = [
             "CREATE INDEX IF NOT EXISTS idx_operations_request_id ON provisioning_operations(request_id)",
@@ -202,6 +261,8 @@ async def create_tables():
             "CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp)",
             "CREATE INDEX IF NOT EXISTS idx_audit_identity ON audit_logs(identity_id)",
             "CREATE INDEX IF NOT EXISTS idx_audit_event ON audit_logs(event_type)",
+            "CREATE INDEX IF NOT EXISTS idx_connectors_type ON connector_configurations(connector_type)",
+            "CREATE INDEX IF NOT EXISTS idx_connectors_midpoint ON connector_configurations(midpoint_resource_oid)",
         ]
         for index_sql in indexes:
             await conn.execute(text(index_sql))

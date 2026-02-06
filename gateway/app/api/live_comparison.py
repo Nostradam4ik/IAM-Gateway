@@ -16,6 +16,8 @@ from app.connectors.ldap_connector import LDAPConnector
 from app.connectors.sql_connector import SQLConnector
 from app.connectors.odoo_connector import OdooConnector
 from app.services.midpoint_client import MidPointClient
+from app.services.workflow_service import WorkflowService
+import uuid
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -850,3 +852,404 @@ async def sync_odoo_employees_to_midpoint(
     except Exception as e:
         logger.error("Failed to sync Odoo to MidPoint", error=str(e))
         raise HTTPException(status_code=500, detail=f"Sync error: {str(e)[:200]}")
+
+
+# ==================== LiveSync avec Workflow d'Approbation ====================
+
+class SyncWithApprovalRequest(BaseModel):
+    """Requete de synchronisation avec approbation."""
+    employee_ids: Optional[List[int]] = None
+    manager_email: str
+    workflow_type: str = "full"  # "full", "manager_only", "rh_it"
+
+
+@router.post("/sync/odoo-to-midpoint/with-approval", response_model=Dict[str, Any])
+async def sync_odoo_to_midpoint_with_approval(
+    request: SyncWithApprovalRequest,
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"])),
+    session=Depends(get_session)
+):
+    """
+    Synchronise les employes Odoo vers MidPoint AVEC workflow d'approbation multi-niveaux.
+
+    Chaine d'approbation: Manager → RH → IT Admin
+
+    1. Cree un workflow d'approbation pour chaque employe
+    2. Envoie notification email au manager
+    3. Le compte est cree dans MidPoint uniquement apres approbation complete
+    """
+    try:
+        odoo = OdooConnector()
+        workflow_service = WorkflowService(session)
+
+        # Get employees to sync
+        if request.employee_ids:
+            employees = []
+            for emp_id in request.employee_ids:
+                emp = await odoo.get_employee(emp_id)
+                if emp:
+                    employees.append(emp)
+        else:
+            employees = await odoo.list_employees()
+
+        if not employees:
+            return {
+                "timestamp": datetime.utcnow().isoformat(),
+                "message": "Aucun employe a synchroniser",
+                "workflows_created": 0,
+                "results": []
+            }
+
+        # Get existing MidPoint users for duplicate check
+        client = MidPointClient()
+        midpoint_users = await client.get_all_accounts()
+        existing_emails = {u.get("email", "").lower() for u in midpoint_users if u.get("email")}
+        existing_usernames = {u.get("name", "").lower() for u in midpoint_users if u.get("name")}
+
+        results = []
+        workflows_created = 0
+        skipped_count = 0
+
+        for emp in employees:
+            emp_name = emp.get("name", "")
+            emp_email = emp.get("email", "") or emp.get("work_email", "")
+            department = emp.get("department", "N/A")
+            job_title = emp.get("job_title", "N/A")
+            manager_name = emp.get("manager_name", "")
+
+            # Generate username from name
+            name_parts = emp_name.split()
+            if len(name_parts) >= 2:
+                firstname = name_parts[0]
+                lastname = " ".join(name_parts[1:])
+                username = f"{firstname.lower()}.{lastname.lower().replace(' ', '')}"
+            else:
+                firstname = emp_name
+                lastname = ""
+                username = emp_name.lower().replace(" ", ".")
+
+            # Check if already exists in MidPoint
+            if emp_email and emp_email.lower() in existing_emails:
+                results.append({
+                    "employee_id": emp.get("id"),
+                    "name": emp_name,
+                    "status": "skipped",
+                    "reason": "Email deja existant dans MidPoint"
+                })
+                skipped_count += 1
+                continue
+
+            if username.lower() in existing_usernames:
+                results.append({
+                    "employee_id": emp.get("id"),
+                    "name": emp_name,
+                    "status": "skipped",
+                    "reason": "Username deja existant dans MidPoint"
+                })
+                skipped_count += 1
+                continue
+
+            # Creer le workflow d'approbation multi-niveaux
+            operation_id = f"odoo-sync-{emp.get('id')}-{str(uuid.uuid4())[:8]}"
+
+            user_data = {
+                "account_id": username,
+                "firstname": firstname,
+                "lastname": lastname,
+                "email": emp_email or f"{username}@upec.fr",
+                "department": department,
+                "job_title": job_title,
+                "employee_id": str(emp.get("id")),
+                "permission_level": 1,
+                "source": "odoo",
+                "odoo_employee_id": emp.get("id"),
+                "manager_name": manager_name,
+            }
+
+            # Determiner l'email du manager
+            # Si l'employe a un manager dans Odoo, utiliser son email, sinon utiliser celui fourni
+            manager_email_to_use = request.manager_email
+            if emp.get("manager_email"):
+                manager_email_to_use = emp.get("manager_email")
+
+            try:
+                workflow_result = await workflow_service.create_multi_level_approval_workflow(
+                    operation_id=operation_id,
+                    user_data=user_data,
+                    manager_email=manager_email_to_use,
+                    requester=current_user.get("username", "admin"),
+                    workflow_type=request.workflow_type
+                )
+
+                results.append({
+                    "employee_id": emp.get("id"),
+                    "name": emp_name,
+                    "username": username,
+                    "status": "workflow_created",
+                    "workflow_id": workflow_result.get("workflow_id"),
+                    "workflow_type": request.workflow_type,
+                    "total_levels": workflow_result.get("total_levels", 3),
+                    "email_sent_to": manager_email_to_use,
+                    "email_sent": workflow_result.get("email_sent", False)
+                })
+                workflows_created += 1
+
+                # Add to existing sets to prevent duplicates in same batch
+                if emp_email:
+                    existing_emails.add(emp_email.lower())
+                existing_usernames.add(username.lower())
+
+            except Exception as wf_error:
+                results.append({
+                    "employee_id": emp.get("id"),
+                    "name": emp_name,
+                    "status": "error",
+                    "error": str(wf_error)[:100]
+                })
+
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "workflow_type": request.workflow_type,
+            "approval_chain": "Manager → RH → IT Admin" if request.workflow_type == "full" else
+                             "Manager uniquement" if request.workflow_type == "manager_only" else
+                             "RH → IT Admin",
+            "summary": {
+                "total_employees": len(employees),
+                "workflows_created": workflows_created,
+                "skipped": skipped_count
+            },
+            "message": f"{workflows_created} workflow(s) d'approbation cree(s). Les comptes seront crees apres approbation complete.",
+            "results": results
+        }
+
+    except Exception as e:
+        logger.error("Failed to create approval workflows", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)[:200]}")
+
+
+@router.post("/sync/execute-approved/{workflow_id}", response_model=Dict[str, Any])
+async def execute_approved_sync(
+    workflow_id: str,
+    current_user: dict = Depends(require_role(["admin", "it_admin"])),
+    session=Depends(get_session)
+):
+    """
+    Execute la creation du compte MidPoint apres approbation complete du workflow.
+    Cette fonction est appelee automatiquement ou manuellement apres approbation.
+    """
+    from app.core.memory_store import memory_store
+
+    workflow = memory_store.get_workflow(workflow_id)
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow non trouve")
+
+    if workflow.get("status") != "approved":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Workflow non approuve. Statut actuel: {workflow.get('status')}"
+        )
+
+    context = workflow.get("context", {})
+
+    # Verifier si c'est un sync Odoo
+    if context.get("source") != "odoo":
+        raise HTTPException(status_code=400, detail="Ce workflow n'est pas une synchronisation Odoo")
+
+    try:
+        client = MidPointClient()
+
+        user_data = {
+            "username": context.get("account_id"),
+            "firstname": context.get("firstname"),
+            "lastname": context.get("lastname"),
+            "email": context.get("email"),
+            "department": context.get("department"),
+            "title": context.get("job_title"),
+        }
+
+        midpoint_result = await client.create_account(user_data)
+
+        # Update workflow with execution result
+        workflow["executed"] = True
+        workflow["executed_at"] = datetime.utcnow().isoformat()
+        workflow["midpoint_oid"] = midpoint_result.get("oid") if midpoint_result else None
+        workflow["history"].append({
+            "timestamp": datetime.utcnow().isoformat(),
+            "action": "account_created",
+            "details": f"Compte cree dans MidPoint: {context.get('account_id')}"
+        })
+        memory_store.save_workflow(workflow_id, workflow)
+
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "workflow_id": workflow_id,
+            "status": "created",
+            "username": context.get("account_id"),
+            "midpoint_oid": midpoint_result.get("oid") if midpoint_result else None,
+            "message": f"Compte {context.get('account_id')} cree avec succes dans MidPoint"
+        }
+
+    except Exception as e:
+        logger.error("Failed to execute approved sync", error=str(e), workflow_id=workflow_id)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)[:200]}")
+
+
+# ==================== Account Activation/Deactivation ====================
+
+@router.post("/account/{username}/disable", response_model=Dict[str, Any])
+async def disable_user_account(
+    username: str,
+    systems: List[str] = Query(default=["midpoint", "ldap", "odoo"]),
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"]))
+):
+    """
+    Desactive un compte utilisateur dans les systemes specifies.
+    Ne supprime pas le compte, le rend simplement inactif.
+    """
+    results = {
+        "username": username,
+        "timestamp": datetime.utcnow().isoformat(),
+        "action": "disable",
+        "results": {}
+    }
+
+    if "midpoint" in systems:
+        try:
+            client = MidPointClient()
+            success = await client.disable_account(username)
+            results["results"]["midpoint"] = {"status": "disabled" if success else "failed"}
+        except Exception as e:
+            results["results"]["midpoint"] = {"status": "error", "error": str(e)[:100]}
+
+    if "ldap" in systems:
+        try:
+            ldap = LDAPConnector()
+            success = await ldap.disable_account(username)
+            results["results"]["ldap"] = {"status": "disabled" if success else "failed"}
+        except Exception as e:
+            results["results"]["ldap"] = {"status": "error", "error": str(e)[:100]}
+
+    if "odoo" in systems:
+        try:
+            odoo = OdooConnector()
+            success = await odoo.disable_account(username)
+            results["results"]["odoo"] = {"status": "disabled" if success else "failed"}
+        except Exception as e:
+            results["results"]["odoo"] = {"status": "error", "error": str(e)[:100]}
+
+    return results
+
+
+@router.post("/account/{username}/enable", response_model=Dict[str, Any])
+async def enable_user_account(
+    username: str,
+    systems: List[str] = Query(default=["midpoint", "ldap", "odoo"]),
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"]))
+):
+    """
+    Reactive un compte utilisateur dans les systemes specifies.
+    """
+    results = {
+        "username": username,
+        "timestamp": datetime.utcnow().isoformat(),
+        "action": "enable",
+        "results": {}
+    }
+
+    if "midpoint" in systems:
+        try:
+            client = MidPointClient()
+            success = await client.enable_account(username)
+            results["results"]["midpoint"] = {"status": "enabled" if success else "failed"}
+        except Exception as e:
+            results["results"]["midpoint"] = {"status": "error", "error": str(e)[:100]}
+
+    if "ldap" in systems:
+        try:
+            ldap = LDAPConnector()
+            success = await ldap.enable_account(username)
+            results["results"]["ldap"] = {"status": "enabled" if success else "failed"}
+        except Exception as e:
+            results["results"]["ldap"] = {"status": "error", "error": str(e)[:100]}
+
+    if "odoo" in systems:
+        try:
+            odoo = OdooConnector()
+            success = await odoo.enable_account(username)
+            results["results"]["odoo"] = {"status": "enabled" if success else "failed"}
+        except Exception as e:
+            results["results"]["odoo"] = {"status": "error", "error": str(e)[:100]}
+
+    return results
+
+
+# ==================== Contract Management ====================
+
+@router.get("/contracts/expired", response_model=Dict[str, Any])
+async def get_expired_contracts(
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"]))
+):
+    """
+    Liste les employes avec des contrats expires.
+    Ces comptes devraient etre desactives.
+    """
+    try:
+        odoo = OdooConnector()
+        expired = await odoo.get_expired_contracts()
+
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "count": len(expired),
+            "expired_contracts": expired
+        }
+
+    except Exception as e:
+        logger.error("Failed to get expired contracts", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)[:200]}")
+
+
+@router.get("/contracts/expiring", response_model=Dict[str, Any])
+async def get_expiring_contracts(
+    days: int = Query(default=30, description="Nombre de jours avant expiration"),
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"]))
+):
+    """
+    Liste les employes dont le contrat expire dans X jours.
+    Permet d'anticiper les departs.
+    """
+    try:
+        odoo = OdooConnector()
+        expiring = await odoo.get_expiring_contracts(days)
+
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "days_threshold": days,
+            "count": len(expiring),
+            "expiring_contracts": expiring
+        }
+
+    except Exception as e:
+        logger.error("Failed to get expiring contracts", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)[:200]}")
+
+
+@router.get("/odoo/employees-with-contracts", response_model=Dict[str, Any])
+async def get_odoo_employees_with_contracts(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Liste tous les employes Odoo avec leurs informations de contrat.
+    """
+    try:
+        odoo = OdooConnector()
+        employees = await odoo.list_employees_with_contracts()
+
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "count": len(employees),
+            "employees": employees
+        }
+
+    except Exception as e:
+        logger.error("Failed to get employees with contracts", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)[:200]}")

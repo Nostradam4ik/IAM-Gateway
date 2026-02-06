@@ -1,9 +1,10 @@
 """
 Service de planification des taches automatiques.
 Gere les synchronisations programmees Odoo -> MidPoint.
+Inclut: attribution auto roles/groupes, gestion contrats expires.
 """
 from typing import Dict, Any, List, Optional
-from datetime import datetime, time
+from datetime import datetime, time, date
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
@@ -13,6 +14,179 @@ import asyncio
 import threading
 
 logger = structlog.get_logger()
+
+# ==================== ROLE & GROUP MAPPINGS ====================
+
+# Department to MidPoint Role mapping (role de base par departement)
+DEPARTMENT_ROLE_MAPPING = {
+    # IT / Informatique
+    "it": "role-department-it",
+    "informatique": "role-department-it",
+    "dsi": "role-department-it",
+    "si": "role-department-it",
+    # RH / HR
+    "hr": "role-department-hr",
+    "rh": "role-department-hr",
+    "ressources-humaines": "role-department-hr",
+    # Finance / Comptabilite
+    "finance": "role-department-finance",
+    "comptabilite": "role-department-finance",
+    "accounting": "role-department-finance",
+    # Ventes / Commercial
+    "sales": "role-department-sales",
+    "ventes": "role-department-sales",
+    "commercial": "role-department-sales",
+    # Marketing / Communication
+    "marketing": "role-department-marketing",
+    "communication": "role-department-marketing",
+    # Direction / Management
+    "management": "role-department-management",
+    "direction": "role-department-management",
+    "executive": "role-department-management",
+    # R&D / Recherche
+    "rd": "role-department-rd",
+    "r&d": "role-department-rd",
+    "recherche": "role-department-rd",
+    "research": "role-department-rd",
+    # Support / Helpdesk
+    "support": "role-department-support",
+    "helpdesk": "role-department-support",
+    "assistance": "role-department-support",
+    # Juridique / Legal
+    "juridique": "role-department-legal",
+    "legal": "role-department-legal",
+    # Production / Operations
+    "production": "role-department-production",
+    "operations": "role-department-production",
+    # Qualite
+    "qualite": "role-department-quality",
+    "quality": "role-department-quality",
+    # Logistique
+    "logistique": "role-department-logistics",
+    "logistics": "role-department-logistics",
+    # Default
+    "default": "role-employee-full"
+}
+
+# Job Title to Additional Roles mapping (roles supplementaires par poste)
+JOB_TITLE_ROLE_MAPPING = {
+    # Developpeurs
+    "developpeur": ["role-developer", "role-git-access"],
+    "developer": ["role-developer", "role-git-access"],
+    "dev": ["role-developer", "role-git-access"],
+    "programmeur": ["role-developer", "role-git-access"],
+    "ingenieur logiciel": ["role-developer", "role-git-access", "role-senior"],
+    "software engineer": ["role-developer", "role-git-access", "role-senior"],
+    # DevOps / SysAdmin
+    "devops": ["role-devops", "role-server-access", "role-git-access"],
+    "sysadmin": ["role-sysadmin", "role-server-access"],
+    "administrateur systeme": ["role-sysadmin", "role-server-access"],
+    "admin systeme": ["role-sysadmin", "role-server-access"],
+    # Managers / Responsables
+    "manager": ["role-manager", "role-reports-access"],
+    "responsable": ["role-manager", "role-reports-access"],
+    "chef de projet": ["role-project-manager", "role-manager"],
+    "project manager": ["role-project-manager", "role-manager"],
+    "chef d'equipe": ["role-team-lead", "role-manager"],
+    "team lead": ["role-team-lead", "role-manager"],
+    # Directeurs
+    "directeur": ["role-director", "role-manager", "role-reports-access", "role-budget-access"],
+    "director": ["role-director", "role-manager", "role-reports-access", "role-budget-access"],
+    "dsi": ["role-cio", "role-director", "role-admin-it"],
+    "cio": ["role-cio", "role-director", "role-admin-it"],
+    "cto": ["role-cto", "role-director", "role-admin-it"],
+    "ceo": ["role-ceo", "role-director", "role-admin-full"],
+    "pdg": ["role-ceo", "role-director", "role-admin-full"],
+    # Analystes
+    "analyste": ["role-analyst", "role-reports-access"],
+    "analyst": ["role-analyst", "role-reports-access"],
+    "data analyst": ["role-data-analyst", "role-database-read"],
+    "business analyst": ["role-business-analyst", "role-reports-access"],
+    # Support
+    "technicien": ["role-technician", "role-helpdesk"],
+    "technician": ["role-technician", "role-helpdesk"],
+    "support": ["role-support", "role-helpdesk"],
+    "helpdesk": ["role-support", "role-helpdesk"],
+    # Consultants
+    "consultant": ["role-consultant", "role-external"],
+    "prestataire": ["role-contractor", "role-external"],
+    "contractor": ["role-contractor", "role-external"],
+    "stagiaire": ["role-intern", "role-limited"],
+    "intern": ["role-intern", "role-limited"],
+    # Admin
+    "administrateur": ["role-admin"],
+    "admin": ["role-admin"],
+}
+
+# Department to LDAP Group mapping (groupe principal)
+DEPARTMENT_GROUP_MAPPING = {
+    "it": "IT",
+    "informatique": "IT",
+    "dsi": "IT",
+    "hr": "RH",
+    "rh": "RH",
+    "ressources-humaines": "RH",
+    "finance": "Finance",
+    "comptabilite": "Finance",
+    "sales": "Sales",
+    "ventes": "Sales",
+    "commercial": "Sales",
+    "marketing": "Marketing",
+    "communication": "Marketing",
+    "management": "Management",
+    "direction": "Management",
+    "rd": "R&D",
+    "r&d": "R&D",
+    "recherche": "R&D",
+    "support": "Support",
+    "helpdesk": "Support",
+    "juridique": "Legal",
+    "legal": "Legal",
+    "production": "Production",
+    "operations": "Production",
+    "qualite": "Quality",
+    "logistique": "Logistics",
+    "default": "Employees"
+}
+
+# Job Title to Additional LDAP Groups mapping
+JOB_TITLE_GROUP_MAPPING = {
+    # Developpeurs
+    "developpeur": ["Developers", "Git-Users"],
+    "developer": ["Developers", "Git-Users"],
+    "dev": ["Developers", "Git-Users"],
+    # DevOps
+    "devops": ["DevOps", "Developers", "Server-Admins"],
+    "sysadmin": ["SysAdmins", "Server-Admins"],
+    "administrateur systeme": ["SysAdmins", "Server-Admins"],
+    # Managers
+    "manager": ["Managers"],
+    "responsable": ["Managers"],
+    "chef de projet": ["Project-Managers", "Managers"],
+    "project manager": ["Project-Managers", "Managers"],
+    "chef d'equipe": ["Team-Leads", "Managers"],
+    # Directeurs
+    "directeur": ["Directors", "Managers", "VIP"],
+    "director": ["Directors", "Managers", "VIP"],
+    "dsi": ["Directors", "IT-Admins", "VIP"],
+    "cto": ["Directors", "IT-Admins", "VIP"],
+    "ceo": ["Directors", "Executive", "VIP"],
+    # Support
+    "technicien": ["Technicians", "Helpdesk"],
+    "support": ["Helpdesk"],
+    # Externes
+    "consultant": ["External", "Consultants"],
+    "prestataire": ["External", "Contractors"],
+    "stagiaire": ["Interns", "Limited-Access"],
+}
+
+# Acces speciaux par departement (groupes supplementaires automatiques)
+DEPARTMENT_EXTRA_GROUPS = {
+    "it": ["VPN-Users", "Server-Access"],
+    "rd": ["VPN-Users", "Lab-Access"],
+    "management": ["VPN-Users", "Reports-Access"],
+    "finance": ["Accounting-System"],
+}
 
 # Simple in-memory storage for scheduler data (thread-safe)
 class SchedulerStore:
@@ -70,8 +244,9 @@ class ScheduledSyncService:
             logger.info("Scheduler stopped")
 
     async def _execute_odoo_midpoint_sync(self, job_id: str):
-        """Execute Odoo to MidPoint synchronization."""
+        """Execute Odoo to MidPoint synchronization with auto role/group assignment."""
         from app.connectors.odoo_connector import OdooConnector
+        from app.connectors.ldap_connector import LDAPConnector
         from app.services.midpoint_client import MidPointClient
 
         logger.info("Starting scheduled Odoo->MidPoint sync", job_id=job_id)
@@ -89,12 +264,15 @@ class ScheduledSyncService:
             "synced": 0,
             "skipped": 0,
             "errors": 0,
+            "roles_assigned": 0,
+            "groups_assigned": 0,
             "details": []
         }
 
         try:
             odoo = OdooConnector()
             client = MidPointClient()
+            ldap = LDAPConnector()
 
             # Get all Odoo employees
             employees = await odoo.list_employees()
@@ -107,6 +285,7 @@ class ScheduledSyncService:
             for emp in employees:
                 emp_name = emp.get("name", "")
                 emp_email = emp.get("email", "")
+                dept_normalized = emp.get("department_normalized", "default")
 
                 # Generate username
                 name_parts = emp_name.split()
@@ -120,15 +299,26 @@ class ScheduledSyncService:
                     username = emp_name.lower().replace(" ", "")
 
                 # Check if exists
+                user_exists = False
                 if emp_email and emp_email.lower() in existing_emails:
-                    results["skipped"] += 1
-                    continue
+                    user_exists = True
                 if username.lower() in existing_usernames:
+                    user_exists = True
+
+                if user_exists:
                     results["skipped"] += 1
+                    # Still try to assign role/group if user exists
+                    await self._assign_role_and_group(
+                        client, ldap, username, dept_normalized, results,
+                        job_title=emp.get("job_title")
+                    )
                     continue
 
                 # Create in MidPoint
                 try:
+                    # Get role based on department
+                    role_name = DEPARTMENT_ROLE_MAPPING.get(dept_normalized, DEPARTMENT_ROLE_MAPPING["default"])
+
                     user_data = {
                         "username": username,
                         "firstname": firstname,
@@ -144,10 +334,21 @@ class ScheduledSyncService:
                         results["skipped"] += 1
                     else:
                         results["synced"] += 1
+
+                        # Auto-assign roles and groups based on department and job title
+                        role_group_result = await self._assign_role_and_group(
+                            client, ldap, username, dept_normalized, results,
+                            job_title=emp.get("job_title")
+                        )
+
                         results["details"].append({
                             "name": emp_name,
                             "username": username,
-                            "status": "created"
+                            "department": emp.get("department"),
+                            "job_title": emp.get("job_title"),
+                            "status": "created",
+                            "roles_assigned": role_group_result.get("roles", []),
+                            "groups_assigned": role_group_result.get("groups", [])
                         })
 
                     # Update tracking sets
@@ -183,7 +384,9 @@ class ScheduledSyncService:
                 job_id=job_id,
                 synced=results["synced"],
                 skipped=results["skipped"],
-                errors=results["errors"]
+                errors=results["errors"],
+                roles_assigned=results["roles_assigned"],
+                groups_assigned=results["groups_assigned"]
             )
 
         except Exception as e:
@@ -196,6 +399,185 @@ class ScheduledSyncService:
                 job_status[job_id]["status"] = "error"
                 job_status[job_id]["last_error"] = str(e)
                 scheduler_store.set("scheduled_jobs", job_status)
+
+        return results
+
+    async def _assign_role_and_group(
+        self,
+        midpoint_client,
+        ldap_connector,
+        username: str,
+        department: str,
+        results: Dict[str, Any],
+        job_title: str = None
+    ) -> Dict[str, Any]:
+        """Assign MidPoint roles and LDAP groups based on department and job title."""
+        assignment_result = {"roles": [], "groups": []}
+
+        # Normalize job title for lookup
+        job_title_lower = job_title.lower().strip() if job_title else ""
+
+        # ==================== MIDPOINT ROLES ====================
+
+        roles_to_assign = []
+
+        # 1. Role de base par departement
+        dept_role = DEPARTMENT_ROLE_MAPPING.get(department, DEPARTMENT_ROLE_MAPPING["default"])
+        roles_to_assign.append(dept_role)
+
+        # 2. Roles additionnels par poste/fonction
+        for title_key, title_roles in JOB_TITLE_ROLE_MAPPING.items():
+            if title_key in job_title_lower:
+                roles_to_assign.extend(title_roles)
+                break
+
+        # 3. Role employe de base pour tout le monde
+        if "role-employee-full" not in roles_to_assign:
+            roles_to_assign.append("role-employee-full")
+
+        # Deduplicate roles
+        roles_to_assign = list(set(roles_to_assign))
+
+        # Assign all roles
+        for role_name in roles_to_assign:
+            try:
+                role_result = await midpoint_client.assign_role_by_name(username, role_name)
+                if role_result:
+                    results["roles_assigned"] += 1
+                    assignment_result["roles"].append(role_name)
+                    logger.info("Role assigned", username=username, role=role_name)
+            except Exception as e:
+                logger.warning("Failed to assign role", username=username, role=role_name, error=str(e))
+
+        # ==================== LDAP GROUPS ====================
+
+        groups_to_assign = []
+
+        # 1. Groupe principal par departement
+        dept_group = DEPARTMENT_GROUP_MAPPING.get(department, DEPARTMENT_GROUP_MAPPING["default"])
+        groups_to_assign.append(dept_group)
+
+        # 2. Groupes additionnels par poste/fonction
+        for title_key, title_groups in JOB_TITLE_GROUP_MAPPING.items():
+            if title_key in job_title_lower:
+                groups_to_assign.extend(title_groups)
+                break
+
+        # 3. Groupes supplementaires par departement (ex: VPN pour IT)
+        if department in DEPARTMENT_EXTRA_GROUPS:
+            groups_to_assign.extend(DEPARTMENT_EXTRA_GROUPS[department])
+
+        # 4. Groupe Employees pour tout le monde
+        if "Employees" not in groups_to_assign:
+            groups_to_assign.append("Employees")
+
+        # Deduplicate groups
+        groups_to_assign = list(set(groups_to_assign))
+
+        # Assign all groups
+        for group_cn in groups_to_assign:
+            try:
+                group_result = await ldap_connector.add_to_group(username, group_cn)
+                if group_result:
+                    results["groups_assigned"] += 1
+                    assignment_result["groups"].append(group_cn)
+                    logger.info("Group assigned", username=username, group=group_cn)
+            except Exception as e:
+                logger.warning("Failed to assign group", username=username, group=group_cn, error=str(e))
+
+        return assignment_result
+
+    async def _execute_contract_expiration_check(self, job_id: str):
+        """Check for expired contracts and deactivate accounts."""
+        from app.connectors.odoo_connector import OdooConnector
+        from app.connectors.ldap_connector import LDAPConnector
+        from app.services.midpoint_client import MidPointClient
+
+        logger.info("Starting contract expiration check", job_id=job_id)
+
+        results = {
+            "job_id": job_id,
+            "started_at": datetime.utcnow().isoformat(),
+            "expired_found": 0,
+            "deactivated": 0,
+            "errors": 0,
+            "details": []
+        }
+
+        try:
+            odoo = OdooConnector()
+            client = MidPointClient()
+            ldap = LDAPConnector()
+
+            # Get expired contracts
+            expired = await odoo.get_expired_contracts()
+            results["expired_found"] = len(expired)
+
+            for item in expired:
+                emp = item["employee"]
+                contract = item["contract"]
+                emp_name = emp.get("name", "")
+                emp_email = emp.get("email", "")
+
+                # Generate username
+                name_parts = emp_name.split()
+                if len(name_parts) >= 2:
+                    username = f"{name_parts[0].lower()}{name_parts[1].lower()}"
+                else:
+                    username = emp_name.lower().replace(" ", "")
+
+                try:
+                    # Deactivate in MidPoint
+                    await client.disable_account(username)
+
+                    # Deactivate in LDAP
+                    await ldap.disable_account(username)
+
+                    # Deactivate in Odoo
+                    if emp.get("user_id"):
+                        await odoo.disable_account(str(emp["user_id"]))
+
+                    results["deactivated"] += 1
+                    results["details"].append({
+                        "name": emp_name,
+                        "username": username,
+                        "contract_end": contract.get("date_end"),
+                        "status": "deactivated"
+                    })
+
+                    logger.info(
+                        "Account deactivated due to contract expiration",
+                        username=username,
+                        contract_end=contract.get("date_end")
+                    )
+
+                except Exception as e:
+                    results["errors"] += 1
+                    results["details"].append({
+                        "name": emp_name,
+                        "status": "error",
+                        "error": str(e)[:100]
+                    })
+
+            results["completed_at"] = datetime.utcnow().isoformat()
+            results["status"] = "completed"
+
+            # Store in history
+            history = scheduler_store.get("contract_check_history", [])
+            history.insert(0, results)
+            scheduler_store.set("contract_check_history", history[:50])
+
+            logger.info(
+                "Contract expiration check completed",
+                job_id=job_id,
+                expired_found=results["expired_found"],
+                deactivated=results["deactivated"]
+            )
+
+        except Exception as e:
+            logger.error("Contract expiration check failed", job_id=job_id, error=str(e))
+            results["status"] = "failed"
+            results["error"] = str(e)
 
         return results
 
@@ -300,6 +682,59 @@ class ScheduledSyncService:
             job_id=job_id,
             hours=hours,
             minutes=minutes,
+            enabled=enabled
+        )
+
+        return job_status[job_id]
+
+    def add_contract_check(
+        self,
+        job_id: str,
+        hour: int = 6,
+        minute: int = 0,
+        enabled: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Add a daily job to check for expired contracts.
+
+        Args:
+            job_id: Unique identifier for the job
+            hour: Hour of day (0-23)
+            minute: Minute (0-59)
+            enabled: Whether the job is enabled
+        """
+        # Remove existing job if exists
+        self.remove_job(job_id)
+
+        if enabled:
+            trigger = CronTrigger(hour=hour, minute=minute)
+
+            self.scheduler.add_job(
+                self._execute_contract_expiration_check,
+                trigger=trigger,
+                id=job_id,
+                args=[job_id],
+                name=f"Daily contract expiration check at {hour:02d}:{minute:02d}"
+            )
+
+        # Store job config
+        job_status = scheduler_store.get("scheduled_jobs", {})
+        job_status[job_id] = {
+            "type": "contract_check",
+            "hour": hour,
+            "minute": minute,
+            "enabled": enabled,
+            "created_at": datetime.utcnow().isoformat(),
+            "status": "idle" if enabled else "disabled",
+            "next_run": self._get_next_run(job_id)
+        }
+        scheduler_store.set("scheduled_jobs", job_status)
+
+        logger.info(
+            "Contract check job configured",
+            job_id=job_id,
+            hour=hour,
+            minute=minute,
             enabled=enabled
         )
 
@@ -411,6 +846,13 @@ class ScheduledSyncService:
                 return self.add_cron_sync(
                     job_id,
                     job_config["cron"],
+                    enabled=True
+                )
+            elif job_config["type"] == "contract_check":
+                return self.add_contract_check(
+                    job_id,
+                    job_config.get("hour", 6),
+                    job_config.get("minute", 0),
                     enabled=True
                 )
         else:

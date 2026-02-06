@@ -242,6 +242,23 @@ async def get_workflow_history(
     return await workflow_service.get_history(instance_id)
 
 
+@router.get("/instances/{instance_id}/details")
+async def get_workflow_details(
+    instance_id: str,
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_session)
+):
+    """Recupere les details complets d'un workflow incluant le statut de chaque niveau."""
+    workflow_service = WorkflowService(session)
+    details = await workflow_service.get_workflow_details(instance_id)
+    if not details:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Workflow instance {instance_id} not found"
+        )
+    return details
+
+
 @router.get("/approve-by-email")
 async def approve_workflow_by_email(
     token: str = Query(..., description="Token d'approbation"),
@@ -296,10 +313,26 @@ async def approve_workflow_by_email(
 
 
 def _generate_success_page(action: str, result: dict) -> str:
-    """Genere une page HTML de succes."""
+    """Genere une page HTML de succes pour workflow multi-niveaux."""
     action_text = "approuvee" if action == "approve" else "rejetee"
     action_color = "#22c55e" if action == "approve" else "#ef4444"
     icon = "✓" if action == "approve" else "✗"
+
+    # Info sur les niveaux
+    current_level = result.get("current_level", 1)
+    total_levels = result.get("total_levels", 3)
+    workflow_complete = result.get("workflow_complete", False)
+
+    if action == "approve" and not workflow_complete:
+        subtitle = f"Niveau {current_level - 1} approuve - En attente du niveau {current_level}/{total_levels}"
+        progress_text = f"La demande a ete transmise au niveau suivant pour validation."
+    elif action == "approve" and workflow_complete:
+        subtitle = "Tous les niveaux ont ete approuves"
+        progress_text = "Le compte sera cree dans les systemes cibles."
+    else:
+        rejected_level = result.get("rejected_at_level", current_level)
+        subtitle = f"Rejetee au niveau {rejected_level}"
+        progress_text = "Le workflow a ete annule."
 
     return f"""
 <!DOCTYPE html>
@@ -342,6 +375,11 @@ def _generate_success_page(action: str, result: dict) -> str:
             font-weight: bold;
             margin: 0;
         }}
+        .subtitle {{
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 8px;
+        }}
         .content {{
             padding: 40px;
         }}
@@ -350,14 +388,37 @@ def _generate_success_page(action: str, result: dict) -> str:
             font-size: 16px;
             line-height: 1.6;
         }}
-        .workflow-id {{
+        .progress-info {{
             background: #f1f5f9;
-            padding: 10px 16px;
+            padding: 16px;
             border-radius: 8px;
-            font-family: monospace;
+            margin: 20px 0;
+        }}
+        .progress-bar {{
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 12px;
+        }}
+        .step {{
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
             font-size: 14px;
+        }}
+        .step.completed {{ background: #22c55e; color: white; }}
+        .step.current {{ background: #3b82f6; color: white; }}
+        .step.pending {{ background: #e2e8f0; color: #64748b; }}
+        .step.rejected {{ background: #ef4444; color: white; }}
+        .workflow-id {{
+            font-family: monospace;
+            font-size: 12px;
             color: #64748b;
-            margin-top: 20px;
+            margin-top: 16px;
         }}
         .btn {{
             display: inline-block;
@@ -380,11 +441,19 @@ def _generate_success_page(action: str, result: dict) -> str:
         <div class="header">
             <div class="icon">{icon}</div>
             <h1 class="title">Demande {action_text.capitalize()}</h1>
+            <p class="subtitle">{subtitle}</p>
         </div>
         <div class="content">
-            <p class="message">
-                {result.get('message', f'La demande a ete {action_text} avec succes.')}
-            </p>
+            <p class="message">{progress_text}</p>
+            <div class="progress-info">
+                <strong>Progression du workflow</strong>
+                <div class="progress-bar">
+                    {"".join([
+                        f'<div class="step {"completed" if i < current_level or (workflow_complete and action == "approve") else "rejected" if action == "reject" and i == result.get("rejected_at_level", current_level) else "current" if i == current_level else "pending"}">{i}</div>'
+                        for i in range(1, total_levels + 1)
+                    ])}
+                </div>
+            </div>
             <div class="workflow-id">
                 ID: {result.get('workflow_id', 'N/A')}
             </div>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getMidpointUsers,
@@ -28,7 +29,6 @@ import {
   Building2,
   Database,
   FolderTree,
-  Settings,
   Filter,
 } from 'lucide-react'
 
@@ -51,14 +51,13 @@ interface Role {
 }
 
 // Catégories de rôles
-type RoleCategory = 'all' | 'departments' | 'ldap' | 'odoo' | 'system'
+type RoleCategory = 'all' | 'departments' | 'ldap' | 'odoo'
 
-const ROLE_CATEGORIES: { key: RoleCategory; label: string; icon: typeof Shield; color: string }[] = [
-  { key: 'all', label: 'Tous', icon: Filter, color: 'gray' },
-  { key: 'departments', label: 'Départements', icon: Building2, color: 'blue' },
-  { key: 'ldap', label: 'LDAP', icon: FolderTree, color: 'green' },
-  { key: 'odoo', label: 'Odoo', icon: Database, color: 'orange' },
-  { key: 'system', label: 'Système', icon: Settings, color: 'purple' },
+const ROLE_CATEGORIES: { key: RoleCategory; i18nKey: string; icon: typeof Shield; color: string }[] = [
+  { key: 'all', i18nKey: 'roles.categories.all', icon: Filter, color: 'gray' },
+  { key: 'departments', i18nKey: 'roles.categories.departments', icon: Building2, color: 'blue' },
+  { key: 'ldap', i18nKey: 'roles.categories.ldap', icon: FolderTree, color: 'green' },
+  { key: 'odoo', i18nKey: 'roles.categories.odoo', icon: Database, color: 'orange' },
 ]
 
 // Fonction pour catégoriser les rôles
@@ -78,21 +77,13 @@ const categorizeRole = (role: Role): RoleCategory[] => {
   if (name.includes('odoo') || name.includes('crm')) {
     categories.push('odoo')
   }
-  if (name.includes('admin') || name.includes('superuser') || name.includes('approver') ||
-      name.includes('reviewer') || name.includes('delegator') || name.includes('end user') ||
-      name.includes('keycloak')) {
-    categories.push('system')
-  }
 
-  // Si aucune catégorie trouvée, mettre dans système
-  if (categories.length === 0) {
-    categories.push('system')
-  }
-
+  // Les rôles non catégorisés sont accessibles via "Tous"
   return categories
 }
 
 export default function MidpointUsers() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showRoleModal, setShowRoleModal] = useState(false)
@@ -250,7 +241,6 @@ export default function MidpointUsers() {
       departments: 0,
       ldap: 0,
       odoo: 0,
-      system: 0,
     }
     roles.forEach(role => {
       const cats = categorizeRole(role)
@@ -267,16 +257,16 @@ export default function MidpointUsers() {
     if (cats.includes('departments')) return 'bg-blue-100 text-blue-800'
     if (cats.includes('odoo')) return 'bg-orange-100 text-orange-800'
     if (cats.includes('ldap')) return 'bg-green-100 text-green-800'
-    return 'bg-purple-100 text-purple-800'
+    return 'bg-gray-100 text-gray-800'
   }
 
   // Obtenir le label de catégorie
   const getCategoryLabel = (role: Role) => {
     const cats = categorizeRole(role)
-    if (cats.includes('departments')) return 'Département'
-    if (cats.includes('odoo')) return 'Odoo'
-    if (cats.includes('ldap')) return 'LDAP'
-    return 'Système'
+    if (cats.includes('departments')) return t('roles.categoryLabels.department')
+    if (cats.includes('odoo')) return t('roles.categoryLabels.odoo')
+    if (cats.includes('ldap')) return t('roles.categoryLabels.ldap')
+    return t('roles.categoryLabels.other')
   }
 
   return (
@@ -284,9 +274,9 @@ export default function MidpointUsers() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Utilisateurs MidPoint</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('users.title')}</h1>
           <p className="text-gray-500 mt-1">
-            Gestion centralisee des identites via MidPoint
+            {t('users.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -299,21 +289,21 @@ export default function MidpointUsers() {
             }`}
           >
             <Server className="w-4 h-4 mr-2" />
-            MidPoint: {healthData?.status || 'checking...'}
+            MidPoint: {healthData?.status || t('common.loading')}
           </div>
           <button
             onClick={() => refetchUsers()}
             className="btn-secondary flex items-center"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
-            Actualiser
+            {t('common.refresh')}
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="btn-primary flex items-center"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Nouvel utilisateur
+            {t('users.newUser')}
           </button>
         </div>
       </div>
@@ -324,7 +314,7 @@ export default function MidpointUsers() {
           <div className="flex items-center">
             <Users className="w-8 h-8 text-blue-500" />
             <div className="ml-4">
-              <p className="text-sm text-gray-500">Total utilisateurs</p>
+              <p className="text-sm text-gray-500">{t('users.totalUsers')}</p>
               <p className="text-2xl font-bold">{usersData?.total || 0}</p>
             </div>
           </div>
@@ -333,7 +323,7 @@ export default function MidpointUsers() {
           <div className="flex items-center">
             <Shield className="w-8 h-8 text-purple-500" />
             <div className="ml-4">
-              <p className="text-sm text-gray-500">Roles disponibles</p>
+              <p className="text-sm text-gray-500">{t('users.availableRoles')}</p>
               <p className="text-2xl font-bold">{rolesData?.total || 0}</p>
             </div>
           </div>
@@ -342,7 +332,7 @@ export default function MidpointUsers() {
           <div className="flex items-center">
             <UserCheck className="w-8 h-8 text-green-500" />
             <div className="ml-4">
-              <p className="text-sm text-gray-500">Utilisateurs actifs</p>
+              <p className="text-sm text-gray-500">{t('users.activeUsers')}</p>
               <p className="text-2xl font-bold">
                 {users.filter(u => u.administrativeStatus === 'enabled').length}
               </p>
@@ -353,7 +343,7 @@ export default function MidpointUsers() {
           <div className="flex items-center">
             <UserX className="w-8 h-8 text-red-500" />
             <div className="ml-4">
-              <p className="text-sm text-gray-500">Utilisateurs desactives</p>
+              <p className="text-sm text-gray-500">{t('users.disabledUsers')}</p>
               <p className="text-2xl font-bold">
                 {users.filter(u => u.administrativeStatus === 'disabled').length}
               </p>
@@ -364,18 +354,18 @@ export default function MidpointUsers() {
 
       {/* Users Table */}
       <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Liste des utilisateurs</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('users.userList')}</h2>
         {usersLoading ? (
           <div className="text-center py-8">
             <RefreshCw className="w-8 h-8 animate-spin mx-auto text-gray-400" />
-            <p className="text-gray-500 mt-2">Chargement...</p>
+            <p className="text-gray-500 mt-2">{t('common.loading')}</p>
           </div>
         ) : users.length === 0 ? (
           <div className="text-center py-8">
             <Users className="w-12 h-12 mx-auto text-gray-400" />
-            <p className="text-gray-500 mt-2">Aucun utilisateur trouve</p>
+            <p className="text-gray-500 mt-2">{t('users.noUsersFound')}</p>
             <p className="text-sm text-gray-400">
-              Creez un utilisateur pour commencer
+              {t('users.createUserToStart')}
             </p>
           </div>
         ) : (
@@ -384,19 +374,19 @@ export default function MidpointUsers() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Utilisateur
+                    {t('users.username')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nom complet
+                    {t('users.fullName')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
+                    {t('common.email')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Statut
+                    {t('common.status')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    {t('common.actions')}
                   </th>
                 </tr>
               </thead>
@@ -448,7 +438,7 @@ export default function MidpointUsers() {
                                 disableUserMutation.mutate(user.oid)
                               }}
                               className="text-yellow-600 hover:text-yellow-800"
-                              title="Desactiver"
+                              title={t('users.disable')}
                             >
                               <UserX className="w-4 h-4" />
                             </button>
@@ -459,7 +449,7 @@ export default function MidpointUsers() {
                                 enableUserMutation.mutate(user.oid)
                               }}
                               className="text-green-600 hover:text-green-800"
-                              title="Activer"
+                              title={t('users.enable')}
                             >
                               <UserCheck className="w-4 h-4" />
                             </button>
@@ -471,7 +461,7 @@ export default function MidpointUsers() {
                               setShowRoleModal(true)
                             }}
                             className="text-purple-600 hover:text-purple-800"
-                            title="Gerer les roles"
+                            title={t('roles.title')}
                           >
                             <Shield className="w-4 h-4" />
                           </button>
@@ -479,9 +469,7 @@ export default function MidpointUsers() {
                             onClick={(e) => {
                               e.stopPropagation()
                               if (
-                                confirm(
-                                  `Supprimer l'utilisateur ${user.name}? Cette action est irreversible.`
-                                )
+                                confirm(t('users.deleteConfirm', { name: user.name }))
                               ) {
                                 deleteUserMutation.mutate(user.oid)
                               }
@@ -711,10 +699,10 @@ export default function MidpointUsers() {
             <div className="p-4 border-b">
               <h3 className="text-lg font-semibold flex items-center">
                 <Shield className="w-5 h-5 mr-2 text-purple-600" />
-                Gestion des roles
+                {t('roles.title')}
               </h3>
               <p className="text-sm text-gray-500 mt-1">
-                Utilisateur: {users.find(u => u.oid === expandedUser)?.name || expandedUser}
+                {t('users.username')}: {users.find(u => u.oid === expandedUser)?.name || expandedUser}
               </p>
             </div>
 
@@ -724,7 +712,7 @@ export default function MidpointUsers() {
                 <div className="flex items-start">
                   <XCircle className="w-5 h-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-red-800">Erreur</p>
+                    <p className="text-sm font-medium text-red-800">{t('common.error')}</p>
                     <p className="text-sm text-red-700 mt-1">{errorMessage}</p>
                   </div>
                   <button
@@ -739,7 +727,7 @@ export default function MidpointUsers() {
 
             {/* Current Roles Section */}
             <div className="p-4 border-b bg-gray-50">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Roles actuels</h4>
+              <h4 className="text-sm font-medium text-gray-700 mb-2">{t('roles.currentRoles')}</h4>
               {userRoles?.roles?.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {userRoles.roles.map((role: Role) => (
@@ -750,7 +738,7 @@ export default function MidpointUsers() {
                       {role.name}
                       <button
                         onClick={() => {
-                          if (confirm(`Retirer le role "${role.name}" de cet utilisateur?`)) {
+                          if (confirm(t('roles.removeRoleConfirm', { name: role.name }))) {
                             removeRoleMutation.mutate({
                               userId: expandedUser,
                               roleId: role.oid,
@@ -759,7 +747,7 @@ export default function MidpointUsers() {
                         }}
                         disabled={removeRoleMutation.isPending}
                         className="ml-2 hover:text-red-600 transition-colors"
-                        title="Retirer ce role"
+                        title={t('roles.removeRole')}
                       >
                         <XCircle className="w-4 h-4" />
                       </button>
@@ -767,7 +755,7 @@ export default function MidpointUsers() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 italic">Aucun role assigne</p>
+                <p className="text-sm text-gray-500 italic">{t('roles.noRolesAssigned')}</p>
               )}
             </div>
 
@@ -798,7 +786,7 @@ export default function MidpointUsers() {
                       } : {}}
                     >
                       <Icon className="w-4 h-4 mr-1.5" />
-                      {cat.label}
+                      {t(cat.i18nKey)}
                       <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs bg-white bg-opacity-50">
                         {roleCounts[cat.key]}
                       </span>
@@ -813,7 +801,7 @@ export default function MidpointUsers() {
               <div className="space-y-2">
                 {filteredRoles.length === 0 ? (
                   <p className="text-center text-gray-500 py-4">
-                    Aucun role dans cette categorie
+                    {t('roles.noRolesInCategory')}
                   </p>
                 ) : (
                   filteredRoles.map((role) => {
@@ -836,7 +824,7 @@ export default function MidpointUsers() {
                               </span>
                               {isAssigned && (
                                 <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-800">
-                                  Assigne
+                                  {t('roles.assigned')}
                                 </span>
                               )}
                             </div>
@@ -848,7 +836,7 @@ export default function MidpointUsers() {
                             {isAssigned ? (
                               <button
                                 onClick={() => {
-                                  if (confirm(`Retirer le role "${role.name}"?`)) {
+                                  if (confirm(t('roles.removeRoleConfirm', { name: role.name }))) {
                                     removeRoleMutation.mutate({
                                       userId: expandedUser,
                                       roleId: role.oid,
@@ -893,7 +881,7 @@ export default function MidpointUsers() {
                 }}
                 className="btn-secondary w-full"
               >
-                Fermer
+                {t('common.close')}
               </button>
             </div>
           </div>

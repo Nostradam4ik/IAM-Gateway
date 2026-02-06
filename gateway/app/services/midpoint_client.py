@@ -312,3 +312,184 @@ class MidPointClient:
                 }
             }
         }
+
+    async def disable_account(self, username: str) -> bool:
+        """Disable a user account in MidPoint."""
+        try:
+            # First find the user by username
+            user = await self.get_user_by_name(username)
+            if not user:
+                logger.warning("User not found for disable", username=username)
+                return False
+
+            client = self._get_client()
+
+            # Update activation status to disabled
+            user_object = {
+                "user": {
+                    "activation": {
+                        "administrativeStatus": "disabled"
+                    }
+                }
+            }
+
+            response = await client.patch(
+                f"/ws/rest/users/{user['id']}",
+                json=user_object
+            )
+
+            if response.status_code in [200, 204]:
+                logger.info("User disabled in MidPoint", username=username)
+                return True
+
+            return False
+
+        except Exception as e:
+            logger.error("Failed to disable account", username=username, error=str(e))
+            return False
+
+    async def enable_account(self, username: str) -> bool:
+        """Enable a user account in MidPoint."""
+        try:
+            # First find the user by username
+            user = await self.get_user_by_name(username)
+            if not user:
+                logger.warning("User not found for enable", username=username)
+                return False
+
+            client = self._get_client()
+
+            # Update activation status to enabled
+            user_object = {
+                "user": {
+                    "activation": {
+                        "administrativeStatus": "enabled"
+                    }
+                }
+            }
+
+            response = await client.patch(
+                f"/ws/rest/users/{user['id']}",
+                json=user_object
+            )
+
+            if response.status_code in [200, 204]:
+                logger.info("User enabled in MidPoint", username=username)
+                return True
+
+            return False
+
+        except Exception as e:
+            logger.error("Failed to enable account", username=username, error=str(e))
+            return False
+
+    async def get_user_by_name(self, username: str) -> Optional[Dict[str, Any]]:
+        """Get a user by username."""
+        try:
+            client = self._get_client()
+
+            # Search for user by name
+            search_query = {
+                "query": {
+                    "filter": {
+                        "equal": {
+                            "path": "name",
+                            "value": username
+                        }
+                    }
+                }
+            }
+
+            response = await client.post(
+                "/ws/rest/users/search",
+                json=search_query
+            )
+            response.raise_for_status()
+
+            data = response.json()
+            obj = data.get("object", {})
+            if isinstance(obj, dict):
+                users = obj.get("object", [])
+            else:
+                users = obj if isinstance(obj, list) else []
+
+            if not isinstance(users, list):
+                users = [users] if users else []
+
+            if users:
+                return self._parse_user(users[0])
+
+            return None
+
+        except Exception as e:
+            logger.error("Failed to get user by name", username=username, error=str(e))
+            return None
+
+    async def assign_role_by_name(self, username: str, role_name: str) -> bool:
+        """Assign a role to a user by role name."""
+        try:
+            # First find the user
+            user = await self.get_user_by_name(username)
+            if not user:
+                logger.warning("User not found for role assignment", username=username)
+                return False
+
+            # Find the role by name
+            role = await self.get_role_by_name(role_name)
+            if not role:
+                logger.warning("Role not found", role_name=role_name)
+                return False
+
+            # Assign the role
+            return await self.assign_role(user['id'], role['id'])
+
+        except Exception as e:
+            logger.error("Failed to assign role by name", username=username, role_name=role_name, error=str(e))
+            return False
+
+    async def get_role_by_name(self, role_name: str) -> Optional[Dict[str, Any]]:
+        """Get a role by its name."""
+        try:
+            client = self._get_client()
+
+            # Search for role by name
+            search_query = {
+                "query": {
+                    "filter": {
+                        "equal": {
+                            "path": "name",
+                            "value": role_name
+                        }
+                    }
+                }
+            }
+
+            response = await client.post(
+                "/ws/rest/roles/search",
+                json=search_query
+            )
+            response.raise_for_status()
+
+            data = response.json()
+            obj = data.get("object", {})
+            if isinstance(obj, dict):
+                roles = obj.get("object", [])
+            else:
+                roles = obj if isinstance(obj, list) else []
+
+            if not isinstance(roles, list):
+                roles = [roles] if roles else []
+
+            if roles:
+                role_data = roles[0].get("role", roles[0])
+                return {
+                    "id": role_data.get("oid"),
+                    "name": role_data.get("name"),
+                    "description": role_data.get("description")
+                }
+
+            return None
+
+        except Exception as e:
+            logger.error("Failed to get role by name", role_name=role_name, error=str(e))
+            return None

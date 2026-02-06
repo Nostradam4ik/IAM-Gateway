@@ -16,6 +16,8 @@ class ConnectorType(str, Enum):
     LDAP = "ldap"
     REST = "rest"
     ERP = "erp"
+    IGA = "iga"  # Identity Governance & Administration
+    MIDPOINT = "midpoint"  # MidPoint spécifique
 
 
 class ConnectorSubtype(str, Enum):
@@ -38,6 +40,11 @@ class ConnectorSubtype(str, Enum):
     # ERP
     ODOO = "odoo"
     SAP = "sap"
+    # IGA (Identity Governance & Administration)
+    MIDPOINT = "midpoint"
+    IGA = "iga"  # Generic IGA connector
+    SAILPOINT = "sailpoint"
+    SAVIYNT = "saviynt"
 
 
 class HealthStatus(str, Enum):
@@ -46,6 +53,15 @@ class HealthStatus(str, Enum):
     UNHEALTHY = "unhealthy"
     UNKNOWN = "unknown"
     TESTING = "testing"
+
+
+class MidPointSyncStatus(str, Enum):
+    """Statut de synchronisation avec MidPoint."""
+    NOT_SYNCED = "not_synced"
+    SYNCED = "synced"
+    OUT_OF_SYNC = "out_of_sync"
+    SYNC_ERROR = "sync_error"
+    SYNCING = "syncing"
 
 
 # Schemas de configuration par type
@@ -188,7 +204,9 @@ CONNECTOR_TYPE_SUBTYPES = {
     ConnectorType.SQL: [ConnectorSubtype.POSTGRESQL, ConnectorSubtype.MYSQL, ConnectorSubtype.ORACLE, ConnectorSubtype.SQLSERVER, ConnectorSubtype.MARIADB],
     ConnectorType.LDAP: [ConnectorSubtype.OPENLDAP, ConnectorSubtype.ACTIVE_DIRECTORY, ConnectorSubtype.FREEIPA],
     ConnectorType.REST: [ConnectorSubtype.KEYCLOAK, ConnectorSubtype.FIREBASE, ConnectorSubtype.GLPI, ConnectorSubtype.GENERIC_REST],
-    ConnectorType.ERP: [ConnectorSubtype.ODOO, ConnectorSubtype.SAP]
+    ConnectorType.ERP: [ConnectorSubtype.ODOO, ConnectorSubtype.SAP],
+    ConnectorType.IGA: [ConnectorSubtype.MIDPOINT, ConnectorSubtype.IGA, ConnectorSubtype.SAILPOINT, ConnectorSubtype.SAVIYNT],
+    ConnectorType.MIDPOINT: [ConnectorSubtype.MIDPOINT]
 }
 
 # Informations sur les types de connecteurs
@@ -206,7 +224,11 @@ CONNECTOR_TYPE_INFO = {
     ConnectorSubtype.GLPI: {"name": "GLPI", "icon": "server", "description": "GLPI IT Management"},
     ConnectorSubtype.GENERIC_REST: {"name": "API REST", "icon": "globe", "description": "API REST generique"},
     ConnectorSubtype.ODOO: {"name": "Odoo", "icon": "box", "description": "ERP Odoo"},
-    ConnectorSubtype.SAP: {"name": "SAP", "icon": "building", "description": "SAP ERP (bientot)"}
+    ConnectorSubtype.SAP: {"name": "SAP", "icon": "building", "description": "SAP ERP (bientot)"},
+    ConnectorSubtype.MIDPOINT: {"name": "MidPoint", "icon": "shield-check", "description": "Evolveum MidPoint IGA"},
+    ConnectorSubtype.IGA: {"name": "IGA Generique", "icon": "shield", "description": "Connecteur IGA generique"},
+    ConnectorSubtype.SAILPOINT: {"name": "SailPoint", "icon": "anchor", "description": "SailPoint IdentityNow"},
+    ConnectorSubtype.SAVIYNT: {"name": "Saviynt", "icon": "key", "description": "Saviynt Enterprise Identity Cloud"}
 }
 
 
@@ -220,6 +242,7 @@ class ConnectorCreate(BaseModel):
     description: Optional[str] = None
     configuration: Dict[str, Any]
     is_active: bool = True
+    auto_create_in_midpoint: bool = True  # Auto-create Resource in MidPoint
 
 
 class ConnectorUpdate(BaseModel):
@@ -246,6 +269,11 @@ class ConnectorResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     created_by: Optional[str]
+    # MidPoint sync fields
+    midpoint_resource_oid: Optional[str] = None
+    midpoint_sync_status: Optional[MidPointSyncStatus] = MidPointSyncStatus.NOT_SYNCED
+    midpoint_last_sync: Optional[datetime] = None
+    midpoint_sync_error: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -263,6 +291,9 @@ class ConnectorListResponse(BaseModel):
     configuration: Dict[str, Any]  # Credentials masques
     last_health_status: HealthStatus
     last_health_check: Optional[datetime]
+    # MidPoint sync status
+    midpoint_resource_oid: Optional[str] = None
+    midpoint_sync_status: Optional[MidPointSyncStatus] = MidPointSyncStatus.NOT_SYNCED
 
 
 class ConnectorTestRequest(BaseModel):
