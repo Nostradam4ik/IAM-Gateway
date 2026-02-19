@@ -4,20 +4,26 @@ Script to generate PowerPoint presentation for IAM Gateway UPEC project
 """
 
 from pptx import Presentation
-from pptx.util import Inches, Pt
-from pptx.dml.color import RgbColor
-from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+from pptx.util import Inches, Pt, Emu
+from pptx.enum.text import PP_ALIGN
 from pptx.enum.shapes import MSO_SHAPE
+from pptx.util import Pt
 import os
 
+def rgb(r, g, b):
+    """Create an RGBColor from r,g,b values."""
+    from pptx.util import Emu
+    from pptx.dml.color import RGBColor
+    return RGBColor(r, g, b)
+
 # Colors
-DARK_BLUE = RgbColor(26, 26, 46)
-MEDIUM_BLUE = RgbColor(50, 130, 184)
-LIGHT_BLUE = RgbColor(187, 225, 250)
-WHITE = RgbColor(255, 255, 255)
-GREEN = RgbColor(76, 175, 80)
-ORANGE = RgbColor(255, 152, 0)
-RED = RgbColor(244, 67, 54)
+DARK_BLUE = rgb(26, 26, 46)
+MEDIUM_BLUE = rgb(50, 130, 184)
+LIGHT_BLUE = rgb(187, 225, 250)
+WHITE = rgb(255, 255, 255)
+GREEN = rgb(76, 175, 80)
+ORANGE = rgb(255, 152, 0)
+RED = rgb(244, 67, 54)
 
 def add_title_slide(prs, title, subtitle, authors, university):
     """Add title slide"""
@@ -30,10 +36,14 @@ def add_title_slide(prs, title, subtitle, authors, university):
     background.fill.fore_color.rgb = DARK_BLUE
     background.line.fill.background()
 
-    # Logo placeholder
-    logo_path = "/app/presentations/screenshots/../cropped-Logo-INFO-FOND-BLANC.jpg"
-    if os.path.exists(logo_path):
-        slide.shapes.add_picture(logo_path, Inches(3), Inches(0.5), width=Inches(4))
+    # Logos
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_iut = os.path.join(script_dir, "cropped-Logo-INFO-FOND-BLANC.jpg")
+    logo_lissi = os.path.join(script_dir, "Lissi-cmjn.png")
+    if os.path.exists(logo_iut):
+        slide.shapes.add_picture(logo_iut, Inches(0.5), Inches(0.3), height=Inches(1.2))
+    if os.path.exists(logo_lissi):
+        slide.shapes.add_picture(logo_lissi, Inches(6), Inches(0.3), height=Inches(1))
 
     # Title
     title_box = slide.shapes.add_textbox(Inches(0.5), Inches(2.5), Inches(9), Inches(1))
@@ -71,7 +81,7 @@ def add_title_slide(prs, title, subtitle, authors, university):
         p = tf.add_paragraph()
         p.text = line
         p.font.size = Pt(16)
-        p.font.color.rgb = RgbColor(136, 136, 136)
+        p.font.color.rgb = rgb(136, 136, 136)
         p.alignment = PP_ALIGN.CENTER
 
 def add_content_slide(prs, title, content_left, content_right=None, image_path=None):
@@ -176,7 +186,7 @@ def add_table_slide(prs, title, headers, rows):
         cell = table.cell(0, i)
         cell.text = header
         cell.fill.solid()
-        cell.fill.fore_color.rgb = RgbColor(15, 76, 117)
+        cell.fill.fore_color.rgb = rgb(15, 76, 117)
         p = cell.text_frame.paragraphs[0]
         p.font.bold = True
         p.font.size = Pt(14)
@@ -189,10 +199,10 @@ def add_table_slide(prs, title, headers, rows):
             cell.text = str(cell_text)
             if row_idx % 2 == 0:
                 cell.fill.solid()
-                cell.fill.fore_color.rgb = RgbColor(30, 45, 70)
+                cell.fill.fore_color.rgb = rgb(30, 45, 70)
             else:
                 cell.fill.solid()
-                cell.fill.fore_color.rgb = RgbColor(26, 26, 46)
+                cell.fill.fore_color.rgb = rgb(26, 26, 46)
             p = cell.text_frame.paragraphs[0]
             p.font.size = Pt(12)
             p.font.color.rgb = WHITE
@@ -208,8 +218,8 @@ def create_presentation():
         prs,
         "Plateforme No-Code & Gateway IAM",
         "Orchestration intelligente des identites multi-systemes",
-        "Zhmuryk Andrii & Aydin Ibrahim",
-        "BUT Informatique 3eme annee\nUniversite Paris-Est Creteil\nDepartement Informatique\nJanvier 2026"
+        "Equipe MOE: Zhmuryk Andrii & Aydin Ibrahim",
+        "Product Owner & Architecture: M. CHIBANI\nBUT Informatique 3eme annee - UPEC\nIUT Creteil-Vitry | Laboratoire LISSI\nNEXUS AI Innovation Lab - Fevrier 2026"
     )
 
     # Slide 2: Problematique
@@ -304,7 +314,7 @@ def create_presentation():
     ])
 
     # Slide 7: Architecture Technique
-    add_table_slide(prs, "Architecture Technique - 15 Services Docker",
+    add_table_slide(prs, "Architecture Technique - 14 Services Docker",
         ["Service", "Technologie", "Port"],
         [
             ["gateway", "FastAPI/Python", "8000"],
@@ -476,7 +486,7 @@ def create_presentation():
             ["Recherche Vectorielle", "80%", "Refresh embeddings"],
             ["Rollback Complet", "60%", "Nettoyage etats"],
             ["Versionnage Git Regles", "40%", "Integration Git"],
-            ["Multi-langue UI", "10%", "i18n React"],
+            ["Multi-langue UI", "100%", "FR, EN, UK (i18next)"],
         ]
     )
 
@@ -616,10 +626,11 @@ def create_presentation():
         "## Chiffres cles",
         "- 16,000+ lignes Python (Backend)",
         "- 5,000+ lignes TypeScript (Frontend)",
-        "- 15 services Docker",
+        "- 14 services Docker orchestres",
         "- 80+ endpoints API REST",
-        "- 6 connecteurs systemes",
-        "- 14 pages Frontend",
+        "- 6 connecteurs (LDAP, SQL, Odoo, MidPoint, Keycloak, CSV)",
+        "- 15 pages Frontend",
+        "- 3 langues (FR, EN, UK)",
     ], [
         "",
         "",
@@ -632,8 +643,8 @@ def create_presentation():
     # Slide 24: Annexes
     add_content_slide(prs, "Annexes - Ressources", [
         "## Acces au projet",
-        "- Code source: [Repository Git]",
-        "- Documentation: /docs/",
+        "- GitHub: github.com/NEXUS-AI-Innovation-lab/IAM-Gateway",
+        "- Documentation: docs/GUIDE_DEVELOPPEUR.md",
         "- Video demo: [Lien video]",
         "",
         "## Technologies",
@@ -642,17 +653,19 @@ def create_presentation():
         "- React: react.dev",
     ], [
         "## Contact",
-        "- Zhmuryk Andrii",
+        "- Zhmuryk Andrii: andrijzmurik@gmail.com",
         "- Aydin Ibrahim",
         "",
         "## Remerciements",
-        "- Professeur encadrant",
-        "- Departement Informatique UPEC",
+        "- PO & Architecture: M. CHIBANI",
+        "- IUT Creteil-Vitry - Dept. Informatique",
+        "- Laboratoire LISSI - UPEC",
         "- Communaute Open Source",
     ])
 
     # Save
-    output_path = "/app/presentations/IAM_Gateway_UPEC.pptx"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_path = os.path.join(script_dir, "IAM_Gateway_UPEC.pptx")
     prs.save(output_path)
     print(f"Presentation saved to {output_path}")
     return output_path
