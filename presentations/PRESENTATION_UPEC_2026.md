@@ -7,15 +7,17 @@
 # SLIDE 1: PAGE DE TITRE
 
 **Plateforme No-Code & Gateway IAM**
-*Orchestration intelligente des identités multi-systèmes*
+*Orchestration intelligente des identites multi-systemes*
 
-- **Étudiants**: Zhmuryk Andrii & Aydin Ibrahim
-- **Formation**: BUT Informatique 3ème année
-- **Université**: UPEC - Université Paris-Est Créteil
-- **Département**: Informatique
-- **Date**: Janvier 2026
+- **Equipe MOE**: Zhmuryk Andrii & Aydin Ibrahim
+- **Product Owner & Architecture**: M. CHIBANI
+- **Formation**: BUT Informatique 3eme annee
+- **Universite**: UPEC - Universite Paris-Est Creteil
+- **Laboratoire**: LISSI
+- **Organisation**: NEXUS AI Innovation Lab
+- **Date**: Fevrier 2026
 
-[Logo UPEC] [Logo Département Informatique]
+[Logo IUT Creteil-Vitry] [Logo Laboratoire LISSI] [Logo UPEC]
 
 ---
 
@@ -164,7 +166,7 @@
 
 # SLIDE 7: ARCHITECTURE TECHNIQUE DÉTAILLÉE
 
-## 15 Services Docker
+## 14 Services Docker
 
 | Service | Technologie | Port | Rôle |
 |---------|------------|------|------|
@@ -390,12 +392,12 @@ definition: |
 
 | Fonctionnalité | Progression | Reste à faire |
 |----------------|-------------|---------------|
-| **Intégration Keycloak** | 70% | Synchronisation des groupes, mapping des rôles |
+| **Integration Keycloak** | 70% | Synchronisation des groupes, mapping des roles |
 | **Notifications Email** | 50% | Templates HTML, personnalisation, retry logic |
-| **Recherche Vectorielle** | 80% | Rafraîchissement auto des embeddings |
-| **Rollback Complet** | 60% | Nettoyage des états intermédiaires |
-| **Versionnage Git des Règles** | 40% | Intégration Git bare repo |
-| **Multi-langue UI** | 10% | Traduction anglais, i18n React |
+| **Recherche Vectorielle** | 80% | Rafraichissement auto des embeddings |
+| **Rollback Complet** | 60% | Nettoyage des etats intermediaires |
+| **Versionnage Git des Regles** | 40% | Integration Git bare repo |
+| **Multi-langue UI** | 100% | Francais, Anglais, Ukrainien (i18next) |
 
 ## Détails:
 
@@ -570,9 +572,9 @@ Devenir une plateforme IAM No-Code complète, accessible aux PME qui n'ont pas l
 ## Chiffres clés
 - **16,000+** lignes de code Python (Backend)
 - **5,000+** lignes de code TypeScript (Frontend)
-- **15** services Docker orchestrés
+- **14** services Docker orchestres
 - **80+** endpoints API REST
-- **6** connecteurs systèmes
+- **6** connecteurs systemes (LDAP, SQL, Odoo, MidPoint, Keycloak, CSV)
 
 ## Points forts du projet
 - Architecture moderne et scalable
@@ -588,10 +590,10 @@ Devenir une plateforme IAM No-Code complète, accessible aux PME qui n'ont pas l
 
 # SLIDE 24: ANNEXES - LIENS & RESSOURCES
 
-## Accès au projet
-- **Code source:** [Repository Git]
-- **Documentation:** /docs/
-- **Vidéo démo:** [Lien vidéo]
+## Acces au projet
+- **Code source:** https://github.com/NEXUS-AI-Innovation-lab/IAM-Gateway
+- **Documentation:** /docs/GUIDE_DEVELOPPEUR.md
+- **Video demo:** [Lien video]
 
 ## Technologies utilisées
 - MidPoint: https://evolveum.com/midpoint/
@@ -600,13 +602,14 @@ Devenir une plateforme IAM No-Code complète, accessible aux PME qui n'ont pas l
 - Docker: https://www.docker.com/
 
 ## Contact
-- **Zhmuryk Andrii:** [email]
+- **Zhmuryk Andrii:** andrijzmurik@gmail.com
 - **Aydin Ibrahim:** [email]
 
 ## Remerciements
-- Professeur encadrant
-- Département Informatique UPEC
-- Communauté Open Source
+- **Product Owner & Architecture**: M. CHIBANI
+- IUT de Creteil-Vitry - Departement Informatique
+- Laboratoire LISSI - UPEC
+- Communaute Open Source (MidPoint, FastAPI, React)
 
 ---
 

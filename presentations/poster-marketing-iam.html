@@ -90,6 +90,62 @@
             font-weight: 600;
         }
 
+        .institutional-logos {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .institutional-logos img {
+            height: 55px;
+            object-fit: contain;
+        }
+
+        .institutional-logos .logo-placeholder {
+            height: 55px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: var(--gray);
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        /* Team section */
+        .team-section {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            padding: 15px 0;
+            border-top: 1px solid #2a3a4a;
+            margin-top: 10px;
+        }
+
+        .team-group {
+            text-align: center;
+        }
+
+        .team-group .team-label {
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .team-group .team-names {
+            font-size: 0.95rem;
+            color: var(--light);
+            font-weight: 500;
+        }
+
         /* Main Content */
         .main {
             padding: 20px 50px 40px;
@@ -317,6 +373,10 @@
     <div class="poster">
         <!-- Header -->
         <header class="header">
+            <div class="institutional-logos">
+                <div class="logo-placeholder">IUT de<br>Creteil-Vitry</div>
+                <div class="logo-placeholder">Laboratoire<br>LISSI</div>
+            </div>
             <div class="logo">
                 <div class="logo-icon">
                     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -325,7 +385,7 @@
                 </div>
                 <div class="logo-text">IAM Gateway</div>
             </div>
-            <div class="badge">Projet SAE 2025</div>
+            <div class="badge">Projet SAE 2026</div>
         </header>
 
         <!-- Main Content -->
@@ -403,6 +463,22 @@
                     <div class="icon">&#128640;</div>
                     <h3>API REST Complète</h3>
                     <p>Interface programmatique pour une intégration et une automatisation avancées.</p>
+                </div>
+            </div>
+
+            <!-- Team -->
+            <div class="team-section">
+                <div class="team-group">
+                    <div class="team-label">Equipe MOE</div>
+                    <div class="team-names">Zhmuryk Andrii &amp; Aydin Ibrahim</div>
+                </div>
+                <div class="team-group">
+                    <div class="team-label">Product Owner &amp; Architecture</div>
+                    <div class="team-names">M. CHIBANI</div>
+                </div>
+                <div class="team-group">
+                    <div class="team-label">Organisation</div>
+                    <div class="team-names">NEXUS AI Innovation Lab</div>
                 </div>
             </div>
         </div>
