@@ -1,5 +1,18 @@
 """
-API de gestion des workflows d'approbation
+API de gestion des workflows d'approbation multi-niveaux.
+
+Ce module gere le cycle de vie complet des workflows :
+  - Configurations : templates de workflow (niveaux, approbateurs)
+  - Instances : workflow actifs lies a une operation de provisionnement
+  - Approbation / Rejet : par interface ou par email (lien tokenise)
+  - Annulation : admin seulement
+
+Chaine d'approbation par defaut (3 niveaux) :
+  1. Manager -> 2. RH -> 3. IT Admin
+
+Apres approbation complete, le provisionnement reprend automatiquement
+(creation du compte dans MidPoint / systemes cibles).
+L'endpoint GET /approve-by-email retourne une page HTML de confirmation.
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import HTMLResponse, RedirectResponse

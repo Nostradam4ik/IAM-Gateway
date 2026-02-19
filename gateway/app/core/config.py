@@ -1,5 +1,19 @@
 """
-Configuration de la Gateway IAM
+Configuration de la Gateway IAM via variables d'environnement.
+
+Utilise pydantic-settings pour charger automatiquement les variables
+d'environnement et le fichier .env. Valeurs par defaut pour dev local.
+
+Sections :
+  - Application : APP_NAME, DEBUG, SECRET_KEY
+  - Database : DATABASE_URL (PostgreSQL asyncpg)
+  - Redis : REDIS_URL (cache, sessions, token blacklist)
+  - LDAP : host, port, bind DN, base DN
+  - SQL Target : base cible pour le provisionnement
+  - Odoo : URL, DB, user, password (XML-RPC)
+  - MidPoint : URL, user, password, MIDPOINT_ENABLED flag
+  - Qdrant : URL (recherche semantique audit)
+  - Email/SMTP : configuration envoi notifications
 """
 from pydantic_settings import BaseSettings
 from pydantic import Field

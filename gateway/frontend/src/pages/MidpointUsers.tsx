@@ -1,3 +1,16 @@
+/**
+ * MidpointUsers.tsx - Page de gestion des utilisateurs MidPoint.
+ *
+ * CRUD complet sur les identites MidPoint :
+ *   - Liste paginee avec recherche et tri
+ *   - Creation d'utilisateur (username, prenom, nom, email, departement)
+ *   - Detail avec comptes shadows (LDAP, Odoo, Keycloak...)
+ *   - Assignation / retrait de roles via modal avec onglets par categorie
+ *   - Enable / Disable d'un compte
+ *   - Suppression avec confirmation
+ *
+ * Utilise l'API /api/v1/midpoint/ (MidPoint REST).
+ */
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'

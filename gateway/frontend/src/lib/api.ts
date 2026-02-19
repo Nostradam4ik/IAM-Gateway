@@ -1,3 +1,26 @@
+/**
+ * api.ts - Client HTTP centralise pour toute l'application frontend.
+ *
+ * Utilise Axios avec :
+ *   - Base URL configurable via VITE_API_URL (defaut: localhost:8000/api/v1)
+ *   - Intercepteur request : ajoute automatiquement le JWT Bearer token
+ *   - Intercepteur response : redirige vers /login sur 401 (token expire)
+ *
+ * Fonctions exportees par section :
+ *   - Auth        : login
+ *   - Provisioning : getOperations, getOperation, createProvision, updateProvision, deleteProvision
+ *   - Rules       : getRules, createRule, updateRule, deleteRule, testRule
+ *   - Workflows   : getWorkflows, getPendingApprovals, approveWorkflow, rejectWorkflow
+ *   - Reconcile   : startReconciliation, getReconciliationJobs, getDiscrepancies, resolveDiscrepancies
+ *   - Live        : getLiveStats, compareSystems, searchUser, syncUser
+ *   - AI          : queryAI, getAIConfig, updateAIConfig
+ *   - Admin       : getSystemStatus, emergencyStop, resumeProvisioning, getConnectorsStatus
+ *   - Connectors  : getConnectors, createConnector, testConnector, runHealthChecks
+ *   - MidPoint    : getMidpointUsers, createMidpointUser, assignRole, removeRole
+ *   - Users       : getGatewayUsers, createGatewayUser, updateUserRoles, deleteGatewayUser
+ *   - LDAP Groups : getLdapGroups, getGroupDetails, addMemberToGroup, removeMemberFromGroup
+ *   - Scheduler   : getScheduledJobs, createDailySync, createIntervalSync, deleteJob
+ */
 import axios from 'axios'
 import { useAuthStore } from '../store/auth'
 

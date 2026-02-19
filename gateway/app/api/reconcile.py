@@ -1,5 +1,15 @@
 """
-API de reconciliation avec MidPoint
+API de reconciliation entre MidPoint et les systemes cibles.
+
+Permet de detecter et corriger les divergences entre la source de verite
+(MidPoint) et les systemes de provisionnement (LDAP, SQL, Odoo).
+
+Fonctionnalites :
+  - Demarrer un job de reconciliation (background task)
+  - Suivre le statut et la progression du job
+  - Lister les divergences trouvees (missing, extra, mismatch)
+  - Resoudre : use_midpoint, use_target, delete_orphan, ignore
+  - Synchroniser le cache local avec les systemes cibles
 """
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Query
 from typing import List, Optional

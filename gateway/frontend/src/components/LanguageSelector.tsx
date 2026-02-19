@@ -1,3 +1,11 @@
+/**
+ * LanguageSelector.tsx - Menu deroulant de selection de langue.
+ *
+ * Affiche un bouton avec le drapeau de la langue courante dans le header.
+ * Au clic, ouvre un dropdown avec les langues disponibles (FR, EN, UK).
+ * Le choix est sauvegarde dans localStorage via i18next.
+ * Se ferme automatiquement au clic exterieur (useRef + clickOutside).
+ */
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Globe, ChevronDown } from 'lucide-react'

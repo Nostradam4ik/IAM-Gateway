@@ -1,5 +1,13 @@
 """
-Modeles pour les operations de provisionnement
+Modeles Pydantic / SQLModel pour les operations de provisionnement.
+
+Definit :
+  - TargetSystem (enum) : LDAP, SQL, ODOO, MIDPOINT
+  - OperationType : CREATE, UPDATE, DELETE, ENABLE, DISABLE
+  - OperationStatus : PENDING, AWAITING_APPROVAL, IN_PROGRESS, SUCCESS, FAILED
+  - ProvisioningRequest / ProvisioningResponse : schemas API
+  - ProvisioningOperation : enregistrement DB d'une operation
+  - RollbackAction, TargetAccountState : suivi des rollbacks
 """
 from sqlmodel import SQLModel, Field
 from typing import Optional, List, Dict, Any

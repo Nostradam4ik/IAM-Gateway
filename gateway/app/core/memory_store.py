@@ -1,20 +1,30 @@
 """
-Stockage pour les operations et reconciliations.
-Utilise PostgreSQL pour persister les donnees entre redemarrages.
-Les donnees de demo ne sont plus generees - seules les vraies operations sont enregistrees.
+Stockage hybride : cache memoire local + persistance PostgreSQL.
+
+Architecture :
+    - Pattern Singleton thread-safe (un seul MemoryStore par processus)
+    - Au demarrage : charge les donnees depuis PostgreSQL dans le cache local
+    - En ecriture : met a jour le cache immediatement + sauvegarde async en DB
+    - En lecture : acces direct au cache (pas de requete SQL)
+
+Donnees gerees :
+    - Operations de provisionnement (table provisioning_operations)
+    - Logs d'audit (table audit_logs + indexation Qdrant vectorielle)
+    - Jobs de reconciliation (table reconciliation_jobs)
+    - Workflows d'approbation (table workflows)
+    - Divergences (cache uniquement)
+
+La sauvegarde asynchrone (_run_async) permet de ne pas bloquer les requetes
+HTTP en attendant la persistance. En cas d'erreur DB, le cache reste coherent.
 """
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import threading
 import asyncio
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 import structlog
 import uuid
 import json
-
-from app.core.config import settings
 
 logger = structlog.get_logger()
 
@@ -37,10 +47,10 @@ class MemoryStore:
         if self._initialized:
             return
         self._initialized = True
-        self.engine = create_async_engine(settings.DATABASE_URL, echo=False)
-        self.async_session = sessionmaker(
-            self.engine, class_=AsyncSession, expire_on_commit=False
-        )
+        # Reutiliser l'engine de database.py au lieu d'en creer un nouveau
+        from app.core.database import engine, async_session
+        self.engine = engine
+        self.async_session = async_session
         # Cache local pour acces rapide (synchronise avec DB)
         self.operations: Dict[str, Any] = {}
         self.reconciliation_jobs: Dict[str, Any] = {}
@@ -406,6 +416,17 @@ class MemoryStore:
         self.audit_logs.insert(0, normalized_entry)
         if len(self.audit_logs) > 1000:
             self.audit_logs = self.audit_logs[:1000]
+
+        # Indexer dans Qdrant pour la recherche semantique
+        async def _index_qdrant():
+            try:
+                from app.core.qdrant_store import qdrant_store
+                if qdrant_store.is_connected:
+                    await qdrant_store.index_audit_log(normalized_entry)
+            except Exception as e:
+                logger.debug("Qdrant indexing skipped", error=str(e))
+
+        self._run_async(_index_qdrant())
 
         # Sauvegarder en DB
         async def _save():

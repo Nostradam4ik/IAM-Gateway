@@ -1,3 +1,15 @@
+/**
+ * Permissions.tsx - Page de visualisation des niveaux de permission.
+ *
+ * Affiche en lecture seule la hierarchie des 5 niveaux de permission :
+ *   1. Lecture seule
+ *   2. Lecture + Ecriture basique
+ *   3. Gestion departement
+ *   4. Administration systeme
+ *   5. Super administrateur
+ *
+ * Inclut des statistiques et la liste des utilisateurs par niveau.
+ */
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {

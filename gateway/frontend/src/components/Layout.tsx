@@ -1,7 +1,21 @@
+/**
+ * Layout.tsx - Mise en page principale avec sidebar et header.
+ *
+ * Structure :
+ *   - Sidebar gauche (fixe sur desktop, overlay sur mobile) avec navigation
+ *   - Header avec : selecteur de langue, bouton Test/Operations,
+ *     bouton Arret d'urgence (appelle emergencyStop API), bouton Logout
+ *   - Zone de contenu principal (children)
+ *
+ * Navigation : les items sont definis par des cles i18n (traduction FR/EN/ES)
+ * Le bouton Arret d'urgence dans le header demande confirmation avant d'appeler
+ * l'API POST /api/v1/admin/emergency-stop qui desactive tout le provisionnement.
+ */
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/auth'
+import { emergencyStop } from '../lib/api'
 import LanguageSelector from './LanguageSelector'
 import {
   LayoutDashboard,
@@ -18,7 +32,6 @@ import {
   Zap,
   Database,
   Users,
-  ShieldCheck,
   FlaskConical,
   UserCog,
 } from 'lucide-react'
@@ -27,10 +40,11 @@ interface LayoutProps {
   children: React.ReactNode
 }
 
+// Items de navigation avec cles i18n pour la traduction multi-langue
 const navigationKeys = [
   { key: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard },
   { key: 'nav.users', href: '/dashboard/midpoint-users', icon: Users },
-  { key: 'nav.ldapGroups', href: '/dashboard/ldap-groups', icon: ShieldCheck },
+
   { key: 'nav.rules', href: '/dashboard/rules', icon: FileCode2 },
   { key: 'nav.workflows', href: '/dashboard/workflows', icon: GitPullRequest },
   { key: 'nav.reconciliation', href: '/dashboard/reconciliation', icon: RefreshCw },
@@ -173,7 +187,19 @@ export default function Layout({ children }: LayoutProps) {
           </Link>
 
           {/* Emergency stop button */}
-          <button className="flex items-center px-4 py-2 ml-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+          <button
+            onClick={async () => {
+              if (confirm('ARRET D\'URGENCE : Voulez-vous vraiment arreter tout le provisionnement ?')) {
+                try {
+                  await emergencyStop()
+                  alert('Systeme arrete. Allez dans Parametres pour reprendre.')
+                } catch (err) {
+                  alert('Erreur lors de l\'arret d\'urgence')
+                }
+              }
+            }}
+            className="flex items-center px-4 py-2 ml-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+          >
             <AlertTriangle className="w-5 h-5 mr-2" />
             {t('nav.emergencyStop')}
           </button>

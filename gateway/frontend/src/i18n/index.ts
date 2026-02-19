@@ -1,3 +1,10 @@
+/**
+ * i18n/index.ts - Configuration de l'internationalisation (i18next).
+ *
+ * Langues supportees : Francais (defaut), English, Ukrainien.
+ * Detection automatique via localStorage puis navigator.language.
+ * Les fichiers de traduction sont dans ./locales/{fr,en,uk}.json.
+ */
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'

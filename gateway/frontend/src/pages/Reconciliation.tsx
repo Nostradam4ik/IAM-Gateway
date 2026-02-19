@@ -1,3 +1,13 @@
+/**
+ * Reconciliation.tsx - Page de reconciliation MidPoint vs systemes cibles.
+ *
+ * Permet de :
+ *   - Lancer un job de reconciliation (en tache de fond)
+ *   - Voir la liste des jobs passes avec progression
+ *   - Consulter les divergences trouvees (missing, extra, mismatch)
+ *   - Resoudre les divergences : use_midpoint, use_target, delete_orphan, ignore
+ *   - Voir le detail de chaque divergence (valeur MidPoint vs valeur cible)
+ */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {

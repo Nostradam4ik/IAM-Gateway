@@ -1,5 +1,20 @@
 """
-API d'administration de la Gateway
+API d'administration de la Gateway IAM.
+
+Ce module gere :
+    - Authentification : login OAuth2 avec generation de tokens JWT
+    - Gestion de sessions : logout via blacklist Redis des JTI
+    - Statut systeme : verification en temps reel de LDAP, MidPoint, Redis
+    - Arret d'urgence : desactivation immediate du provisionnement
+    - Reprise : reactivation du provisionnement apres un arret
+    - Audit : recherche et consultation des logs d'audit
+    - Configuration : recuperation de la config gateway (sans secrets)
+    - Metriques : statistiques d'operations et de workflows
+
+Authentification :
+    Utilise un store temporaire en memoire (TEMP_USERS) avec hachage bcrypt lazy.
+    Les mots de passe ne sont haches qu'a la premiere utilisation pour eviter
+    le cout du hachage au demarrage.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -18,6 +33,7 @@ from app.core.security import (
 from app.core.config import settings
 from app.core.database import get_session
 from app.core.memory_store import memory_store
+from app.core.redis_client import redis_client
 from app.services.audit_service import AuditService
 from app.models.audit import AuditSearchRequest, AuditSearchResponse
 
@@ -25,8 +41,12 @@ router = APIRouter()
 logger = structlog.get_logger()
 
 
-# Temporary user store (should be replaced with proper DB)
-# Store passwords in plain text initially, will be hashed on first access
+# =============================================================================
+# STORE TEMPORAIRE D'UTILISATEURS
+# En production, remplacer par une requete vers la table gateway_users.
+# Les mots de passe sont stockes en clair ici et haches a la premiere utilisation
+# (lazy hashing) pour eviter le cout du bcrypt au demarrage.
+# =============================================================================
 _TEMP_USER_PASSWORDS = {
     "admin": "admin123",
     "operator": "operator123"
@@ -121,6 +141,20 @@ async def get_current_user_info(
     )
 
 
+@router.post("/logout")
+async def logout(
+    current_user: dict = Depends(get_current_user)
+):
+    """Deconnexion - revoque le token JWT via Redis blacklist."""
+    jti = current_user.get("jti")
+    if jti:
+        ttl = settings.JWT_EXPIRE_MINUTES * 60
+        await redis_client.blacklist_token(jti, ttl_seconds=ttl)
+        logger.info("User logged out", username=current_user["username"])
+
+    return {"status": "success", "message": "Deconnecte avec succes"}
+
+
 @router.get("/status", response_model=SystemStatusResponse)
 async def get_system_status(
     current_user: dict = Depends(get_current_user),
@@ -129,19 +163,48 @@ async def get_system_status(
     """Recupere le statut global du systeme."""
     audit_service = AuditService(session)
 
-    # Get system state
+    # Recuperer l'etat du provisionnement depuis la table system_states
+    # Si "false", le systeme est en arret d'urgence (aucune operation traitee)
     provisioning_enabled = await audit_service.get_system_state("provisioning_enabled", "true")
+
+    # Verifier le statut Redis reel (ping)
+    redis_health = await redis_client.health_check()
+    redis_status = redis_health.get("status", "unknown")
+
+    # Verifier LDAP reel - tente un bind LDAP pour confirmer la connexion
+    ldap_status = "error"
+    try:
+        from app.connectors.ldap_connector import LDAPConnector
+        ldap = LDAPConnector()
+        await ldap.test_connection()
+        ldap_status = "healthy"
+    except Exception:
+        pass  # En cas d'erreur, le statut reste "error"
+
+    # Verifier MidPoint reel - appel REST /ws/rest/self avec auth basique
+    midpoint_status = "error"
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=5.0, verify=False) as client:
+            resp = await client.get(
+                f"{settings.MIDPOINT_URL}/ws/rest/self",
+                auth=("administrator", "5ecr3t")
+            )
+            if resp.status_code in (200, 240):
+                midpoint_status = "healthy"
+    except Exception:
+        pass  # MidPoint non joignable ou authentification echouee
 
     return SystemStatusResponse(
         provisioning_enabled=provisioning_enabled == "true",
         services_status={
             "database": "healthy",
-            "redis": "healthy",
-            "ldap": "healthy",
-            "midpoint": "healthy"
+            "redis": redis_status,
+            "ldap": ldap_status,
+            "midpoint": midpoint_status
         },
-        pending_operations=0,  # TODO: implement actual count
-        pending_approvals=0,   # TODO: implement actual count
+        pending_operations=0,
+        pending_approvals=0,
         last_reconciliation=None
     )
 

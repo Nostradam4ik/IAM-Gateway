@@ -1,5 +1,16 @@
 """
-Service d'audit et de logs
+Service d'audit et de tracabilite.
+
+Ce module centralise tous les evenements d'audit de la Gateway IAM :
+    - Provisionnement : requetes, succes, echecs, rollbacks
+    - Workflows : approbations, rejets
+    - Reconciliation : debut, resolution de divergences
+    - Configuration : changements de parametres, arret/reprise
+    - IA : requetes vers l'assistant IA
+
+Les logs sont indexes dans Qdrant (moteur vectoriel) pour permettre
+la recherche semantique en langage naturel dans les logs d'audit.
+Les metriques sont calculees depuis le memory_store (cache local).
 """
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
@@ -77,25 +88,25 @@ class AuditService:
         return log_entry
 
     async def _index_log_entry(self, log_entry: AuditLog) -> None:
-        """Indexe une entree de log dans le vector store."""
-        # Generate summary for embedding
-        details = json.loads(log_entry.details)
-        summary = f"{log_entry.event_type.value}: {log_entry.action}"
+        """Indexe une entree de log dans Qdrant pour la recherche semantique."""
+        from app.core.qdrant_store import qdrant_store
 
-        if log_entry.account_id:
-            summary += f" for account {log_entry.account_id}"
-        if log_entry.target_system:
-            summary += f" on {log_entry.target_system}"
+        if not qdrant_store.is_connected:
+            return
 
-        # Create vector entry
-        vector_entry = VectorLogEntry(
-            audit_log_id=log_entry.id,
-            summary=summary
-        )
+        details = json.loads(log_entry.details) if isinstance(log_entry.details, str) else log_entry.details
 
-        # Index in Qdrant (when configured)
-        # embedding = await self._generate_embedding(summary)
-        # await self._vector_store.upsert(...)
+        await qdrant_store.index_audit_log({
+            "event_type": log_entry.event_type.value if hasattr(log_entry.event_type, 'value') else str(log_entry.event_type),
+            "action": log_entry.action,
+            "account_id": log_entry.account_id or "",
+            "target_system": log_entry.target_system or "",
+            "actor": log_entry.actor or "",
+            "severity": log_entry.severity.value if hasattr(log_entry.severity, 'value') else str(log_entry.severity),
+            "created_at": datetime.utcnow().isoformat(),
+            "db_id": str(log_entry.id) if log_entry.id else "",
+            "details": details
+        })
 
     async def log_provision_request(
         self,
@@ -295,10 +306,9 @@ class AuditService:
         query: str,
         limit: int = 10
     ) -> List[Dict[str, Any]]:
-        """Recherche semantique dans les logs."""
-        # Generate embedding for query
-        # Search in Qdrant
-        return []
+        """Recherche semantique dans les logs via Qdrant."""
+        from app.core.qdrant_store import qdrant_store
+        return await qdrant_store.search_logs(query=query, limit=limit)
 
     async def get_recent_logs(self, limit: int = 100) -> List[AuditLogResponse]:
         """Recupere les logs recents."""

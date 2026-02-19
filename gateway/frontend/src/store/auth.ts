@@ -1,3 +1,12 @@
+/**
+ * auth.ts - Store d'authentification global (Zustand + persist).
+ *
+ * Stocke le JWT token et les infos utilisateur dans localStorage
+ * sous la cle 'auth-storage'. Utilise par :
+ *   - api.ts (intercepteur) pour ajouter le Bearer token
+ *   - Layout.tsx pour afficher le username et les roles
+ *   - App.tsx (PrivateRoute) pour proteger les routes
+ */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 

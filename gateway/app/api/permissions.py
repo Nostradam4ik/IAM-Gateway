@@ -1,26 +1,29 @@
 """
 API de gestion des niveaux de droits (1-5)
 Systeme de permissions hierarchique pour les utilisateurs
+Persiste dans la table gateway_users (colonne permission_level)
 """
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
-from datetime import datetime
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
 from app.core.security import get_current_user, require_role
+from app.core.database import get_session
 from app.core.memory_store import memory_store
 
 router = APIRouter()
 logger = structlog.get_logger()
 
 
-# Definition des niveaux de droits
+# Definition des niveaux de droits (constantes de reference)
 PERMISSION_LEVELS = {
     1: {
         "name": "Visiteur",
         "description": "Acces minimal - Consultation uniquement",
-        "color": "#6b7280",  # gray
+        "color": "#6b7280",
         "permissions": [
             "view_dashboard",
             "view_own_profile"
@@ -30,7 +33,7 @@ PERMISSION_LEVELS = {
     2: {
         "name": "Utilisateur",
         "description": "Acces standard - Consultation et actions basiques",
-        "color": "#3b82f6",  # blue
+        "color": "#3b82f6",
         "permissions": [
             "view_dashboard",
             "view_own_profile",
@@ -43,7 +46,7 @@ PERMISSION_LEVELS = {
     3: {
         "name": "Operateur",
         "description": "Acces etendu - Gestion des operations courantes",
-        "color": "#10b981",  # green
+        "color": "#10b981",
         "permissions": [
             "view_dashboard",
             "view_own_profile",
@@ -60,7 +63,7 @@ PERMISSION_LEVELS = {
     4: {
         "name": "Manager",
         "description": "Acces avance - Validation et gestion d'equipe",
-        "color": "#f59e0b",  # amber
+        "color": "#f59e0b",
         "permissions": [
             "view_dashboard",
             "view_own_profile",
@@ -81,7 +84,7 @@ PERMISSION_LEVELS = {
     5: {
         "name": "Chef de Departement",
         "description": "Acces maximum (non-admin) - Gestion complete du departement",
-        "color": "#8b5cf6",  # purple
+        "color": "#8b5cf6",
         "permissions": [
             "view_dashboard",
             "view_own_profile",
@@ -138,65 +141,46 @@ class PermissionLevel(BaseModel):
     user_count: int = 0
 
 
-# Donnees demo des utilisateurs avec leurs niveaux
-def _init_demo_permissions():
-    """Initialise les permissions demo."""
-    demo_users = [
-        # Niveau 1 - Visiteurs
-        {"user_id": "stage001", "username": "lucas.stagiaire", "full_name": "Lucas Martin", "department": "IT", "level": 1},
-        {"user_id": "visit001", "username": "marie.visiteur", "full_name": "Marie Dupont", "department": "External", "level": 1},
+async def _get_users_from_db(session: AsyncSession, level: Optional[int] = None) -> List[Dict[str, Any]]:
+    """Recupere les utilisateurs depuis gateway_users avec leur permission_level."""
+    query = """
+        SELECT id, username, full_name, email, permission_level, created_at
+        FROM gateway_users
+        WHERE is_active = true
+    """
+    params = {}
 
-        # Niveau 2 - Utilisateurs
-        {"user_id": "emp001", "username": "jean.dupont", "full_name": "Jean Dupont", "department": "IT", "level": 2},
-        {"user_id": "emp002", "username": "sophie.petit", "full_name": "Sophie Petit", "department": "IT", "level": 2},
-        {"user_id": "emp003", "username": "hugo.durand", "full_name": "Hugo Durand", "department": "IT", "level": 2},
-        {"user_id": "emp004", "username": "marie.martin", "full_name": "Marie Martin", "department": "HR", "level": 2},
-        {"user_id": "emp005", "username": "pierre.bernard", "full_name": "Pierre Bernard", "department": "Finance", "level": 2},
-        {"user_id": "emp006", "username": "emma.richard", "full_name": "Emma Richard", "department": "Marketing", "level": 2},
-        {"user_id": "emp007", "username": "lucas.robert", "full_name": "Lucas Robert", "department": "Sales", "level": 2},
-        {"user_id": "emp008", "username": "camille.simon", "full_name": "Camille Simon", "department": "R&D", "level": 2},
+    if level is not None:
+        query += " AND permission_level = :level"
+        params["level"] = level
 
-        # Niveau 3 - Operateurs
-        {"user_id": "op001", "username": "antoine.girard", "full_name": "Antoine Girard", "department": "IT", "level": 3},
-        {"user_id": "op002", "username": "lea.leroy", "full_name": "Lea Leroy", "department": "HR", "level": 3},
-        {"user_id": "op003", "username": "thomas.moreau", "full_name": "Thomas Moreau", "department": "Finance", "level": 3},
-        {"user_id": "op004", "username": "charlotte.morel", "full_name": "Charlotte Morel", "department": "Marketing", "level": 3},
+    query += " ORDER BY permission_level DESC, username ASC"
 
-        # Niveau 4 - Managers
-        {"user_id": "mgr001", "username": "julie.moreau", "full_name": "Julie Moreau", "department": "IT", "level": 4},
-        {"user_id": "mgr002", "username": "claire.bonnet", "full_name": "Claire Bonnet", "department": "HR", "level": 4},
-        {"user_id": "mgr003", "username": "philippe.mercier", "full_name": "Philippe Mercier", "department": "Finance", "level": 4},
-        {"user_id": "mgr004", "username": "maxime.faure", "full_name": "Maxime Faure", "department": "Sales", "level": 4},
+    result = await session.execute(text(query), params)
+    rows = result.fetchall()
 
-        # Niveau 5 - Chefs de departement
-        {"user_id": "dir001", "username": "nicolas.leroux", "full_name": "Nicolas Leroux", "department": "IT", "level": 5},
-        {"user_id": "dir002", "username": "nathalie.fournier", "full_name": "Nathalie Fournier", "department": "HR", "level": 5},
-        {"user_id": "dir003", "username": "christine.roux", "full_name": "Christine Roux", "department": "Finance", "level": 5},
-        {"user_id": "dir004", "username": "alexandre.laurent", "full_name": "Alexandre Laurent", "department": "Sales", "level": 5},
-        {"user_id": "dir005", "username": "sebastien.morin", "full_name": "Sebastien Morin", "department": "R&D", "level": 5},
-    ]
-
-    return demo_users
-
-
-# Cache pour les permissions
-_permissions_cache = None
-
-def get_permissions_cache():
-    global _permissions_cache
-    if _permissions_cache is None:
-        _permissions_cache = _init_demo_permissions()
-    return _permissions_cache
+    users = []
+    for row in rows:
+        users.append({
+            "user_id": str(row[0]),
+            "username": row[1] or "",
+            "full_name": row[2] or row[1] or "",
+            "email": row[3] or "",
+            "level": row[4] if row[4] is not None else 1,
+            "created_at": row[5].isoformat() if row[5] else ""
+        })
+    return users
 
 
 @router.get("/levels", response_model=List[PermissionLevel])
 async def get_permission_levels(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
 ):
     """
     Recupere tous les niveaux de droits disponibles avec leur description.
     """
-    users = get_permissions_cache()
+    users = await _get_users_from_db(session)
 
     levels = []
     for level_num, level_info in PERMISSION_LEVELS.items():
@@ -217,34 +201,32 @@ async def get_permission_levels(
 @router.get("/users", response_model=List[UserPermission])
 async def get_users_permissions(
     level: Optional[int] = None,
-    department: Optional[str] = None,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
 ):
     """
     Liste tous les utilisateurs avec leurs niveaux de droits.
-    Filtrable par niveau et/ou departement.
+    Filtrable par niveau.
     """
-    users = get_permissions_cache()
+    users = await _get_users_from_db(session, level=level)
 
     result = []
     for user in users:
-        # Filtres
-        if level is not None and user["level"] != level:
-            continue
-        if department is not None and user["department"].lower() != department.lower():
-            continue
+        perm_level = user["level"]
+        if perm_level < 1 or perm_level > 5:
+            perm_level = 1
 
-        level_info = PERMISSION_LEVELS[user["level"]]
+        level_info = PERMISSION_LEVELS[perm_level]
         result.append(UserPermission(
             user_id=user["user_id"],
             username=user["username"],
             full_name=user["full_name"],
-            department=user["department"],
-            level=user["level"],
+            department="",
+            level=perm_level,
             level_name=level_info["name"],
             permissions=level_info["permissions"],
-            assigned_by="admin",
-            assigned_at="2024-01-15T10:00:00"
+            assigned_by="system",
+            assigned_at=user["created_at"]
         ))
 
     return result
@@ -253,118 +235,137 @@ async def get_users_permissions(
 @router.get("/users/{user_id}", response_model=UserPermission)
 async def get_user_permission(
     user_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
 ):
     """
     Recupere les droits d'un utilisateur specifique.
     """
-    users = get_permissions_cache()
+    result = await session.execute(text("""
+        SELECT id, username, full_name, email, permission_level, created_at
+        FROM gateway_users
+        WHERE (CAST(id AS TEXT) = :uid OR username = :uid)
+        AND is_active = true
+    """), {"uid": user_id})
 
-    for user in users:
-        if user["user_id"] == user_id or user["username"] == user_id:
-            level_info = PERMISSION_LEVELS[user["level"]]
-            return UserPermission(
-                user_id=user["user_id"],
-                username=user["username"],
-                full_name=user["full_name"],
-                department=user["department"],
-                level=user["level"],
-                level_name=level_info["name"],
-                permissions=level_info["permissions"],
-                assigned_by="admin",
-                assigned_at="2024-01-15T10:00:00"
-            )
+    row = result.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouve")
 
-    raise HTTPException(status_code=404, detail="Utilisateur non trouve")
+    perm_level = row[4] if row[4] is not None else 1
+    if perm_level < 1 or perm_level > 5:
+        perm_level = 1
+
+    level_info = PERMISSION_LEVELS[perm_level]
+    return UserPermission(
+        user_id=str(row[0]),
+        username=row[1] or "",
+        full_name=row[2] or row[1] or "",
+        department="",
+        level=perm_level,
+        level_name=level_info["name"],
+        permissions=level_info["permissions"],
+        assigned_by="system",
+        assigned_at=row[5].isoformat() if row[5] else ""
+    )
 
 
 @router.post("/assign", response_model=Dict[str, Any])
 async def assign_permission_level(
     assignment: PermissionAssignment,
-    current_user: dict = Depends(require_role(["admin", "iam_engineer"]))
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"])),
+    session: AsyncSession = Depends(get_session)
 ):
     """
     Assigne un niveau de droits a un utilisateur.
     Necessite les droits admin ou iam_engineer.
+    Persiste dans la table gateway_users.
     """
     if assignment.level < 1 or assignment.level > 5:
         raise HTTPException(status_code=400, detail="Le niveau doit etre entre 1 et 5")
 
-    users = get_permissions_cache()
+    # Recuperer le niveau actuel
+    result = await session.execute(text("""
+        SELECT id, username, permission_level
+        FROM gateway_users
+        WHERE (CAST(id AS TEXT) = :uid OR username = :uid)
+        AND is_active = true
+    """), {"uid": assignment.user_id})
 
-    for user in users:
-        if user["user_id"] == assignment.user_id:
-            old_level = user["level"]
-            user["level"] = assignment.level
+    row = result.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouve")
 
-            # Log audit
-            memory_store.add_audit_log({
-                "type": "permission_change",
-                "action": "assign_level",
-                "user_id": assignment.user_id,
-                "old_level": old_level,
-                "new_level": assignment.level,
-                "reason": assignment.reason,
-                "actor": current_user["username"]
-            })
+    old_level = row[2] if row[2] is not None else 1
+    user_id_db = str(row[0])
+    username = row[1]
 
-            logger.info(
-                "Permission level assigned",
-                user_id=assignment.user_id,
-                old_level=old_level,
-                new_level=assignment.level,
-                by=current_user["username"]
-            )
+    # Mettre a jour en base
+    await session.execute(text("""
+        UPDATE gateway_users
+        SET permission_level = :level
+        WHERE id = CAST(:uid AS UUID)
+    """), {"level": assignment.level, "uid": user_id_db})
+    await session.commit()
 
-            return {
-                "status": "success",
-                "message": f"Niveau {assignment.level} assigne a {assignment.user_id}",
-                "old_level": old_level,
-                "new_level": assignment.level
-            }
+    # Log audit
+    memory_store.add_audit_log({
+        "type": "permission_change",
+        "action": "assign_level",
+        "user_id": user_id_db,
+        "username": username,
+        "old_level": old_level,
+        "new_level": assignment.level,
+        "reason": assignment.reason,
+        "actor": current_user.get("username", current_user.get("sub", "system"))
+    })
 
-    raise HTTPException(status_code=404, detail="Utilisateur non trouve")
+    logger.info(
+        "Permission level assigned",
+        user_id=user_id_db,
+        username=username,
+        old_level=old_level,
+        new_level=assignment.level,
+        by=current_user.get("username", "system")
+    )
+
+    return {
+        "status": "success",
+        "message": f"Niveau {assignment.level} assigne a {username}",
+        "old_level": old_level,
+        "new_level": assignment.level
+    }
 
 
 @router.get("/stats", response_model=Dict[str, Any])
 async def get_permissions_stats(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
 ):
     """
     Statistiques sur la distribution des niveaux de droits.
     """
-    users = get_permissions_cache()
+    users = await _get_users_from_db(session)
 
-    # Comptage par niveau
     level_counts = {i: 0 for i in range(1, 6)}
-    dept_counts = {}
-
     for user in users:
-        level_counts[user["level"]] += 1
-        dept = user["department"]
-        if dept not in dept_counts:
-            dept_counts[dept] = {i: 0 for i in range(1, 6)}
-        dept_counts[dept][user["level"]] += 1
+        lvl = user["level"]
+        if 1 <= lvl <= 5:
+            level_counts[lvl] += 1
+
+    total = len(users)
 
     return {
-        "total_users": len(users),
+        "total_users": total,
         "by_level": [
             {
                 "level": level,
                 "name": PERMISSION_LEVELS[level]["name"],
                 "count": count,
-                "percentage": round(count / len(users) * 100, 1) if users else 0,
+                "percentage": round(count / total * 100, 1) if total > 0 else 0,
                 "color": PERMISSION_LEVELS[level]["color"]
             }
             for level, count in level_counts.items()
-        ],
-        "by_department": [
-            {
-                "department": dept,
-                "levels": levels,
-                "total": sum(levels.values())
-            }
-            for dept, levels in dept_counts.items()
         ]
     }
 
@@ -373,24 +374,34 @@ async def get_permissions_stats(
 async def check_user_permission(
     user_id: str,
     permission: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
 ):
     """
     Verifie si un utilisateur a une permission specifique.
     """
-    users = get_permissions_cache()
+    result = await session.execute(text("""
+        SELECT id, username, permission_level
+        FROM gateway_users
+        WHERE (CAST(id AS TEXT) = :uid OR username = :uid)
+        AND is_active = true
+    """), {"uid": user_id})
 
-    for user in users:
-        if user["user_id"] == user_id or user["username"] == user_id:
-            level_info = PERMISSION_LEVELS[user["level"]]
-            has_permission = permission in level_info["permissions"]
+    row = result.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouve")
 
-            return {
-                "user_id": user_id,
-                "permission": permission,
-                "has_permission": has_permission,
-                "user_level": user["level"],
-                "level_name": level_info["name"]
-            }
+    perm_level = row[2] if row[2] is not None else 1
+    if perm_level < 1 or perm_level > 5:
+        perm_level = 1
 
-    raise HTTPException(status_code=404, detail="Utilisateur non trouve")
+    level_info = PERMISSION_LEVELS[perm_level]
+    has_permission = permission in level_info["permissions"]
+
+    return {
+        "user_id": str(row[0]),
+        "permission": permission,
+        "has_permission": has_permission,
+        "user_level": perm_level,
+        "level_name": level_info["name"]
+    }

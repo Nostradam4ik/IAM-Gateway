@@ -1,5 +1,20 @@
 """
-Connecteur LDAP/Active Directory
+Connecteur LDAP/Active Directory.
+
+Ce module implemente les operations CRUD sur un annuaire LDAP :
+    - Creation de comptes (objectClass inetOrgPerson)
+    - Modification d'attributs (MODIFY_REPLACE)
+    - Suppression de comptes
+    - Recherche par uid, cn, mail (filtre LDAP)
+    - Gestion des groupes (ajout/suppression de membres)
+
+Structure LDAP attendue :
+    Base DN : configuree dans settings.LDAP_BASE_DN (ex: dc=gateway,dc=local)
+    Utilisateurs : ou=users,<base_dn>
+    Groupes : ou=groups,<base_dn>
+
+Chaque operation ouvre une connexion LDAP, execute l'action, puis ferme la connexion
+(pattern connect-use-unbind pour eviter les connexions stales).
 """
 from typing import Dict, Any, Optional, List
 from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_ADD, MODIFY_DELETE, MODIFY_REPLACE
@@ -171,13 +186,15 @@ class LDAPConnector(BaseConnector):
             conn.unbind()
 
     async def get_account(self, account_id: str) -> Optional[Dict[str, Any]]:
-        """Get LDAP user account."""
+        """Get LDAP user account by uid, cn, or mail."""
         conn = self._get_connection()
 
         try:
+            safe_id = account_id.replace('\\', '\\5c').replace('*', '\\2a').replace('(', '\\28').replace(')', '\\29')
+            search_filter = f"(|(uid={safe_id})(cn=*{safe_id}*)(mail=*{safe_id}*)(givenName=*{safe_id}*)(sn=*{safe_id}*))"
             conn.search(
                 search_base=self.users_ou,
-                search_filter=f"(uid={account_id})",
+                search_filter=search_filter,
                 search_scope=SUBTREE,
                 attributes=['*']
             )

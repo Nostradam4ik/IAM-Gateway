@@ -1,5 +1,19 @@
 """
-Moteur de regles dynamiques pour le calcul des attributs
+Moteur de regles dynamiques pour le calcul des attributs de provisionnement.
+
+Utilise Jinja2 en mode sandbox (SafeJinjaEnvironment) pour executer
+les expressions de transformation en toute securite.
+
+Fonctionnalites :
+  - Calcul des attributs cibles a partir des attributs source
+  - 4 types de regles : mapping, calculation, validation, aggregation
+  - Execution par priorite (plus haute = execute en premier)
+  - Test unitaire d'une regle avec donnees d'exemple
+  - Versioning : chaque modification cree une nouvelle version
+  - Politiques (PolicyConfig) : regroupement logique de regles
+
+Les regles sont stockees en memoire (list) avec CRUD complet.
+Exemples d'expressions : {{ firstname | lower }}.{{ lastname | lower }}
 """
 from typing import List, Dict, Any, Optional
 from datetime import datetime

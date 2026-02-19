@@ -1,5 +1,15 @@
 """
-Service de provisionnement multi-cibles
+Service de provisionnement multi-cibles (mode legacy sans MidPoint).
+
+Orchestre les operations CRUD sur les systemes cibles (LDAP, SQL, Odoo)
+via ConnectorFactory. Utilise quand MIDPOINT_ENABLED=False.
+
+Fonctionnalites :
+  - Creation d'operations avec suivi d'etat
+  - Execution transactionnelle sur plusieurs cibles
+  - Rollback automatique en cas d'echec partiel
+  - Reprise apres approbation de workflow
+  - Annulation d'operation
 """
 from typing import List, Dict, Any, Optional
 from datetime import datetime

@@ -1,5 +1,14 @@
 """
-Modeles pour les regles dynamiques
+Modeles Pydantic / SQLModel pour les regles de calcul d'attributs.
+
+Definit :
+  - RuleType (enum) : mapping, calculation, validation, aggregation
+  - RuleStatus (enum) : active, inactive, draft
+  - Rule : definition complete d'une regle (nom, expression Jinja2, priorite)
+  - RuleDefinition : schema de creation/modification
+  - RuleVersion : historique des modifications
+  - RuleTestRequest/Response : test d'une regle avec donnees d'exemple
+  - PolicyConfig : regroupement logique de regles
 """
 from sqlmodel import SQLModel, Field
 from typing import Optional, List, Dict, Any

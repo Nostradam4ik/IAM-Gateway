@@ -1,5 +1,11 @@
 """
-Modèles de données pour l'agent IA
+Modeles Pydantic pour l'agent IA et ses fonctionnalites.
+
+Definit les schemas request/response pour :
+  - AIQueryRequest/Response : chat en langage naturel
+  - MappingSuggestionRequest/Response : suggestions de mapping attributs
+  - ConnectorGenerationRequest/Response : generation de code connecteur
+  - ErrorAnalysisRequest/Response : diagnostic d'erreurs
 """
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any

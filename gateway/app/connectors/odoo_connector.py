@@ -1,5 +1,20 @@
 """
-Connecteur Odoo via XML-RPC
+Connecteur Odoo ERP via XML-RPC.
+
+Ce module gere les operations CRUD sur Odoo via le protocole XML-RPC :
+    - Authentification : /xmlrpc/2/common (authenticate)
+    - Operations : /xmlrpc/2/object (execute_kw)
+
+Flux de creation d'un compte :
+    1. Creer un contact (res.partner) - nom, email, telephone
+    2. Creer un utilisateur (res.users) lie au contact
+    3. Creer un employe (hr.employee) lie a l'utilisateur
+    4. Optionnel : creer/associer un departement (hr.department)
+
+Particularites :
+    - La suppression desactive le compte (active=False) au lieu de le supprimer
+    - Les groupes sont des relations many2many : 4=add, 3=remove, 6=set
+    - La normalisation des departements permet le mapping automatique des roles
 """
 from typing import Dict, Any, Optional, List
 import xmlrpc.client
@@ -340,13 +355,18 @@ class OdooConnector(BaseConnector):
             return False
 
     async def get_account(self, account_id: str) -> Optional[Dict[str, Any]]:
-        """Get Odoo user account."""
+        """Get Odoo user account by login, name, or email."""
         try:
-            # Search by login or ID - use simple domain first
             if account_id.isdigit():
                 domain = [('id', '=', int(account_id))]
             else:
-                domain = [('login', '=', account_id)]
+                domain = [
+                    '|', '|', '|',
+                    ('login', 'ilike', account_id),
+                    ('name', 'ilike', account_id),
+                    ('email', 'ilike', account_id),
+                    ('login', '=', account_id),
+                ]
 
             users = self._execute(
                 'res.users', 'search_read',

@@ -1,5 +1,16 @@
 """
-API de l'agent IA pour assistance au provisionnement
+API de l'assistant IA pour le provisionnement IAM.
+
+Fournit une interface chat et des outils d'aide :
+  - /query : questions en langage naturel sur le provisionnement
+  - /suggest-mappings : suggestions automatiques de mapping source->cible
+  - /generate-connector : generation de squelette de connecteur Python
+  - /analyze-error : diagnostic d'erreurs de provisionnement
+  - /explain-rule : explication d'une regle en langage naturel
+  - /config : configuration du provider IA (OpenAI, Anthropic, Mistral, DeepSeek)
+
+La cle API est stockee en base (table ai_configuration) et n'est jamais
+renvoyee au frontend. Les conversations sont stockees en memoire.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional, Dict, Any

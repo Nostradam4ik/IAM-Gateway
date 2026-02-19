@@ -1,5 +1,19 @@
 """
-Service de reconciliation avec MidPoint
+Service de reconciliation entre MidPoint et les systemes cibles.
+
+Compare l'etat des comptes dans MidPoint (source de verite) avec
+les systemes connectes (LDAP, SQL, Odoo) pour detecter les divergences.
+
+Types de divergences :
+  - missing_in_target : compte MidPoint absent du systeme cible
+  - missing_in_midpoint : compte orphelin dans le systeme cible
+  - attribute_mismatch : attributs differents entre source et cible
+
+Resolution : appliquer la valeur MidPoint, garder la valeur cible,
+supprimer l'orphelin, ou ignorer.
+
+ROLE_OIDS : mapping des roles MidPoint pour le provisionnement automatique
+vers LDAP (ldap-user) et Odoo (odoo-user).
 """
 from typing import List, Dict, Any, Optional
 from datetime import datetime

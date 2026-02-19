@@ -1,5 +1,14 @@
 """
-Modeles pour les workflows d'approbation
+Modeles Pydantic / SQLModel pour les workflows d'approbation.
+
+Definit :
+  - WorkflowType (enum) : full (3 niveaux), manager_only, rh_it
+  - ApprovalStatus (enum) : pending, approved, rejected, cancelled
+  - ApprovalLevel : definition d'un niveau (role, email, timeout)
+  - WorkflowConfig : template de workflow reutilisable
+  - WorkflowInstance : instance active liee a une operation
+  - ApprovalDecision : decision d'un approbateur (commentaires inclus)
+  - WorkflowInstanceResponse : reponse API avec progression des niveaux
 """
 from sqlmodel import SQLModel, Field
 from typing import Optional, List, Dict, Any

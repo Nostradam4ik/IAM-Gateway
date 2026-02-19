@@ -1,3 +1,13 @@
+/**
+ * LDAPGroups.tsx - Page de gestion des groupes LDAP.
+ *
+ * Affiche la liste des groupes LDAP (ou=groups) avec :
+ *   - Nombre de membres par groupe
+ *   - Detail des membres (uid, cn, mail) au clic
+ *   - Ajout d'un membre avec autocomplete (recherche LDAP)
+ *   - Retrait d'un membre du groupe
+ *   - Support groupOfUniqueNames, groupOfNames, posixGroup
+ */
 import React, { useState, useEffect } from 'react';
 import {
   Users,

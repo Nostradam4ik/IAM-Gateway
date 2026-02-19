@@ -1,3 +1,17 @@
+/**
+ * Connectors.tsx - Page de gestion des connecteurs dynamiques.
+ *
+ * Fonctionnalites :
+ *   - Liste des connecteurs avec statut de sante (healthy/unhealthy)
+ *   - Wizard de creation en 2 etapes : type + configuration (schema-driven)
+ *   - Edition des parametres de connexion
+ *   - Test de connexion en direct (preview avant sauvegarde)
+ *   - Synchronisation avec MidPoint (creation automatique de Resource)
+ *   - Activation / desactivation d'un connecteur
+ *
+ * Types supportes : LDAP, SQL (PostgreSQL, MySQL, MSSQL, Oracle),
+ *   ERP (Odoo), IGA (MidPoint, Keycloak).
+ */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {

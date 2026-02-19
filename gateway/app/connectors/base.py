@@ -1,5 +1,14 @@
 """
-Interface de base pour les connecteurs
+Interface abstraite de base pour tous les connecteurs.
+
+Chaque connecteur (LDAP, SQL, Odoo, MidPoint) herite de BaseConnector
+et implemente les methodes abstraites :
+  - test_connection() : verifie la connectivite
+  - create_account(uid, attrs) : cree un compte
+  - get_account(uid) : recupere un compte
+  - update_account(uid, attrs) : modifie un compte
+  - delete_account(uid) : supprime un compte
+  - list_accounts() : liste tous les comptes
 """
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List

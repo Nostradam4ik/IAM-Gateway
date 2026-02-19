@@ -1,3 +1,15 @@
+/**
+ * Operations.tsx - Page de test et d'operations de provisionnement.
+ *
+ * Accessible via le bouton "Test" du header (FlaskConical).
+ * Permet de :
+ *   - Creer un provisionnement avec formulaire complet
+ *     (nom, prenom, email, systemes cibles, niveau de permission 1-5)
+ *   - Voir l'historique des operations avec statut
+ *   - Modifier / supprimer une operation existante
+ *   - Selectionner les systemes cibles (LDAP, SQL, Odoo) par boutons toggle
+ *   - Choisir le niveau de permission via grille visuelle interactive
+ */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getOperations, createProvisioningRequest, getPermissionLevels, updateProvisioningRequest, deleteProvisioningRequest } from '../lib/api'

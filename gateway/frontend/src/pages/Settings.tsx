@@ -1,3 +1,15 @@
+/**
+ * Settings.tsx - Page de parametres et controle du systeme.
+ *
+ * Sections :
+ *   1. Etat du systeme : affiche si le provisionnement est actif ou arrete
+ *      - Bouton "Arret d'urgence" avec dialogue de confirmation
+ *      - Bouton "Reprendre" pour reactiver le provisionnement
+ *   2. Connecteurs : affiche le statut de connexion de chaque connecteur
+ *      (LDAP, SQL, Odoo) avec bouton de rafraichissement
+ *
+ * Le statut est rafraichi toutes les 5 secondes pour un suivi en temps reel.
+ */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -187,29 +199,6 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Configuration */}
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Configuration</h2>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-500">Timeout workflow par defaut</p>
-            <p className="font-medium">72 heures</p>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-500">Niveaux max workflow</p>
-            <p className="font-medium">5 niveaux</p>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-500">URL MidPoint</p>
-            <p className="font-medium text-sm">http://localhost:8080/midpoint</p>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-500">Base LDAP</p>
-            <p className="font-medium text-sm">dc=example,dc=com</p>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

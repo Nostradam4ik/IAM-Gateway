@@ -1,8 +1,22 @@
+/**
+ * LiveComparison.tsx - Page de comparaison temps reel entre systemes.
+ *
+ * 4 onglets :
+ *   1. Odoo : affiche les contacts, entreprises et utilisateurs Odoo en direct
+ *   2. Recherche : recherche cross-reference d'un utilisateur dans LDAP/SQL/Odoo
+ *   3. Sync MidPoint : synchronisation Odoo -> MidPoint
+ *      - Mode direct : creation immediate des comptes MidPoint
+ *      - Mode approbation : workflow multi-niveaux (Manager -> RH -> IT)
+ *      - Selection individuelle ou en masse des employes a synchroniser
+ *   4. Planification : configuration des synchronisations automatiques
+ *      - Presets rapides : Jours ouvrables (8h/12h/18h), Nocturne (2h), Horaire
+ *      - Jobs personnalises : heure fixe, intervalle, ou multi-heures (grille 24h)
+ *      - Gestion des jobs : activer/desactiver, executer maintenant, supprimer
+ *      - Historique des synchronisations avec statistiques
+ */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  getLiveStats,
-  compareSystems,
   getUserCrossReference,
   getOdooContacts,
   checkSystemsHealth,
@@ -22,7 +36,6 @@ import {
 } from '../lib/api'
 import {
   RefreshCw,
-  Database,
   CheckCircle,
   XCircle,
   AlertTriangle,
@@ -31,7 +44,6 @@ import {
   Building2,
   Zap,
   Eye,
-  ArrowRightLeft,
   Upload,
   Server,
   Clock,
@@ -43,12 +55,13 @@ import {
   History,
   Shield,
   Mail,
+  Database,
 } from 'lucide-react'
 
 export default function LiveComparison() {
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'stats' | 'compare' | 'odoo' | 'search' | 'sync' | 'schedule'>('stats')
+  const [activeTab, setActiveTab] = useState<'odoo' | 'search' | 'sync' | 'schedule'>('odoo')
   const [selectedEmployees, setSelectedEmployees] = useState<number[]>([])
   const [syncWithApproval, setSyncWithApproval] = useState(false)
   const [managerEmail, setManagerEmail] = useState('')
@@ -64,25 +77,11 @@ export default function LiveComparison() {
   })
   const [selectedHours, setSelectedHours] = useState<number[]>([8, 12, 18])
 
-  // Live stats query
-  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
-    queryKey: ['liveStats'],
-    queryFn: getLiveStats,
-    refetchInterval: 30000,
-  })
-
   // Health check query
   const { data: health } = useQuery({
     queryKey: ['systemsHealth'],
     queryFn: checkSystemsHealth,
     refetchInterval: 60000,
-  })
-
-  // Comparison query (manual trigger)
-  const { data: comparison, isLoading: compareLoading, refetch: runComparison } = useQuery({
-    queryKey: ['systemComparison'],
-    queryFn: compareSystems,
-    enabled: false,
   })
 
   // Odoo contacts
@@ -324,12 +323,10 @@ export default function LiveComparison() {
       <div className="border-b border-gray-200">
         <nav className="flex gap-4">
           {[
-            { id: 'stats', label: 'Statistiques', icon: Database },
-            { id: 'compare', label: 'Comparaison', icon: ArrowRightLeft },
             { id: 'odoo', label: 'Odoo', icon: Building2 },
+            { id: 'search', label: 'Recherche', icon: Search },
             { id: 'sync', label: 'Sync MidPoint', icon: Upload },
             { id: 'schedule', label: 'Planification', icon: Calendar },
-            { id: 'search', label: 'Recherche', icon: Search },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -346,257 +343,6 @@ export default function LiveComparison() {
           ))}
         </nav>
       </div>
-
-      {/* Stats Tab */}
-      {activeTab === 'stats' && (
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Statistiques en temps reel</h2>
-            <button
-              onClick={() => refetchStats()}
-              className="btn-secondary flex items-center gap-2"
-            >
-              <RefreshCw className={`w-4 h-4 ${statsLoading ? 'animate-spin' : ''}`} />
-              Actualiser
-            </button>
-          </div>
-
-          {statsLoading ? (
-            <div className="text-center py-8 text-gray-500">Chargement...</div>
-          ) : stats ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* LDAP Card */}
-              <div className="card">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <Database className="w-5 h-5 text-blue-500" />
-                    LDAP
-                  </h3>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(stats.systems?.LDAP?.status)}`}>
-                    {stats.systems?.LDAP?.status || 'inconnu'}
-                  </span>
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {stats.systems?.LDAP?.total_users || 0}
-                </div>
-                <p className="text-gray-500 text-sm">utilisateurs</p>
-                {stats.systems?.LDAP?.sample && (
-                  <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs text-gray-500 mb-2">Exemples:</p>
-                    {stats.systems.LDAP.sample.slice(0, 3).map((u: any, i: number) => (
-                      <div key={i} className="text-sm text-gray-700 truncate">
-                        {u.cn || u.uid}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* SQL Card */}
-              <div className="card">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <Database className="w-5 h-5 text-green-500" />
-                    SQL (Intranet)
-                  </h3>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(stats.systems?.SQL?.status)}`}>
-                    {stats.systems?.SQL?.status || 'inconnu'}
-                  </span>
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {stats.systems?.SQL?.total_users || 0}
-                </div>
-                <p className="text-gray-500 text-sm">utilisateurs</p>
-                {stats.systems?.SQL?.sample && (
-                  <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs text-gray-500 mb-2">Exemples:</p>
-                    {stats.systems.SQL.sample.slice(0, 3).map((u: any, i: number) => (
-                      <div key={i} className="text-sm text-gray-700 truncate">
-                        {u.username} ({u.department})
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Odoo Card */}
-              <div className="card border-2 border-purple-200 bg-purple-50/30">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-purple-500" />
-                    Odoo
-                  </h3>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(stats.systems?.Odoo?.status)}`}>
-                    {stats.systems?.Odoo?.status || 'inconnu'}
-                  </span>
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {stats.systems?.Odoo?.total_users || 0}
-                </div>
-                <p className="text-gray-500 text-sm">utilisateurs actifs</p>
-                {stats.systems?.Odoo?.sample && (
-                  <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs text-gray-500 mb-2">Exemples:</p>
-                    {stats.systems.Odoo.sample.slice(0, 3).map((u: any, i: number) => (
-                      <div key={i} className="text-sm text-gray-700 truncate">
-                        {u.name} ({u.login})
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : null}
-
-          {/* Total */}
-          {stats && (
-            <div className="card bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-medium opacity-90">Total Identites</h3>
-                  <p className="text-4xl font-bold mt-2">{stats.total_identities}</p>
-                  <p className="text-sm opacity-75 mt-1">dans tous les systemes</p>
-                </div>
-                <Users className="w-16 h-16 opacity-30" />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Compare Tab */}
-      {activeTab === 'compare' && (
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Comparaison entre systemes</h2>
-            <button
-              onClick={() => runComparison()}
-              disabled={compareLoading}
-              className="btn-primary flex items-center gap-2"
-            >
-              {compareLoading ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <ArrowRightLeft className="w-4 h-4" />
-              )}
-              Lancer la comparaison
-            </button>
-          </div>
-
-          {comparison && (
-            <>
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="card text-center">
-                  <div className="text-3xl font-bold text-green-600">
-                    {comparison.summary?.fully_synced || 0}
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">Totalement synchronises</p>
-                </div>
-                <div className="card text-center">
-                  <div className="text-3xl font-bold text-yellow-600">
-                    {comparison.summary?.partially_synced || 0}
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">Partiellement synchronises</p>
-                </div>
-                <div className="card text-center">
-                  <div className="text-3xl font-bold text-orange-600">
-                    {comparison.summary?.isolated || 0}
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">Isoles (1 systeme)</p>
-                </div>
-                <div className="card text-center bg-blue-50">
-                  <div className="text-3xl font-bold text-blue-600">
-                    {comparison.summary?.sync_rate || '0%'}
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">Taux de sync complete</p>
-                </div>
-              </div>
-
-              {/* Discrepancies */}
-              {comparison.discrepancies?.length > 0 && (
-                <div className="card">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                    Divergences detectees ({comparison.discrepancies.length})
-                  </h3>
-                  <div className="space-y-3">
-                    {comparison.discrepancies.map((disc: any, i: number) => (
-                      <div key={i} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{disc.identifier}</span>
-                          {getSyncStatusBadge(disc.sync_status)}
-                        </div>
-                        {disc.missing_in && (
-                          <p className="text-sm text-gray-600 mt-1">
-                            Manquant dans: <span className="font-medium text-red-600">{disc.missing_in.join(', ')}</span>
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Cross Reference Table */}
-              {comparison.cross_reference && (
-                <div className="card overflow-hidden">
-                  <h3 className="font-semibold mb-4">Reference croisee (50 premiers)</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-gray-50">
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Identifiant</th>
-                          <th className="px-4 py-3 text-center text-sm font-medium text-gray-500">LDAP</th>
-                          <th className="px-4 py-3 text-center text-sm font-medium text-gray-500">SQL</th>
-                          <th className="px-4 py-3 text-center text-sm font-medium text-gray-500">Odoo</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Statut</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {comparison.cross_reference.slice(0, 20).map((ref: any, i: number) => (
-                          <tr key={i} className="border-t hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm font-medium">{ref.identifier}</td>
-                            <td className="px-4 py-3 text-center">
-                              {ref.in_ldap ? (
-                                <CheckCircle className="w-5 h-5 text-green-500 mx-auto" />
-                              ) : (
-                                <XCircle className="w-5 h-5 text-red-300 mx-auto" />
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {ref.in_sql ? (
-                                <CheckCircle className="w-5 h-5 text-green-500 mx-auto" />
-                              ) : (
-                                <XCircle className="w-5 h-5 text-red-300 mx-auto" />
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {ref.in_odoo ? (
-                                <CheckCircle className="w-5 h-5 text-green-500 mx-auto" />
-                              ) : (
-                                <XCircle className="w-5 h-5 text-red-300 mx-auto" />
-                              )}
-                            </td>
-                            <td className="px-4 py-3">{getSyncStatusBadge(ref.sync_status)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {!comparison && !compareLoading && (
-            <div className="card text-center py-12">
-              <ArrowRightLeft className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Cliquez sur "Lancer la comparaison" pour analyser les systemes</p>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Odoo Tab */}
       {activeTab === 'odoo' && (

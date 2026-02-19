@@ -1,18 +1,22 @@
 ## Dossier `docs`
 
-Ce dossier héberge l’ensemble des livrables textuels exigés pour le Projet 3.
+Ce dossier heberge l'ensemble des livrables textuels du Projet 3 - Gateway IAM.
 
-### Sous-dossiers prévus
+### Documents principaux
 
-- `01_planning/` — planning des sprints, backlog, user stories, cahier de recette.
-- `02_recherche/` — état de l’art, rapport MidPoint/provisionnement.
-- `03_architecture/` — dossiers d’architecture technique et fonctionnelle.
-- `04_implémentation/` — guides développeur, rapports SCRUM, CI/CD, recettes.
-- `05_guides/` — guide utilisateur, procédures d’exploitation.
+- `GUIDE_DEVELOPPEUR.md` — Guide complet pour les developpeurs (installation, architecture, API, deploiement)
+- `RAPPORT_MAINTENANCE.md` — Rapport de maintenance et corrections appliquees
+
+### Sous-dossiers
+
+- `01_planning/` — Planning des sprints, backlog, user stories, cahier de recette
+- `02_recherche/` — Etat de l'art IGA, methodologie, fonctionnement MidPoint
+- `03_architecture/` — Architecture technique et architecture des donnees
+- `04_implémentation/` — Rapports d'implementation, CI/CD, SCRUM, guide MidPoint
+- `05_guides/` — Guide utilisateur
+- `reports/` — Rapport TP1
 
 ### Convention
 
-- Tous les documents sont rédigés en Markdown (`.md`) pour faciliter la revue versionnée.
-- Ajouter en pied de page : `Co-auteurs : <votre nom>, achibani@gmail.com`.
-- Les documents destinés à l’évaluation finale seront exportés en PDF depuis ces sources.
-
+- Tous les documents sont rediges en Markdown (`.md`) pour faciliter la revue versionnee.
+- Les documents destines a l'evaluation finale seront exportes en PDF depuis ces sources.

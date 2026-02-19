@@ -1,3 +1,13 @@
+/**
+ * Landing.tsx - Page d'accueil publique de la Gateway IAM.
+ *
+ * Page marketing avec gradient sombre, presentant les fonctionnalites :
+ *   - Provisionnement automatise multi-systeme
+ *   - Workflows d'approbation multi-niveaux
+ *   - Comparaison temps reel et reconciliation
+ *   - Assistant IA integre
+ * Inclut un bouton CTA vers /login et un lien vers la demo.
+ */
 import { Link } from 'react-router-dom'
 import {
   Shield, Users, Workflow, Lock, Zap, Globe, CheckCircle, ArrowRight,

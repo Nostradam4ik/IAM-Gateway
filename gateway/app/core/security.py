@@ -1,8 +1,22 @@
 """
-Module de securite - Authentication et Authorization
+Module de securite - Authentification et Autorisation.
+
+Ce module centralise toute la logique de securite de la Gateway IAM :
+    - Hachage des mots de passe avec bcrypt (salage automatique)
+    - Creation et validation de tokens JWT (JSON Web Tokens)
+    - Revocation de tokens via blacklist Redis (JTI unique par token)
+    - Controle d'acces base sur les roles (RBAC)
+
+Flux d'authentification :
+    1. POST /api/v1/admin/token avec username/password
+    2. Verification bcrypt du mot de passe
+    3. Generation d'un JWT avec JTI unique (UUID v4)
+    4. Client envoie le token dans Authorization: Bearer <token>
+    5. Chaque requete : decode JWT + verifie JTI dans blacklist Redis
 """
 from datetime import datetime, timedelta
 from typing import Optional
+import uuid
 from jose import JWTError, jwt
 import bcrypt
 from fastapi import Depends, HTTPException, status
@@ -13,27 +27,37 @@ from app.core.config import settings
 
 logger = structlog.get_logger()
 
+# Schema OAuth2 - extrait le token du header Authorization: Bearer <token>
+# tokenUrl pointe vers l'endpoint de login pour la doc Swagger
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/admin/token")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against hash."""
+    """Verifie un mot de passe en clair contre son hash bcrypt."""
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password."""
+    """Hache un mot de passe avec bcrypt (sel aleatoire genere automatiquement)."""
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Create JWT access token."""
+    """
+    Cree un token JWT avec un JTI unique pour supporter la revocation.
+
+    Le token contient : sub (username), roles, exp (expiration), jti (UUID unique).
+    Le JTI permet de revoquer individuellement un token via la blacklist Redis.
+    """
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+    to_encode.update({
+        "exp": expire,
+        "jti": str(uuid.uuid4())  # ID unique pour la revocation via Redis
+    })
     encoded_jwt = jwt.encode(
         to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )
@@ -41,7 +65,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 
 def decode_token(token: str) -> dict:
-    """Decode and validate JWT token."""
+    """Decode et valide un token JWT (signature + expiration)."""
     try:
         payload = jwt.decode(
             token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
@@ -57,7 +81,13 @@ def decode_token(token: str) -> dict:
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
-    """Get current authenticated user from token."""
+    """
+    Recupere l'utilisateur courant depuis le token JWT.
+
+    Verifie : 1) validite du token, 2) presence du username,
+    3) que le JTI n'est pas dans la blacklist Redis (token revoque).
+    Utilisee comme dependance FastAPI (Depends) dans les endpoints proteges.
+    """
     payload = decode_token(token)
     username: str = payload.get("sub")
     if username is None:
@@ -65,13 +95,29 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
         )
-    return {"username": username, "roles": payload.get("roles", [])}
+
+    # Verifier si le token est revoque via Redis
+    from app.core.redis_client import redis_client
+    jti = payload.get("jti")
+    if jti and await redis_client.is_token_blacklisted(jti):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
+        )
+
+    return {"username": username, "roles": payload.get("roles", []), "jti": jti}
 
 
 def require_role(required_roles: list):
-    """Dependency to require specific roles."""
+    """
+    Decorateur RBAC - exige au moins un des roles specifies.
+
+    Usage : @router.get("/", dependencies=[Depends(require_role(["admin"]))])
+    Leve 403 Forbidden si aucun role de l'utilisateur ne correspond.
+    """
     async def role_checker(current_user: dict = Depends(get_current_user)):
         user_roles = current_user.get("roles", [])
+        # L'utilisateur doit avoir AU MOINS UN des roles requis
         if not any(role in user_roles for role in required_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

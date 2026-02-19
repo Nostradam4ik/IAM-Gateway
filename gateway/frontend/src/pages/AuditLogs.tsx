@@ -1,3 +1,13 @@
+/**
+ * AuditLogs.tsx - Page de consultation des logs d'audit.
+ *
+ * Affiche les evenements d'audit avec :
+ *   - Recherche semantique (utilise Qdrant en backend)
+ *   - Filtrage par type d'evenement
+ *   - Limite configurable (defaut 100)
+ *   - Icones et couleurs par type (provision, workflow, error, info)
+ *   - Format date-fns pour les timestamps
+ */
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { searchAuditLogs, getRecentAuditLogs } from '../lib/api'

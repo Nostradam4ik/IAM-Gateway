@@ -1,7 +1,16 @@
 """
 API de comparaison en temps reel entre systemes.
-Fonctionnalite innovante pour visualiser l'etat de synchronisation.
-Inclut LiveSync Odoo -> MidPoint.
+
+Fonctionnalite centrale pour visualiser l'etat de synchronisation
+entre les systemes IAM (LDAP, SQL, Odoo, MidPoint).
+
+Sections :
+  1. Stats temps reel  : snapshot instantane de chaque systeme
+  2. Comparaison       : cross-reference par email/username, detection divergences
+  3. Recherche         : retrouver un utilisateur dans tous les systemes
+  4. LiveSync Odoo->MP : sync directe ou avec workflow d'approbation multi-niveaux
+  5. Activation/Desactivation : enable/disable multi-systeme
+  6. Contrats          : detection contrats expires/expirants depuis Odoo
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional, Dict, Any

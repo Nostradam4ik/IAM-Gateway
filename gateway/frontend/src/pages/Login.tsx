@@ -1,3 +1,10 @@
+/**
+ * Login.tsx - Page d'authentification de la Gateway IAM.
+ *
+ * Formulaire username/password qui appelle POST /api/v1/admin/token.
+ * En cas de succes, stocke le JWT et les roles dans useAuthStore
+ * puis redirige vers /dashboard.
+ */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'

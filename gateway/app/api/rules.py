@@ -1,5 +1,16 @@
 """
-API de gestion des regles dynamiques
+API de gestion des regles dynamiques de provisionnement.
+
+Ce module expose le CRUD complet pour les regles de calcul d'attributs :
+  - Lister / filtrer par systeme cible, type ou statut
+  - Creer / modifier / supprimer une regle (admin, iam_engineer)
+  - Tester une regle avec des donnees d'exemple
+  - Historique des versions et restauration
+  - Gestion des politiques (PolicyConfig) qui regroupent des regles
+
+Les regles utilisent des expressions Jinja2 sandboxed pour transformer
+les attributs (ex: {{ firstname | lower }}.{{ lastname | lower }}).
+Types de regles : mapping, calculation, validation, aggregation.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional

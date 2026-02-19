@@ -1,5 +1,15 @@
 """
-Client pour communication avec MidPoint
+Client HTTP pour l'API REST de MidPoint.
+
+Utilise httpx (async) avec authentification Basic pour communiquer
+avec MidPoint. Gere les endpoints /users, /roles, /shadows.
+
+Operations principales :
+  - get_all_accounts / get_account : lecture utilisateurs
+  - create_account / update_account / delete_account
+  - disable_account / enable_account
+  - get_roles / assign_role / remove_role
+  - get_user_shadows : comptes dans les systemes cibles (LDAP, Odoo...)
 """
 from typing import Dict, Any, Optional, List
 import httpx

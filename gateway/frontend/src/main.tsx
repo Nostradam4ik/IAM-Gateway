@@ -1,3 +1,12 @@
+/**
+ * main.tsx - Point d'entree de l'application React.
+ *
+ * Configure les providers globaux :
+ *   - React.StrictMode : detection des problemes en dev
+ *   - QueryClientProvider : TanStack React Query (staleTime 5 min, retry 1)
+ *   - BrowserRouter : routing cote client (react-router-dom)
+ *   - i18n : initialise automatiquement via import './i18n'
+ */
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'

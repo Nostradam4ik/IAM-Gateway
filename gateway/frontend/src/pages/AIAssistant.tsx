@@ -1,3 +1,15 @@
+/**
+ * AIAssistant.tsx - Interface de chat avec l'assistant IA.
+ *
+ * Fournit un chat interactif pour :
+ *   - Poser des questions sur le provisionnement IAM
+ *   - Obtenir de l'aide sur les regles et les connecteurs
+ *   - Diagnostiquer des erreurs de provisionnement
+ *
+ * Necessite une cle API configuree (OpenAI, Anthropic, Mistral ou DeepSeek).
+ * L'ecran de configuration s'affiche si aucun provider n'est configure.
+ * Les conversations sont stockees en memoire cote serveur.
+ */
 import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryAI, getAIConfig, updateAIConfig } from '../lib/api'

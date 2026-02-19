@@ -1,6 +1,10 @@
 """
-Factory pour les connecteurs - Version dynamique
-Charge les connecteurs depuis la base de donnees ou la configuration statique.
+Factory pour les connecteurs - Version dynamique.
+
+Charge les connecteurs depuis la base de donnees (connector_configurations)
+ou la configuration statique (.env). Retourne l'instance appropriee
+(LDAPConnector, SQLConnector, OdooConnector, MidPointConnector)
+en fonction du type/sous-type demande.
 """
 from typing import Dict, Optional, Any
 import structlog

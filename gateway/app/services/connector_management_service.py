@@ -1,6 +1,15 @@
 """
 Service de gestion des connecteurs dynamiques.
-Permet de creer, modifier, supprimer et tester des connecteurs via l'interface.
+
+Ce module gere le cycle de vie complet des connecteurs via l'interface :
+    - CRUD : creation, lecture, modification, suppression (table connector_configurations)
+    - Test de connexion : verification en temps reel par type (SQL, LDAP, REST, ERP, IGA)
+    - Health checks : verification periodique de tous les connecteurs actifs
+    - Masquage des credentials : les mots de passe sont remplaces par "••••••••" dans les API
+    - Synchronisation MidPoint : tracking du statut de sync (resource OID, dernier sync)
+
+Les connecteurs sont configures dynamiquement par les administrateurs via le wizard
+frontend. Chaque type de connecteur a un JSON Schema qui definit ses champs requis.
 """
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -202,12 +211,13 @@ class ConnectorManagementService:
         if data.configuration is not None:
             # Fusionner avec la config existante pour garder les passwords non modifies
             existing_config = await self.get_connector_config(connector_id)
-            if existing_config:
-                for key, value in data.configuration.items():
-                    if value != "••••••••":  # Ne pas ecraser si masque
-                        existing_config[key] = value
-                updates.append("configuration = CAST(:configuration AS jsonb)")
-                params["configuration"] = json.dumps(existing_config)
+            if existing_config is None:
+                existing_config = {}
+            for key, value in data.configuration.items():
+                if value != "••••••••":  # Ne pas ecraser si masque
+                    existing_config[key] = value
+            updates.append("configuration = CAST(:configuration AS jsonb)")
+            params["configuration"] = json.dumps(existing_config)
 
         query = f"UPDATE connector_configurations SET {', '.join(updates)} WHERE id = :id"
         await self.session.execute(text(query), params)
@@ -278,6 +288,8 @@ class ConnectorManagementService:
                 result = await self._test_rest_connection(connector_subtype, configuration)
             elif connector_type == ConnectorType.ERP:
                 result = await self._test_erp_connection(connector_subtype, configuration)
+            elif connector_type in [ConnectorType.IGA, ConnectorType.MIDPOINT]:
+                result = await self._test_iga_connection(connector_subtype, configuration)
             else:
                 result = ConnectorTestResult(
                     success=False,
@@ -499,6 +511,59 @@ class ConnectorManagementService:
             return ConnectorTestResult(
                 success=False,
                 message=f"Echec connexion ERP: {str(e)}"
+            )
+
+    async def _test_iga_connection(
+        self,
+        subtype: ConnectorSubtype,
+        config: Dict[str, Any]
+    ) -> ConnectorTestResult:
+        """Teste une connexion IGA (MidPoint, etc.)."""
+        try:
+            if subtype == ConnectorSubtype.MIDPOINT:
+                import httpx
+
+                url = config.get("url", "").rstrip("/")
+                username = config.get("username", "administrator")
+                password = config.get("password", "")
+                verify_ssl = config.get("verify_ssl", False)
+
+                async with httpx.AsyncClient(verify=verify_ssl, timeout=15) as client:
+                    resp = await client.get(
+                        f"{url}/ws/rest/self",
+                        auth=(username, password),
+                        headers={"Accept": "application/json"}
+                    )
+
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        user_name = data.get("user", {}).get("name", username)
+                        return ConnectorTestResult(
+                            success=True,
+                            message=f"Connexion MidPoint reussie (utilisateur: {user_name})",
+                            details={"url": url, "status": resp.status_code}
+                        )
+                    elif resp.status_code == 401:
+                        return ConnectorTestResult(
+                            success=False,
+                            message="Authentification MidPoint echouee (401)"
+                        )
+                    else:
+                        return ConnectorTestResult(
+                            success=False,
+                            message=f"MidPoint a repondu HTTP {resp.status_code}"
+                        )
+
+            else:
+                return ConnectorTestResult(
+                    success=False,
+                    message=f"Test non implemente pour {subtype.value}"
+                )
+
+        except Exception as e:
+            return ConnectorTestResult(
+                success=False,
+                message=f"Echec connexion IGA: {str(e)}"
             )
 
     async def update_health_status(

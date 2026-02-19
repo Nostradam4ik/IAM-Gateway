@@ -1,3 +1,14 @@
+/**
+ * Users.tsx - Page de gestion des utilisateurs Gateway (admin).
+ *
+ * Gere les comptes qui se connectent a la Gateway IAM elle-meme :
+ *   - Liste des utilisateurs avec roles et statut actif
+ *   - Creation d'utilisateur (username, email, mot de passe, roles)
+ *   - Modification des roles (acces + approbation)
+ *   - Visualisation de la chaine d'approbation (Manager -> RH -> IT)
+ *   - Diagramme visuel des niveaux avec toggle des roles
+ *   - Suppression / desactivation (interdiction de se supprimer soi-meme)
+ */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {

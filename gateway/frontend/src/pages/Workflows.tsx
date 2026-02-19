@@ -1,3 +1,13 @@
+/**
+ * Workflows.tsx - Page de gestion des workflows d'approbation.
+ *
+ * Affiche les instances de workflow avec :
+ *   - Liste des approbations en attente pour l'utilisateur courant
+ *   - Historique de toutes les instances (approved, rejected, pending)
+ *   - Detail multi-niveaux : progression Manager -> RH -> IT Admin
+ *   - Boutons Approuver / Rejeter avec zone de commentaires
+ *   - Timeline visuelle des decisions par niveau
+ */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {

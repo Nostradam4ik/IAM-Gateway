@@ -1,6 +1,16 @@
 """
-Modeles pour la gestion dynamique des connecteurs.
-Permet aux administrateurs de configurer les connecteurs via l'interface.
+Modeles et schemas pour la gestion dynamique des connecteurs.
+
+Ce module definit :
+    - ConnectorType : types principaux (SQL, LDAP, REST, ERP, IGA, MidPoint)
+    - ConnectorSubtype : sous-types specifiques (PostgreSQL, OpenLDAP, Odoo, etc.)
+    - CONNECTOR_CONFIG_SCHEMAS : JSON Schemas par sous-type (champs requis, types, etc.)
+    - CONNECTOR_TYPE_SUBTYPES : mapping type -> liste de sous-types disponibles
+    - CONNECTOR_TYPE_INFO : nom, icone et description affichee dans le wizard frontend
+    - Schemas Pydantic : ConnectorCreate, ConnectorUpdate, ConnectorResponse, etc.
+
+Le wizard frontend utilise les JSON Schemas pour generer dynamiquement les formulaires
+de configuration. Les credentials (format "password") sont masques dans les reponses API.
 """
 from sqlmodel import SQLModel, Field
 from typing import Optional, Dict, Any, List
@@ -195,6 +205,16 @@ CONNECTOR_CONFIG_SCHEMAS = {
             "username": {"type": "string", "title": "Utilisateur"},
             "password": {"type": "string", "title": "Mot de passe / API Key", "format": "password"},
             "timeout": {"type": "integer", "title": "Timeout (secondes)", "default": 30}
+        }
+    },
+    ConnectorSubtype.MIDPOINT: {
+        "type": "object",
+        "required": ["url", "username", "password"],
+        "properties": {
+            "url": {"type": "string", "title": "URL MidPoint", "format": "uri", "placeholder": "http://midpoint-core:8080/midpoint"},
+            "username": {"type": "string", "title": "Administrateur", "default": "administrator"},
+            "password": {"type": "string", "title": "Mot de passe", "format": "password"},
+            "verify_ssl": {"type": "boolean", "title": "Verifier SSL", "default": False}
         }
     }
 }

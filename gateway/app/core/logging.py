@@ -1,5 +1,9 @@
 """
-Configuration du logging structure
+Configuration du logging structure (structlog + JSON).
+
+Utilise structlog pour des logs structures en JSON, facilitant
+l'analyse dans des outils comme ELK ou Grafana Loki.
+Le niveau de log est configurable via settings.LOG_LEVEL.
 """
 import structlog
 import logging

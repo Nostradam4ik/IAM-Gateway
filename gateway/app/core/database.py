@@ -1,5 +1,9 @@
 """
-Configuration de la base de donnees
+Configuration de la base de donnees PostgreSQL (asyncpg).
+
+Cree le moteur SQLAlchemy async et la factory de sessions.
+La fonction get_session() est utilisee comme dependance FastAPI
+pour injecter une session dans chaque endpoint.
 """
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker

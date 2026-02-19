@@ -1,5 +1,14 @@
 """
-Connecteur SQL pour bases de donnees relationnelles
+Connecteur SQL pour bases de donnees relationnelles.
+
+Ce module gere les operations CRUD sur une base SQL (PostgreSQL, MySQL, etc.) :
+    - CRUD sur la table 'users' (id, username, email, is_active, etc.)
+    - Gestion des permissions via la table 'permissions' (user_id, permission_name)
+    - Construction dynamique des requetes UPDATE (seuls les champs modifies)
+
+La connexion utilise SQLAlchemy (engine synchrone) avec la URL configuree
+dans settings.INTRANET_DB_URL. Les tables sont creees automatiquement si
+elles n'existent pas via metadata.create_all().
 """
 from typing import Dict, Any, Optional, List
 from sqlalchemy import create_engine, text, MetaData, Table, Column, String, Boolean, DateTime
@@ -192,12 +201,19 @@ class SQLConnector(BaseConnector):
             return False
 
     async def get_account(self, account_id: str) -> Optional[Dict[str, Any]]:
-        """Get user from SQL database."""
+        """Get user from SQL database by id, username, or email."""
         try:
             with self.engine.connect() as conn:
                 result = conn.execute(
-                    text("SELECT * FROM users WHERE id = :id"),
-                    {"id": account_id}
+                    text("""
+                        SELECT * FROM users
+                        WHERE CAST(id AS TEXT) = :id
+                           OR username ILIKE :pattern
+                           OR email ILIKE :pattern
+                           OR first_name ILIKE :pattern
+                           OR last_name ILIKE :pattern
+                    """),
+                    {"id": account_id, "pattern": f"%{account_id}%"}
                 )
 
                 row = result.fetchone()

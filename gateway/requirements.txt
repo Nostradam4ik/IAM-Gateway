@@ -6,7 +6,7 @@ python-multipart
 
 # Authentication
 python-jose[cryptography]
-passlib[bcrypt]
+bcrypt
 httpx
 
 # Database

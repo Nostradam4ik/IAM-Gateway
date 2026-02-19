@@ -1,5 +1,18 @@
 """
-API pour la gestion des groupes LDAP
+API pour la gestion des groupes LDAP.
+
+Opere sur ou=groups,dc=gateway,dc=local avec support des types :
+  - groupOfUniqueNames (attribut uniqueMember)
+  - groupOfNames (attribut member)
+  - posixGroup (attribut memberUid)
+
+Endpoints :
+  - GET /           : lister tous les groupes avec nombre de membres
+  - GET /{name}     : details du groupe avec liste des membres
+  - POST /{name}/members : ajouter un utilisateur au groupe
+  - DELETE /{name}/members/{uid} : retirer un utilisateur
+  - GET /users/search : recherche d'utilisateurs LDAP (autocomplete)
+  - GET /user/{uid}/memberships : groupes d'un utilisateur
 """
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional

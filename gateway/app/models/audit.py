@@ -1,5 +1,10 @@
 """
-Modeles pour l'audit et les logs
+Modeles Pydantic / SQLModel pour les evenements d'audit.
+
+Definit :
+  - AuditEvent : evenement d'audit (type, action, acteur, timestamp)
+  - AuditSearchRequest : requete de recherche dans les logs
+  - AuditSearchResponse : resultats avec score de pertinence (Qdrant)
 """
 from sqlmodel import SQLModel, Field
 from typing import Optional, List, Dict, Any

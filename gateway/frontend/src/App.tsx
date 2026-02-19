@@ -1,3 +1,24 @@
+/**
+ * App.tsx - Point d'entree du routage de l'application Gateway IAM.
+ *
+ * Structure des routes :
+ *   / -> Landing (page d'accueil publique)
+ *   /login -> Login (formulaire d'authentification)
+ *   /dashboard/* -> Routes protegees (necessitent authentification)
+ *     /dashboard -> Dashboard (vue d'ensemble connecteurs + services)
+ *     /dashboard/operations -> Operations (provisionnement via formulaire)
+ *     /dashboard/rules -> Rules (regles de mapping Jinja2)
+ *     /dashboard/workflows -> Workflows (approbation multi-niveaux)
+ *     /dashboard/reconciliation -> Reconciliation (comparaison source/cible)
+ *     /dashboard/live -> LiveComparison (Odoo, recherche, sync, planification)
+ *     /dashboard/permissions -> Permissions (niveaux de droits 1-5)
+ *     /dashboard/connectors -> Connectors (CRUD connecteurs dynamiques)
+ *     /dashboard/midpoint-users -> MidpointUsers (CRUD utilisateurs MidPoint)
+ *     /dashboard/gateway-users -> Users (CRUD utilisateurs gateway + chaine approbation)
+ *     /dashboard/ai -> AIAssistant (chat IA - necessite cle API)
+ *     /dashboard/audit -> AuditLogs (logs + recherche semantique)
+ *     /dashboard/settings -> Settings (etat systeme, arret urgence, connecteurs)
+ */
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/auth'
 import Layout from './components/Layout'
@@ -15,9 +36,12 @@ import LiveComparison from './pages/LiveComparison'
 import Permissions from './pages/Permissions'
 import Connectors from './pages/Connectors'
 import MidpointUsers from './pages/MidpointUsers'
-import LDAPGroups from './pages/LDAPGroups'
 import Users from './pages/Users'
 
+/**
+ * Garde de route privee - redirige vers /login si l'utilisateur n'est pas authentifie.
+ * Utilise le store Zustand (useAuthStore) pour verifier l'etat d'authentification.
+ */
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />
@@ -43,7 +67,7 @@ function App() {
                 <Route path="/permissions" element={<Permissions />} />
                 <Route path="/connectors" element={<Connectors />} />
                 <Route path="/midpoint-users" element={<MidpointUsers />} />
-                <Route path="/ldap-groups" element={<LDAPGroups />} />
+
                 <Route path="/gateway-users" element={<Users />} />
                 <Route path="/ai" element={<AIAssistant />} />
                 <Route path="/audit" element={<AuditLogs />} />
