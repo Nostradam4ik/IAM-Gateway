@@ -8,7 +8,7 @@ date: "1er mars 2026"
 ## Déploiement de l'Infrastructure IAM Gateway
 
 **Projet** : SAE S5/S6 - Passerelle de Provisionnement IAM Intelligente  
-**Auteur** : Andrii Zhmuryk  
+**Auteurs** : Andrii Zhmuryk, Aydin Ibrahim, Abdelghani Chibani
 **Contact** : andrijzmurik@gmail.com  
 **Dépôt GitHub** : [https://github.com/Nostradam4ik/IAM-Gateway](https://github.com/Nostradam4ik/IAM-Gateway)  
 
