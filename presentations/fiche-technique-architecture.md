@@ -1,14 +1,14 @@
 ---
 title: "Fiche Technique : Architecture Passerelle IAM Gateway"
-author: "Andrii Zhmuryk"
+author: "Andrii Zhmuryk, Aydin Ibrahim"
 date: "1er mars 2026"
 ---
 
 # Fiche Technique : Architecture Passerelle IAM Gateway
 
 **Projet** : Passerelle de Provisionnement IAM Intelligente (SAE S5/S6)  
-**Auteur** : Andrii Zhmuryk  
-**Contact** : andrii.zhmuryk@u-pec.fr | [GitHub](https://github.com/Nostradam4ik)
+**Auteurs** : Andrii Zhmuryk, Aydin Ibrahim  
+**Contact** : andrijzmurik@gmail.com | [GitHub](https://github.com/Nostradam4ik)
 
 ---
 
