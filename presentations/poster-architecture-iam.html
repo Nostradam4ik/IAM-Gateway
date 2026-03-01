@@ -14,49 +14,60 @@
             font-family: 'Roboto', sans-serif;
         }
 
-        body {
-            background-color: #f0f2f5;
+        /* Fix the layout for printing and viewing */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #525659; /* Chrome PDF viewer background color */
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            padding: 20px;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
 
-        /* Conteneur A3 (Format Paysage) */
+        /* Conteneur A3 (Format Paysage) strict */
         .poster-container {
             width: 420mm;
             height: 297mm;
             background-color: #ffffff;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             position: relative;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            border: 1px solid #e2e8f0;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            /* Ensure fixed dimensions are respected */
+            min-width: 420mm;
+            min-height: 297mm;
+            max-width: 420mm;
+            max-height: 297mm;
         }
 
         /* En-tête */
         .header {
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             color: white;
-            padding: 30px 50px;
+            padding: 25px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 5px solid #3b82f6;
+            height: 120px;
+            flex-shrink: 0;
         }
 
         .title-section h1 {
-            font-size: 48px;
+            font-size: 42px;
             font-weight: 900;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             letter-spacing: 1px;
             color: #ffffff;
         }
 
         .title-section h2 {
-            font-size: 24px;
+            font-size: 20px;
             color: #93c5fd;
             font-weight: 500;
             text-transform: uppercase;
@@ -66,28 +77,30 @@
         .authors-section {
             text-align: right;
             background-color: rgba(255, 255, 255, 0.1);
-            padding: 15px 25px;
+            padding: 12px 20px;
             border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .authors-section p {
-            font-size: 16px;
-            margin: 5px 0;
+            font-size: 15px;
+            margin: 4px 0;
             color: #e2e8f0;
         }
 
         .authors-section strong {
-            color: #3b82f6;
+            color: #60a5fa; /* slightly lighter blue for contrast */
         }
 
         /* Corps du poster */
         .main-content {
             flex: 1;
-            padding: 40px 50px;
+            padding: 30px 40px;
             display: flex;
             flex-direction: column;
-            gap: 40px;
+            gap: 30px;
+            height: calc(297mm - 120px - 60px); /* Total - Header - Footer */
+            overflow: hidden; /* Prevent expanding beyond limits */
         }
 
         /* Section Schéma Architecture */
@@ -95,40 +108,42 @@
             background-color: #f8fafc;
             border-radius: 16px;
             border: 2px solid #e2e8f0;
-            padding: 40px;
+            padding: 30px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             position: relative;
+            flex: 1; /* Take available space */
         }
 
         .diagram-column {
             display: flex;
             flex-direction: column;
-            gap: 30px;
+            gap: 25px;
             width: 25%;
             z-index: 2;
+            justify-content: center;
         }
 
         .diagram-column.center {
-            width: 35%;
+            width: 38%;
         }
 
         .column-title {
             text-align: center;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             color: #475569;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         /* Blocs (Noeuds) */
         .node {
             background-color: white;
             border-radius: 12px;
-            padding: 25px 20px;
+            padding: 20px 15px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             text-align: center;
             border-top: 5px solid #cbd5e1;
@@ -136,34 +151,34 @@
         }
 
         .node.source { border-color: #8b5cf6; }
-        .node.core { border-color: #3b82f6; border-width: 6px; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15); }
+        .node.core { border-color: #3b82f6; border-width: 5px; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15); padding: 25px 20px;}
         .node.target { border-color: #10b981; }
 
         .node-icon {
-            font-size: 40px;
-            margin-bottom: 15px;
+            font-size: 36px;
+            margin-bottom: 10px;
             display: block;
         }
 
         .node h3 {
-            font-size: 22px;
+            font-size: 20px;
             color: #1e293b;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .node p {
-            font-size: 14px;
+            font-size: 13px;
             color: #64748b;
-            line-height: 1.5;
+            line-height: 1.4;
         }
 
         .badge {
             display: inline-block;
             padding: 4px 12px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
-            margin-top: 15px;
+            margin-top: 12px;
             background-color: #f1f5f9;
             color: #475569;
         }
@@ -172,30 +187,31 @@
         .core-modules {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 25px;
+            gap: 12px;
+            margin-top: 20px;
             text-align: left;
         }
 
         .core-module {
             background-color: #f8fafc;
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
             border: 1px solid #e2e8f0;
         }
 
         .core-module h4 {
-            font-size: 14px;
+            font-size: 13px;
             color: #0f172a;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
 
         .core-module p {
-            font-size: 12px;
+            font-size: 11px;
             margin: 0;
+            color: #475569;
         }
 
-        /* Lignes de flux (Flèches statiques CSS) */
+        /* Lignes de flux (Flèches statiques CSS) - Ajustées pour éviter les débordements */
         .flow-container {
             position: absolute;
             top: 0;
@@ -211,19 +227,19 @@
             position: absolute;
             top: 50%;
             left: 26%;
-            width: 18%;
-            height: 4px;
-            background-color: #94a3b8;
+            width: 17%;
+            height: 3px;
+            background-color: #cbd5e1;
             transform: translateY(-50%);
         }
         .arrow-left-to-center::after {
             content: '';
             position: absolute;
-            right: -10px;
-            top: -6px;
-            border-top: 8px solid transparent;
-            border-bottom: 8px solid transparent;
-            border-left: 12px solid #94a3b8;
+            right: -8px;
+            top: -5px;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 10px solid #cbd5e1;
         }
 
         /* Flèche de centre à droite (Haut) */
@@ -232,17 +248,17 @@
             top: 25%;
             left: 64%;
             width: 10%;
-            height: 4px;
-            background-color: #94a3b8;
+            height: 3px;
+            background-color: #cbd5e1;
         }
         .arrow-center-to-right-top::after {
             content: '';
             position: absolute;
-            right: -10px;
-            top: -6px;
-            border-top: 8px solid transparent;
-            border-bottom: 8px solid transparent;
-            border-left: 12px solid #94a3b8;
+            right: -8px;
+            top: -5px;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 10px solid #cbd5e1;
         }
 
         /* Flèche de centre à droite (Bas) */
@@ -251,17 +267,17 @@
             bottom: 25%;
             left: 64%;
             width: 10%;
-            height: 4px;
-            background-color: #94a3b8;
+            height: 3px;
+            background-color: #cbd5e1;
         }
         .arrow-center-to-right-bottom::after {
             content: '';
             position: absolute;
-            right: -10px;
-            top: -6px;
-            border-top: 8px solid transparent;
-            border-bottom: 8px solid transparent;
-            border-left: 12px solid #94a3b8;
+            right: -8px;
+            top: -5px;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 10px solid #cbd5e1;
         }
 
         /* Ligne verticale de connexion à droite */
@@ -269,97 +285,117 @@
             position: absolute;
             top: 25%;
             left: 64%;
-            width: 4px;
+            width: 3px;
             height: 50%;
-            background-color: #94a3b8;
+            background-color: #cbd5e1;
         }
 
         .flow-label {
             position: absolute;
             background-color: #ffffff;
-            border: 1px solid #cbd5e1;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: bold;
-            color: #475569;
+            color: #64748b;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
         /* Section Caractéristiques en bas */
         .features-section {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 25px;
+            gap: 20px;
+            height: 140px; /* Fixed height to prevent pushing content down */
+            flex-shrink: 0;
         }
 
         .feature-card {
             background-color: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
             border-left: 4px solid #3b82f6;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .feature-card h4 {
-            font-size: 18px;
+            font-size: 15px;
             color: #1e293b;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .feature-card p {
-            font-size: 14px;
+            font-size: 12px;
             color: #64748b;
-            line-height: 1.6;
+            line-height: 1.4;
+            margin: 0;
         }
 
         /* Footer */
         .footer {
-            background-color: #f1f5f9;
-            padding: 20px 50px;
+            background-color: #f8fafc;
+            padding: 0 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-top: 1px solid #e2e8f0;
-            font-size: 14px;
+            font-size: 13px;
             color: #64748b;
             font-weight: 500;
+            height: 60px;
+            flex-shrink: 0;
         }
 
         .tech-stack {
             display: flex;
-            gap: 20px;
+            gap: 15px;
         }
 
         .tech-item {
             background-color: white;
-            padding: 6px 15px;
-            border-radius: 20px;
+            padding: 4px 12px;
+            border-radius: 15px;
             border: 1px solid #cbd5e1;
-            color: #334155;
+            color: #475569;
+            font-size: 12px;
         }
 
-        /* Configuration pour l'impression */
+        /* VERY STRICT Print Configuration */
         @page {
-            size: A3 landscape;
-            margin: 0;
+            size: A3 landscape !important;
+            margin: 0 !important;
         }
 
         @media print {
-            body {
-                background-color: white;
-                padding: 0;
-                display: block;
+            body, html {
+                margin: 0 !important;
+                padding: 0 !important;
+                background-color: white !important;
+                width: 420mm !important;
+                height: 297mm !important;
+                overflow: hidden !important;
             }
+            
             .poster-container {
-                box-shadow: none;
-                border: none;
-                width: 420mm;
-                height: 297mm;
+                box-shadow: none !important;
+                border: none !important;
+                width: 420mm !important;
+                height: 297mm !important;
+                margin: 0 !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                page-break-inside: avoid !important;
             }
+            
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
@@ -379,7 +415,8 @@
             </div>
             <div class="authors-section">
                 <p>Projet <strong>SAE S5/S6</strong></p>
-                <p>Auteurs : <strong>Andrii Zhmuryk</strong> & <strong>achibani@gmail.com</strong></p>
+                <p>Auteurs : <strong>Andrii Zhmuryk, Aydin Ibrahim</strong></p>
+                <p><strong>achibani@gmail.com</strong></p>
             </div>
         </header>
 
@@ -392,15 +429,15 @@
                 <!-- Conteneur des flèches statiques (Position absolue) -->
                 <div class="flow-container">
                     <div class="arrow-left-to-center">
-                        <span class="flow-label" style="top: -30px; left: 50%; transform: translateX(-50%);">POST /provision</span>
+                        <span class="flow-label" style="top: -25px; left: 50%; transform: translateX(-50%);">POST /provision</span>
                     </div>
                     
                     <div class="vertical-line-right"></div>
                     <div class="arrow-center-to-right-top">
-                        <span class="flow-label" style="top: -30px; left: 50%; transform: translateX(-50%);">LDAPS</span>
+                        <span class="flow-label" style="top: -25px; left: 50%; transform: translateX(-50%);">LDAPS</span>
                     </div>
                     <div class="arrow-center-to-right-bottom">
-                        <span class="flow-label" style="top: -30px; left: 50%; transform: translateX(-50%);">REST / RPC</span>
+                        <span class="flow-label" style="top: -25px; left: 50%; transform: translateX(-50%);">REST / RPC</span>
                     </div>
                 </div>
 
@@ -460,19 +497,19 @@
                     <div class="node target">
                         <span class="node-icon">🔐</span>
                         <h3>Active Directory / LDAP</h3>
-                        <p>Annuaires centraux d'entreprise.</p>
+                        <p>Annuaires centraux d'entreprise pour l'authentification.</p>
                     </div>
 
                     <div class="node target">
                         <span class="node-icon">📊</span>
                         <h3>Odoo ERP</h3>
-                        <p>Création des fiches employés.</p>
+                        <p>Création des fiches employés et gestion RH.</p>
                     </div>
 
                     <div class="node target">
                         <span class="node-icon">🎫</span>
                         <h3>GLPI</h3>
-                        <p>Création automatique de tickets.</p>
+                        <p>Création automatique de tickets ITSM.</p>
                     </div>
                 </div>
 
@@ -482,22 +519,22 @@
             <div class="features-section">
                 <div class="feature-card">
                     <h4>🔄 Transaction & Rollback</h4>
-                    <p>En cas d'échec sur un système cible (ex: Odoo), le système annule automatiquement les créations précédentes (ex: LDAP) pour garantir la cohérence des données.</p>
+                    <p>En cas d'échec sur un système cible, le système annule les créations précédentes pour garantir la cohérence des données.</p>
                 </div>
                 
                 <div class="feature-card">
                     <h4>⚡ Traitement Asynchrone</h4>
-                    <p>Réponse immédiate à MidPoint. Les opérations longues ou nécessitant une validation humaine sont mises en file d'attente (Redis) et traitées en arrière-plan.</p>
+                    <p>Les opérations longues ou nécessitant une validation humaine sont mises en file d'attente (Redis) en arrière-plan.</p>
                 </div>
 
                 <div class="feature-card">
                     <h4>🛡️ Sécurité & OAuth2</h4>
-                    <p>Authentification de tous les endpoints via Keycloak (JWT). Isolation stricte des secrets d'infrastructure via variables d'environnement.</p>
+                    <p>Authentification des endpoints via Keycloak (JWT) et isolation stricte des secrets via variables d'environnement.</p>
                 </div>
 
                 <div class="feature-card">
                     <h4>🐳 Infrastructure Docker</h4>
-                    <p>Déploiement complet via docker-compose incluant l'API, les bases de données (Postgres, Redis, Qdrant) et l'Identity Provider (Keycloak).</p>
+                    <p>Déploiement complet via docker-compose (API, Postgres, Redis, Qdrant, Keycloak) garantissant la portabilité.</p>
                 </div>
             </div>
 
