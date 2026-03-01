@@ -3,643 +3,518 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IAM Gateway - Architecture Technique Détaillée</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>IAM Gateway - Architecture Technique</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #2563eb;
-            --secondary: #7c3aed;
-            --accent: #06b6d4;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --dark: #0f172a;
-            --dark-light: #1e293b;
-            --gray: #94a3b8;
-            --light: #f8fafc;
-            --card-bg: rgba(30, 41, 59, 0.7);
+        /* CSS Reset et Configuration de base */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-        html, body {
-            width: 297mm;
-            height: 420mm;
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0b1121 0%, #172554 100%);
-            color: var(--light);
+        /* Conteneur A3 (Format Paysage) */
+        .poster-container {
+            width: 420mm;
+            height: 297mm;
+            background-color: #ffffff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            position: relative;
             overflow: hidden;
-            position: relative;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e2e8f0;
         }
 
-        /* Grille de fond type "blueprint" */
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 30px 30px;
-            z-index: 0;
-        }
-
-        .poster {
-            width: 297mm;
-            height: 420mm;
-            display: grid;
-            grid-template-rows: auto 1fr auto;
-            position: relative;
-            z-index: 1;
-            padding: 40px;
-            gap: 30px;
-        }
-
-        /* HEADER */
+        /* En-tête */
         .header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 30px 50px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            padding: 30px 40px;
-            border-radius: 24px;
-            box-shadow: 0 20px 40px -15px rgba(0,0,0,0.5);
-            z-index: 10;
+            border-bottom: 5px solid #3b82f6;
         }
 
-        .title-block h1 {
-            font-size: 2.8rem;
+        .title-section h1 {
+            font-size: 48px;
             font-weight: 900;
-            background: linear-gradient(to right, #fff, #60a5fa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 5px;
-            letter-spacing: -1px;
-        }
-        
-        .title-block h2 {
-            font-size: 1.2rem;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 3px;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+            color: #ffffff;
         }
 
-        .meta-info { text-align: right; }
-        
-        .meta-info .course {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: white;
-            margin-bottom: 8px;
-        }
-        
-        .meta-info .authors {
-            font-size: 0.95rem;
-            color: var(--gray);
-            background: rgba(255,255,255,0.05);
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        /* MAIN CONTENT - SCHÉMA ARCHITECTURE */
-        .architecture-map {
-            background: var(--card-bg);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 24px;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: inset 0 0 80px rgba(0,0,0,0.5);
-            position: relative;
-            z-index: 10;
-        }
-
-        .arch-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .arch-header h3 {
-            font-size: 1.8rem;
-            color: white;
-            display: inline-block;
-            padding-bottom: 10px;
-            border-bottom: 3px solid var(--primary);
-        }
-
-        /* LAYOUT DU SCHÉMA */
-        .diagram-grid {
-            display: grid;
-            grid-template-columns: 280px 100px 1fr 100px 280px;
-            align-items: stretch;
-            gap: 10px;
-            height: 100%;
-        }
-
-        /* COLONNES */
-        .column {
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-            position: relative;
-        }
-
-        .col-title {
-            text-align: center;
-            font-size: 1.1rem;
-            font-weight: 800;
-            color: var(--gray);
+        .title-section h2 {
+            font-size: 24px;
+            color: #93c5fd;
+            font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 2px;
-            margin-bottom: 15px;
-            background: rgba(0,0,0,0.3);
-            padding: 10px;
+        }
+
+        .authors-section {
+            text-align: right;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 15px 25px;
             border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        /* BOÎTES (NODES) */
-        .box {
-            background: rgba(15, 23, 42, 0.9);
-            border: 2px solid #334155;
+        .authors-section p {
+            font-size: 16px;
+            margin: 5px 0;
+            color: #e2e8f0;
+        }
+
+        .authors-section strong {
+            color: #3b82f6;
+        }
+
+        /* Corps du poster */
+        .main-content {
+            flex: 1;
+            padding: 40px 50px;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        /* Section Schéma Architecture */
+        .architecture-diagram {
+            background-color: #f8fafc;
             border-radius: 16px;
-            padding: 25px 20px;
+            border: 2px solid #e2e8f0;
+            padding: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             position: relative;
-            z-index: 2;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-            text-align: center;
         }
 
-        .box.source { border-color: #8b5cf6; box-shadow: 0 0 20px rgba(139, 92, 246, 0.2); }
-        .box.target { border-color: #10b981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
-        .box.db     { border-color: #f59e0b; box-shadow: 0 0 20px rgba(245, 158, 11, 0.2); }
-        .box.auth   { border-color: #ec4899; box-shadow: 0 0 20px rgba(236, 72, 153, 0.2); }
+        .diagram-column {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            width: 25%;
+            z-index: 2;
+        }
 
-        .icon-large {
-            font-size: 2.5rem;
+        .diagram-column.center {
+            width: 35%;
+        }
+
+        .column-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+
+        /* Blocs (Noeuds) */
+        .node {
+            background-color: white;
+            border-radius: 12px;
+            padding: 25px 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            border-top: 5px solid #cbd5e1;
+            position: relative;
+        }
+
+        .node.source { border-color: #8b5cf6; }
+        .node.core { border-color: #3b82f6; border-width: 6px; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15); }
+        .node.target { border-color: #10b981; }
+
+        .node-icon {
+            font-size: 40px;
             margin-bottom: 15px;
             display: block;
         }
 
-        .box h4 {
-            font-size: 1.3rem;
-            color: white;
-            margin-bottom: 8px;
+        .node h3 {
+            font-size: 22px;
+            color: #1e293b;
+            margin-bottom: 10px;
         }
 
-        .box p {
-            font-size: 0.9rem;
-            color: var(--gray);
-            line-height: 1.4;
+        .node p {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.5;
         }
 
-        .tech-tag {
+        .badge {
             display: inline-block;
-            background: rgba(255,255,255,0.1);
-            color: #cbd5e1;
-            font-size: 0.75rem;
-            padding: 4px 10px;
+            padding: 4px 12px;
             border-radius: 20px;
-            margin-top: 12px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 15px;
+            background-color: #f1f5f9;
+            color: #475569;
         }
 
-        /* CORE GATEWAY (BOÎTE CENTRALE GÉANTE) */
-        .core-gateway {
-            background: linear-gradient(180deg, rgba(30, 58, 138, 0.4) 0%, rgba(15, 23, 42, 0.8) 100%);
-            border: 2px solid var(--primary);
-            border-radius: 24px;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            box-shadow: 0 0 40px rgba(37, 99, 235, 0.2);
-            z-index: 5;
+        /* Contenu spécifique au Core Gateway */
+        .core-modules {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 25px;
+            text-align: left;
         }
 
-        .core-header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px dashed rgba(255,255,255,0.2);
+        .core-module {
+            background-color: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
         }
 
-        .core-header h2 {
-            font-size: 2rem;
-            color: white;
+        .core-module h4 {
+            font-size: 14px;
+            color: #0f172a;
             margin-bottom: 5px;
         }
 
-        /* COMPOSANTS INTERNES CORE */
-        .internal-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            flex-grow: 1;
+        .core-module p {
+            font-size: 12px;
+            margin: 0;
         }
 
-        .module {
-            background: rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 20px;
+        /* Lignes de flux (Flèches statiques CSS) */
+        .flow-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
         }
-        
-        .module-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--accent);
-            margin-bottom: 15px;
+
+        /* Flèche de gauche à centre */
+        .arrow-left-to-center {
+            position: absolute;
+            top: 50%;
+            left: 26%;
+            width: 18%;
+            height: 4px;
+            background-color: #94a3b8;
+            transform: translateY(-50%);
+        }
+        .arrow-left-to-center::after {
+            content: '';
+            position: absolute;
+            right: -10px;
+            top: -6px;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 12px solid #94a3b8;
+        }
+
+        /* Flèche de centre à droite (Haut) */
+        .arrow-center-to-right-top {
+            position: absolute;
+            top: 25%;
+            left: 64%;
+            width: 10%;
+            height: 4px;
+            background-color: #94a3b8;
+        }
+        .arrow-center-to-right-top::after {
+            content: '';
+            position: absolute;
+            right: -10px;
+            top: -6px;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 12px solid #94a3b8;
+        }
+
+        /* Flèche de centre à droite (Bas) */
+        .arrow-center-to-right-bottom {
+            position: absolute;
+            bottom: 25%;
+            left: 64%;
+            width: 10%;
+            height: 4px;
+            background-color: #94a3b8;
+        }
+        .arrow-center-to-right-bottom::after {
+            content: '';
+            position: absolute;
+            right: -10px;
+            top: -6px;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 12px solid #94a3b8;
+        }
+
+        /* Ligne verticale de connexion à droite */
+        .vertical-line-right {
+            position: absolute;
+            top: 25%;
+            left: 64%;
+            width: 4px;
+            height: 50%;
+            background-color: #94a3b8;
+        }
+
+        .flow-label {
+            position: absolute;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #475569;
+        }
+
+        /* Section Caractéristiques en bas */
+        .features-section {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+        }
+
+        .feature-card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+            border-left: 4px solid #3b82f6;
+        }
+
+        .feature-card h4 {
+            font-size: 18px;
+            color: #1e293b;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .module ul {
-            list-style: none;
+        .feature-card p {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.6;
         }
 
-        .module li {
-            font-size: 0.9rem;
-            color: #e2e8f0;
-            margin-bottom: 10px;
-            padding-left: 15px;
-            position: relative;
-        }
-
-        .module li::before {
-            content: '→';
-            position: absolute;
-            left: 0;
-            color: var(--primary);
-            font-weight: bold;
-        }
-
-        /* FLÈCHES ET CONNEXIONS */
-        .flows {
+        /* Footer */
+        .footer {
+            background-color: #f1f5f9;
+            padding: 20px 50px;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            position: relative;
-            z-index: 1;
+            border-top: 1px solid #e2e8f0;
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
         }
 
-        .flow-line {
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.5), rgba(255,255,255,0.1));
-            position: relative;
-            margin: 40px 0;
-        }
-
-        .flow-line::after {
-            content: '';
-            position: absolute;
-            right: 0;
-            top: -6px;
-            border-top: 8px solid transparent;
-            border-bottom: 8px solid transparent;
-            border-left: 12px solid rgba(255,255,255,0.6);
-        }
-
-        .flow-line.reverse::after {
-            right: auto;
-            left: 0;
-            border-left: none;
-            border-right: 12px solid rgba(255,255,255,0.6);
-        }
-
-        .flow-label {
-            position: absolute;
-            top: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1e293b;
-            color: #cbd5e1;
-            font-size: 0.8rem;
-            padding: 4px 10px;
-            border-radius: 12px;
-            border: 1px solid #334155;
-            white-space: nowrap;
-            font-weight: 600;
-            z-index: 10;
-        }
-
-        /* BOTTOM SECTION (Stack Technique & Détails) */
-        .details-section {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 30px;
-            z-index: 10;
-            position: relative;
-        }
-
-        .detail-card {
-            background: var(--card-bg);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 24px;
-            padding: 30px;
-            backdrop-filter: blur(10px);
-        }
-
-        .detail-card h3 {
-            font-size: 1.4rem;
-            color: white;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--primary);
-        }
-
-        .feature-list {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        .tech-stack {
+            display: flex;
             gap: 20px;
         }
 
-        .feat-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 15px;
+        .tech-item {
+            background-color: white;
+            padding: 6px 15px;
+            border-radius: 20px;
+            border: 1px solid #cbd5e1;
+            color: #334155;
         }
 
-        .feat-icon {
-            font-size: 1.5rem;
-            background: rgba(37, 99, 235, 0.2);
-            width: 40px; height: 40px;
-            display: flex;
-            align-items: center; justify-content: center;
-            border-radius: 10px;
-            color: var(--accent);
-            flex-shrink: 0;
+        /* Configuration pour l'impression */
+        @page {
+            size: A3 landscape;
+            margin: 0;
         }
 
-        .feat-text h5 { color: white; font-size: 1.05rem; margin-bottom: 4px; }
-        .feat-text p { color: var(--gray); font-size: 0.85rem; line-height: 1.4; }
-
-        /* Security block */
-        .sec-block {
-            background: rgba(236, 72, 153, 0.1);
-            border: 1px solid rgba(236, 72, 153, 0.3);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .sec-block h5 { color: #f472b6; margin-bottom: 8px; font-size: 1rem;}
-        .sec-block p { color: #cbd5e1; font-size: 0.85rem; }
-
-        /* Print formatting */
-        @page { size: A3 landscape; margin: 0; }
         @media print {
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            html, body {
+            body {
+                background-color: white;
+                padding: 0;
+                display: block;
+            }
+            .poster-container {
+                box-shadow: none;
+                border: none;
                 width: 420mm;
                 height: 297mm;
             }
-            .poster {
-                width: 420mm;
-                height: 297mm;
-                transform: scale(0.95);
-                transform-origin: top left;
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
-        }
-        
-        /* Fix for overlay issue */
-        .main-container {
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-            height: 100%;
-            z-index: 10;
-            position: relative;
         }
     </style>
 </head>
 <body>
-    <div class="poster">
-        <div class="main-container">
-            <!-- HEADER -->
-            <header class="header">
-                <div class="title-block">
-                    <h1>IAM Gateway</h1>
-                    <h2>Architecture Technique & Flux de Données</h2>
-                </div>
-                <div class="meta-info">
-                    <div class="course">Projet SAE S5/S6</div>
-                    <div class="authors">Auteurs: Andrii Zhmuryk | achibani@gmail.com</div>
-                </div>
-            </header>
 
-            <!-- SCHEMA PRINCIPAL -->
-            <div class="architecture-map">
-                <div class="arch-header">
-                    <h3>Diagramme de Composants & Flux REST</h3>
-                </div>
-
-                <div class="diagram-grid">
-                    
-                    <!-- COLONNE 1 : SOURCES -->
-                    <div class="column">
-                        <div class="col-title">Identity Sources</div>
-                        
-                        <div class="box source">
-                            <span class="icon-large">🔄</span>
-                            <h4>MidPoint / Evolve</h4>
-                            <p>Solution IGA principale. Génère les événements de cycle de vie (Création, Modification, Départ).</p>
-                            <span class="tech-tag">JSON / REST</span>
-                        </div>
-
-                        <div class="box source" style="margin-top: auto;">
-                            <span class="icon-large">👥</span>
-                            <h4>Admin UI (React)</h4>
-                            <p>Interface de gestion des règles, lancement manuel et validation des workflows.</p>
-                            <span class="tech-tag">React / Axios</span>
-                        </div>
-                    </div>
-
-                    <!-- COLONNE 2 : FLUX ENTRANTS -->
-                    <div class="flows">
-                        <div class="flow-line">
-                            <span class="flow-label">POST /provision</span>
-                        </div>
-                        <div style="height: 150px;"></div>
-                        <div class="flow-line">
-                            <span class="flow-label">API Calls</span>
-                        </div>
-                    </div>
-
-                    <!-- COLONNE 3 : CORE GATEWAY -->
-                    <div class="column">
-                        <div class="col-title">Core Gateway Engine</div>
-                        
-                        <div class="core-gateway">
-                            <div class="core-header">
-                                <h2>FastAPI Backend Server</h2>
-                                <p style="color: var(--accent); font-weight: 600;">Orchestration, Règles et Connecteurs</p>
-                            </div>
-
-                            <div class="internal-grid">
-                                <div class="module">
-                                    <div class="module-title">⚙️ Rule Engine</div>
-                                    <ul>
-                                        <li>Parsing YAML / JSON</li>
-                                        <li>Calculs dynamiques Jinja2</li>
-                                        <li>Versioning (Git style)</li>
-                                        <li>Mapping d'attributs multi-cibles</li>
-                                    </ul>
-                                </div>
-                                
-                                <div class="module">
-                                    <div class="module-title">🔌 Connectors Layer</div>
-                                    <ul>
-                                        <li>Architecture Modulaire</li>
-                                        <li>Pattern "Command"</li>
-                                        <li>Mécanisme de Rollback auto</li>
-                                        <li>Gestion des Timeouts/Retries</li>
-                                    </ul>
-                                </div>
-
-                                <div class="module">
-                                    <div class="module-title">⏳ Workflow Service</div>
-                                    <ul>
-                                        <li>Gestion asynchrone (Celery/RQ)</li>
-                                        <li>File d'attente Redis</li>
-                                        <li>Approbations hiérarchiques</li>
-                                        <li>Webhooks & Notifications</li>
-                                    </ul>
-                                </div>
-
-                                <div class="module">
-                                    <div class="module-title">🤖 AI & Audit Services</div>
-                                    <ul>
-                                        <li>Agent OpenAI (Function Calling)</li>
-                                        <li>Génération auto de règles</li>
-                                        <li>Audit complet (SQLModel)</li>
-                                        <li>Recherche sémantique vectorielle</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            <div style="text-align: center; margin-top: 20px;">
-                                <span class="tech-tag" style="background: rgba(37,99,235,0.3); color: white; padding: 6px 15px; font-size: 0.9rem;">Python 3.11 • FastAPI • Pydantic • SQLAlchemy</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- COLONNE 4 : FLUX SORTANTS -->
-                    <div class="flows">
-                        <div class="flow-line">
-                            <span class="flow-label">LDAPS / TCP 636</span>
-                        </div>
-                        <div class="flow-line">
-                            <span class="flow-label">XML-RPC</span>
-                        </div>
-                        <div class="flow-line">
-                            <span class="flow-label">REST API</span>
-                        </div>
-                    </div>
-
-                    <!-- COLONNE 5 : CIBLES & INFRA -->
-                    <div class="column">
-                        <div class="col-title">Target Systems & Infra</div>
-                        
-                        <div class="box target" style="padding: 15px;">
-                            <span class="icon-large" style="margin-bottom: 5px; font-size: 1.8rem;">🔐</span>
-                            <h4>Active Directory / LDAP</h4>
-                            <p style="font-size: 0.8rem;">Annuaires centraux</p>
-                        </div>
-
-                        <div class="box target" style="padding: 15px;">
-                            <span class="icon-large" style="margin-bottom: 5px; font-size: 1.8rem;">📊</span>
-                            <h4>Odoo ERP</h4>
-                            <p style="font-size: 0.8rem;">Fiches RH employés</p>
-                        </div>
-
-                        <div class="box target" style="padding: 15px;">
-                            <span class="icon-large" style="margin-bottom: 5px; font-size: 1.8rem;">💻</span>
-                            <h4>GLPI (ITSM)</h4>
-                            <p style="font-size: 0.8rem;">Tickets & Matériel</p>
-                        </div>
-
-                        <div style="margin-top: auto; display: flex; gap: 10px;">
-                            <div class="box db" style="flex:1; padding: 10px;">
-                                <h4 style="font-size: 1rem;">Qdrant</h4>
-                                <p style="font-size: 0.75rem;">Vector DB</p>
-                            </div>
-                            <div class="box db" style="flex:1; padding: 10px;">
-                                <h4 style="font-size: 1rem;">Redis</h4>
-                                <p style="font-size: 0.75rem;">Cache / Queue</p>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
+    <div class="poster-container">
+        
+        <!-- En-tête -->
+        <header class="header">
+            <div class="title-section">
+                <h1>IAM Gateway</h1>
+                <h2>Architecture Technique & Flux de Données</h2>
             </div>
+            <div class="authors-section">
+                <p>Projet <strong>SAE S5/S6</strong></p>
+                <p>Auteurs : <strong>Andrii Zhmuryk</strong> & <strong>achibani@gmail.com</strong></p>
+            </div>
+        </header>
 
-            <!-- DETAILS TECHNIQUES -->
-            <div class="details-section">
+        <!-- Contenu principal -->
+        <main class="main-content">
+            
+            <!-- Schéma d'architecture -->
+            <div class="architecture-diagram">
                 
-                <div class="detail-card">
-                    <h3>Points Forts Architecturaux</h3>
-                    <div class="feature-list">
-                        <div class="feat-item">
-                            <div class="feat-icon">🔄</div>
-                            <div class="feat-text">
-                                <h5>Transaction & Rollback</h5>
-                                <p>Si la création échoue sur Odoo après avoir réussi sur LDAP, le système annule automatiquement la création LDAP pour maintenir la cohérence (Pattern Command).</p>
+                <!-- Conteneur des flèches statiques (Position absolue) -->
+                <div class="flow-container">
+                    <div class="arrow-left-to-center">
+                        <span class="flow-label" style="top: -30px; left: 50%; transform: translateX(-50%);">POST /provision</span>
+                    </div>
+                    
+                    <div class="vertical-line-right"></div>
+                    <div class="arrow-center-to-right-top">
+                        <span class="flow-label" style="top: -30px; left: 50%; transform: translateX(-50%);">LDAPS</span>
+                    </div>
+                    <div class="arrow-center-to-right-bottom">
+                        <span class="flow-label" style="top: -30px; left: 50%; transform: translateX(-50%);">REST / RPC</span>
+                    </div>
+                </div>
+
+                <!-- Colonne 1 : Sources -->
+                <div class="diagram-column">
+                    <div class="column-title">Identity Sources</div>
+                    
+                    <div class="node source">
+                        <span class="node-icon">🔄</span>
+                        <h3>MidPoint / Evolve</h3>
+                        <p>Système de gouvernance central (IGA). Génère les événements métiers (Embauche, Mutation, Départ).</p>
+                        <span class="badge">Payload JSON</span>
+                    </div>
+
+                    <div class="node source">
+                        <span class="node-icon">💻</span>
+                        <h3>Admin UI (React)</h3>
+                        <p>Interface pour la gestion des règles, lancement manuel et suivi des workflows.</p>
+                        <span class="badge">API REST</span>
+                    </div>
+                </div>
+
+                <!-- Colonne 2 : Core Gateway -->
+                <div class="diagram-column center">
+                    <div class="column-title">Core Gateway Engine</div>
+                    
+                    <div class="node core">
+                        <span class="node-icon">🧠</span>
+                        <h3>FastAPI Backend Server</h3>
+                        <p>Orchestrateur central responsable du parsing, de l'application des règles et de la distribution.</p>
+                        
+                        <div class="core-modules">
+                            <div class="core-module">
+                                <h4>⚙️ Rule Engine</h4>
+                                <p>Jinja2, YAML, Versioning</p>
                             </div>
-                        </div>
-                        <div class="feat-item">
-                            <div class="feat-icon">⚡</div>
-                            <div class="feat-text">
-                                <h5>Asynchronisme</h5>
-                                <p>L'API répond instantanément à MidPoint. Les tâches longues (Odoo, validation humaine) sont empilées dans Redis et traitées par des workers en arrière-plan.</p>
+                            <div class="core-module">
+                                <h4>🔌 Connectors Layer</h4>
+                                <p>Pattern Command, Rollback</p>
                             </div>
-                        </div>
-                        <div class="feat-item">
-                            <div class="feat-icon">🧠</div>
-                            <div class="feat-text">
-                                <h5>Intelligence Artificielle</h5>
-                                <p>L'agent IA traduit le langage naturel en configurations YAML complexes et explique les erreurs d'audit via la recherche vectorielle (Qdrant).</p>
+                            <div class="core-module">
+                                <h4>⏳ Workflow</h4>
+                                <p>Redis Queue, Approbations</p>
                             </div>
-                        </div>
-                        <div class="feat-item">
-                            <div class="feat-icon">🐳</div>
-                            <div class="feat-text">
-                                <h5>Déploiement Dockerisé</h5>
-                                <p>Environnement complet encapsulé via docker-compose (Gateway, BDD, Broker, Keycloak), assurant une reproductibilité parfaite.</p>
+                            <div class="core-module">
+                                <h4>🔍 Audit & AI</h4>
+                                <p>Qdrant, SQLModel, OpenAI</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="detail-card">
-                    <h3>Sécurité & Déploiement</h3>
+                <!-- Colonne 3 : Cibles -->
+                <div class="diagram-column">
+                    <div class="column-title">Target Systems</div>
                     
-                    <div class="sec-block">
-                        <h5>Authentification Centralisée</h5>
-                        <p>Protection de tous les endpoints API via vérification de tokens JWT délivrés par <strong>Keycloak (OIDC)</strong>. Contrôle d'accès basé sur les rôles (RBAC).</p>
-                    </div>
-                    
-                    <div class="sec-block">
-                        <h5>Protection des Données</h5>
-                        <p>Secrets et mots de passe (AD, Odoo) isolés via variables d'environnement (`.env`). Validation stricte des payloads entrants avec <strong>Pydantic</strong>.</p>
+                    <div class="node target">
+                        <span class="node-icon">🔐</span>
+                        <h3>Active Directory / LDAP</h3>
+                        <p>Annuaires centraux d'entreprise.</p>
                     </div>
 
-                    <div style="margin-top: 20px; text-align: center;">
-                        <div style="font-size: 0.8rem; color: var(--gray); margin-bottom: 10px;">Pipeline CI/CD</div>
-                        <div style="display: flex; justify-content: center; gap: 10px;">
-                            <span class="tech-tag">GitHub Actions</span>
-                            <span class="tech-tag">PyTest</span>
-                            <span class="tech-tag">Bandit SAST</span>
-                        </div>
+                    <div class="node target">
+                        <span class="node-icon">📊</span>
+                        <h3>Odoo ERP</h3>
+                        <p>Création des fiches employés.</p>
+                    </div>
+
+                    <div class="node target">
+                        <span class="node-icon">🎫</span>
+                        <h3>GLPI</h3>
+                        <p>Création automatique de tickets.</p>
                     </div>
                 </div>
 
             </div>
-        </div>
+
+            <!-- Caractéristiques Techniques -->
+            <div class="features-section">
+                <div class="feature-card">
+                    <h4>🔄 Transaction & Rollback</h4>
+                    <p>En cas d'échec sur un système cible (ex: Odoo), le système annule automatiquement les créations précédentes (ex: LDAP) pour garantir la cohérence des données.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>⚡ Traitement Asynchrone</h4>
+                    <p>Réponse immédiate à MidPoint. Les opérations longues ou nécessitant une validation humaine sont mises en file d'attente (Redis) et traitées en arrière-plan.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h4>🛡️ Sécurité & OAuth2</h4>
+                    <p>Authentification de tous les endpoints via Keycloak (JWT). Isolation stricte des secrets d'infrastructure via variables d'environnement.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h4>🐳 Infrastructure Docker</h4>
+                    <p>Déploiement complet via docker-compose incluant l'API, les bases de données (Postgres, Redis, Qdrant) et l'Identity Provider (Keycloak).</p>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Pied de page -->
+        <footer class="footer">
+            <div>IAM Gateway - Conception Architecturale © 2026</div>
+            <div class="tech-stack">
+                <span class="tech-item">Python 3.11</span>
+                <span class="tech-item">FastAPI</span>
+                <span class="tech-item">Pydantic</span>
+                <span class="tech-item">Docker</span>
+            </div>
+        </footer>
+
     </div>
+
 </body>
 </html>
