@@ -3,480 +3,524 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plateforme No-Code & Gateway IAM - UPEC 2026</title>
+    <title>IAM Gateway - Presentation UPEC 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card2: #111827;
+            --primary: #3b82f6;
+            --primary-dark: #1e40af;
+            --accent: #06b6d4;
+            --accent-light: #22d3ee;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --purple: #7c3aed;
+            --white: #ffffff;
+            --light: #f1f5f9;
+            --gray: #94a3b8;
+            --gray-light: #cbd5e1;
+            --muted: #64748b;
         }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a2e;
-            color: #eee;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--white);
         }
+
+        /* ── Slide layout ── */
         .slide {
             width: 100%;
             min-height: 100vh;
             padding: 40px 60px;
             page-break-after: always;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             position: relative;
+            background: var(--bg);
         }
         .slide::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, #0f4c75, #3282b8, #bbe1fa);
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent), var(--purple));
         }
-        .header {
+        .slide-num {
+            position: absolute;
+            bottom: 20px;
+            right: 40px;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        /* ── Header per slide ── */
+        .slide-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #3282b8;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(59,130,246,0.2);
         }
-        .logo-container {
-            display: flex;
-            gap: 20px;
-            align-items: center;
+        .slide-header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -1px;
         }
-        .logo {
-            width: 80px;
-            height: 80px;
+        .slide-header .subtitle {
+            font-size: 1rem;
+            color: var(--accent);
+            margin-top: 4px;
+        }
+        .slide-header .logos img {
+            height: 45px;
             background: white;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #1a1a2e;
-            font-size: 12px;
-            text-align: center;
+            padding: 4px 8px;
+            border-radius: 6px;
+            margin-left: 12px;
         }
-        h1 {
-            font-size: 2.5em;
-            color: #bbe1fa;
-            margin-bottom: 20px;
-        }
-        h2 {
-            font-size: 1.8em;
-            color: #3282b8;
-            margin: 20px 0 15px 0;
-        }
-        h3 {
-            font-size: 1.3em;
-            color: #bbe1fa;
-            margin: 15px 0 10px 0;
-        }
-        p, li {
-            font-size: 1.1em;
-            line-height: 1.6;
-            margin-bottom: 10px;
-        }
-        ul {
-            margin-left: 30px;
-        }
-        .title-slide {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-        .title-slide h1 {
-            font-size: 3.5em;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            font-size: 1.5em;
-            color: #3282b8;
-            margin-bottom: 40px;
-        }
-        .authors {
-            font-size: 1.3em;
-            margin: 30px 0;
-        }
-        .university {
-            font-size: 1.1em;
-            color: #888;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border: 1px solid #3282b8;
-        }
-        th {
-            background: #0f4c75;
-            color: white;
-        }
-        tr:nth-child(even) {
-            background: rgba(50, 130, 184, 0.1);
-        }
-        .highlight-box {
-            background: rgba(50, 130, 184, 0.2);
-            border-left: 4px solid #3282b8;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 0 10px 10px 0;
-        }
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-        .grid-3 {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
-        }
+
+        /* ── Grids ── */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+
+        /* ── Cards ── */
         .card {
-            background: rgba(50, 130, 184, 0.15);
-            border-radius: 10px;
-            padding: 20px;
-            border: 1px solid #3282b8;
+            background: var(--bg-card);
+            border: 1px solid rgba(59,130,246,0.15);
+            border-radius: 14px;
+            padding: 24px;
         }
-        .card h3 {
-            margin-top: 0;
+        .card h3 { font-size: 1.15rem; color: var(--accent-light); margin-bottom: 10px; }
+
+        /* ── Typography ── */
+        h2 { font-size: 1.5rem; color: var(--primary); margin: 20px 0 12px; font-weight: 700; }
+        h3 { font-size: 1.15rem; color: var(--accent-light); margin: 16px 0 8px; }
+        p, li { font-size: 1rem; line-height: 1.65; color: var(--gray-light); }
+        ul { margin-left: 24px; }
+        li { margin-bottom: 4px; }
+        strong { color: var(--white); }
+
+        /* ── Tables ── */
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        th, td { padding: 10px 14px; text-align: left; border: 1px solid rgba(59,130,246,0.15); font-size: 0.95rem; }
+        th { background: var(--primary-dark); color: var(--white); font-weight: 600; }
+        tr:nth-child(even) { background: var(--bg-card); }
+        tr:nth-child(odd) td { background: var(--bg-card2); }
+
+        /* ── Highlight ── */
+        .highlight {
+            background: rgba(59,130,246,0.12);
+            border-left: 4px solid var(--primary);
+            padding: 16px 20px;
+            border-radius: 0 10px 10px 0;
+            margin: 16px 0;
         }
-        .status-complete {
-            color: #4caf50;
-        }
-        .status-partial {
-            color: #ff9800;
-        }
-        .status-todo {
-            color: #f44336;
-        }
-        .architecture-box {
-            background: #0d1117;
-            border-radius: 10px;
-            padding: 20px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            white-space: pre;
-            overflow-x: auto;
-        }
-        .progress-bar {
-            height: 20px;
-            background: #333;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #0f4c75, #3282b8);
-            transition: width 0.3s;
-        }
-        .slide-number {
-            position: absolute;
-            bottom: 20px;
-            right: 40px;
-            font-size: 0.9em;
-            color: #666;
-        }
+        .highlight.warning { border-color: var(--warning); background: rgba(245,158,11,0.1); }
+        .highlight.success { border-color: var(--success); background: rgba(16,185,129,0.1); }
+
+        /* ── Code ── */
         .code-block {
             background: #0d1117;
-            border-radius: 8px;
-            padding: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85em;
+            border-radius: 10px;
+            padding: 16px 20px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.88rem;
+            color: var(--gray-light);
+            white-space: pre;
             overflow-x: auto;
-            margin: 15px 0;
+            margin: 12px 0;
+            border: 1px solid rgba(59,130,246,0.1);
         }
+
+        /* ── Metrics ── */
         .metric-box {
             text-align: center;
             padding: 20px;
-            background: rgba(50, 130, 184, 0.2);
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid rgba(59,130,246,0.12);
+        }
+        .metric-number { font-size: 2.4rem; font-weight: 900; color: var(--accent-light); }
+        .metric-label { font-size: 0.85rem; color: var(--gray); margin-top: 4px; }
+
+        /* ── Progress ── */
+        .progress-bar {
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 6px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.4s;
+        }
+        .pct-100 .progress-fill { background: var(--success); width: 100%; }
+        .pct-80 .progress-fill { background: linear-gradient(90deg, var(--success), #86efac); width: 80%; }
+        .pct-70 .progress-fill { background: linear-gradient(90deg, var(--warning), #fbbf24); width: 70%; }
+        .pct-60 .progress-fill { background: linear-gradient(90deg, var(--warning), #fbbf24); width: 60%; }
+        .pct-50 .progress-fill { background: linear-gradient(90deg, var(--warning), #fb923c); width: 50%; }
+        .pct-40 .progress-fill { background: linear-gradient(90deg, var(--danger), var(--warning)); width: 40%; }
+        .pct-30 .progress-fill { background: linear-gradient(90deg, var(--danger), #f87171); width: 30%; }
+
+        .status-done { color: var(--success); font-weight: 600; }
+        .status-partial { color: var(--warning); font-weight: 600; }
+        .status-todo { color: var(--danger); font-weight: 600; }
+
+        /* ── Screenshots ── */
+        .screenshot {
+            background: var(--bg-card2);
+            border-radius: 12px;
+            padding: 8px;
+            border: 2px solid rgba(59,130,246,0.2);
+            overflow: hidden;
+        }
+        .screenshot img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            display: block;
+        }
+        .screenshot-label {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 8px;
+        }
+
+        /* ── Architecture ── */
+        .arch-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 24px;
+            background: var(--bg-card2);
+            border: 1px solid rgba(59,130,246,0.15);
+            border-radius: 14px;
+            margin: 16px 0;
+            flex-wrap: wrap;
+        }
+        .arch-block {
+            text-align: center;
+            padding: 14px 18px;
             border-radius: 10px;
+            min-width: 100px;
         }
-        .metric-number {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #bbe1fa;
+        .arch-block.source { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); }
+        .arch-block.gw { background: linear-gradient(135deg, rgba(30,64,175,0.3), rgba(124,58,237,0.3)); border: 2px solid var(--primary); padding: 18px 28px; }
+        .arch-block.target { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); }
+        .arch-block .icon { font-size: 1.5rem; }
+        .arch-block .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--gray); margin-top: 4px; }
+        .arch-block .name { font-size: 0.95rem; font-weight: 700; color: var(--white); }
+        .arch-arrow { font-size: 1.5rem; color: var(--primary); }
+
+        /* ── Title slide ── */
+        .title-slide {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
         }
-        .metric-label {
-            font-size: 0.9em;
-            color: #888;
-        }
+        .title-slide .main-logos { display: flex; gap: 40px; align-items: center; margin-bottom: 40px; }
+        .title-slide .main-logos img { height: 80px; background: white; padding: 8px 16px; border-radius: 10px; }
+        .title-slide h1 { font-size: 3.5rem; font-weight: 900; letter-spacing: -2px; margin-bottom: 12px; }
+        .title-slide .sub { font-size: 1.4rem; color: var(--accent); margin-bottom: 40px; }
+        .title-slide .authors { font-size: 1.25rem; font-weight: 600; margin-bottom: 16px; }
+        .title-slide .info { font-size: 1rem; color: var(--gray); line-height: 1.8; }
+
+        /* ── Print ── */
+        @page { size: landscape; margin: 0; }
         @media print {
-            .slide {
-                page-break-after: always;
-            }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .slide { page-break-after: always; }
         }
     </style>
 </head>
 <body>
 
+<!-- ════════════════════════════════════════════════════════════ -->
 <!-- SLIDE 1: TITRE -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide title-slide">
-    <div class="logo-container" style="margin-bottom: 40px;">
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC IUT Creteil-Vitry Departement Informatique" style="max-width:500px;height:auto;border-radius:10px;background:white;padding:15px;">
+    <div class="main-logos">
+        <img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="IUT Creteil-Vitry - UPEC">
+        <img src="Lissi-cmjn.png" alt="Laboratoire LISSI">
     </div>
-    <h1>Plateforme No-Code & Gateway IAM</h1>
-    <div class="subtitle">Orchestration intelligente des identites multi-systemes</div>
-    <div class="authors">
-        <strong>Zhmuryk Andrii & Aydin Ibrahim</strong>
+    <h1>IAM Gateway</h1>
+    <div class="sub">Passerelle de Provisionnement Intelligente des Identites</div>
+    <div class="authors">Equipe MOE : Zhmuryk Andrii &amp; Aydin Ibrahim</div>
+    <div class="info">
+        Product Owner &amp; Architecture : A. CHIBANI<br>
+        BUT Informatique 3e annee - UPEC<br>
+        IUT Creteil-Vitry | Laboratoire LISSI<br>
+        NEXUS AI Innovation Lab - Fevrier 2026
     </div>
-    <div class="university">
-        BUT Informatique 3eme annee<br>
-        Universite Paris-Est Creteil<br>
-        Departement Informatique<br>
-        Janvier 2026
-    </div>
-    <div class="slide-number">1 / 24</div>
+    <div class="slide-num">1 / 24</div>
 </div>
 
-<!-- SLIDE 2: PROBLEMATIQUE -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 2: SOMMAIRE -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Problematique</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Sommaire</h1></div>
+        <div class="logos">
+            <img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC">
+            <img src="Lissi-cmjn.png" alt="LISSI">
+        </div>
     </div>
-
-    <h2>Le probleme de la gestion des identites en entreprise</h2>
-
     <div class="grid-2">
         <div>
-            <h3>Situation actuelle</h3>
+            <ol style="list-style:none;padding:0;">
+                <li style="padding:10px 0;border-bottom:1px solid rgba(59,130,246,0.1);font-size:1.15rem;"><strong style="color:var(--accent);">01</strong> &nbsp; Problematique &amp; Contexte</li>
+                <li style="padding:10px 0;border-bottom:1px solid rgba(59,130,246,0.1);font-size:1.15rem;"><strong style="color:var(--accent);">02</strong> &nbsp; Notre Solution</li>
+                <li style="padding:10px 0;border-bottom:1px solid rgba(59,130,246,0.1);font-size:1.15rem;"><strong style="color:var(--accent);">03</strong> &nbsp; Architecture &amp; Stack Technique</li>
+                <li style="padding:10px 0;border-bottom:1px solid rgba(59,130,246,0.1);font-size:1.15rem;"><strong style="color:var(--accent);">04</strong> &nbsp; Backlog des Fonctionnalites</li>
+                <li style="padding:10px 0;border-bottom:1px solid rgba(59,130,246,0.1);font-size:1.15rem;"><strong style="color:var(--accent);">05</strong> &nbsp; Fonctionnalites Implementees + Screenshots</li>
+                <li style="padding:10px 0;border-bottom:1px solid rgba(59,130,246,0.1);font-size:1.15rem;"><strong style="color:var(--accent);">06</strong> &nbsp; Fonctionnalites en Production</li>
+            </ol>
+        </div>
+        <div>
+            <ol style="list-style:none;padding:0;">
+                <li style="padding:10px 0;border-bottom:1px solid rgba(59,130,246,0.1);font-size:1.15rem;"><strong style="color:var(--accent);">07</strong> &nbsp; Fonctionnalites a Finaliser (% progression)</li>
+                <li style="padding:10px 0;border-bottom:1px solid rgba(59,130,246,0.1);font-size:1.15rem;"><strong style="color:var(--accent);">08</strong> &nbsp; Fonctionnalites Futures</li>
+                <li style="padding:10px 0;border-bottom:1px solid rgba(59,130,246,0.1);font-size:1.15rem;"><strong style="color:var(--accent);">09</strong> &nbsp; Environnement de Developpement</li>
+                <li style="padding:10px 0;border-bottom:1px solid rgba(59,130,246,0.1);font-size:1.15rem;"><strong style="color:var(--accent);">10</strong> &nbsp; Difficultes Rencontrees</li>
+                <li style="padding:10px 0;border-bottom:1px solid rgba(59,130,246,0.1);font-size:1.15rem;"><strong style="color:var(--accent);">11</strong> &nbsp; Conclusion &amp; Competences Acquises</li>
+            </ol>
+        </div>
+    </div>
+    <div class="slide-num">2 / 24</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 3: PROBLEMATIQUE -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="slide">
+    <div class="slide-header">
+        <div><h1>Problematique &amp; Contexte</h1></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
+    </div>
+    <div class="grid-2">
+        <div>
+            <h2>Le defi de la gestion des identites</h2>
             <ul>
-                <li>Active Directory / LDAP (authentification)</li>
-                <li>ERP Odoo, SAP (gestion RH)</li>
+                <li><strong>1 employe = 5 a 10 comptes</strong> (AD, LDAP, ERP, Cloud...)</li>
+                <li>Creation manuelle = erreurs + delais</li>
+                <li>Depart employe = comptes orphelins oublies</li>
+                <li>Aucune tracabilite des acces</li>
+                <li>Risques de securite majeurs</li>
+            </ul>
+            <div class="highlight warning" style="margin-top:20px;">
+                <strong>30%</strong> des violations liees aux comptes orphelins<br>
+                <strong>4h</strong> en moyenne pour creer tous les acces d'un employe
+            </div>
+        </div>
+        <div>
+            <h2>Systemes concernes</h2>
+            <ul>
+                <li>Active Directory / LDAP</li>
+                <li>ERP (Odoo, SAP)</li>
                 <li>Applications metier (bases SQL)</li>
                 <li>Services Cloud (Keycloak, OAuth)</li>
+                <li>Intranet &amp; outils internes</li>
             </ul>
-
-            <div class="highlight-box" style="margin-top:20px;">
-                <strong>1 employe = 5 a 10 comptes differents</strong>
-            </div>
-        </div>
-        <div>
-            <h3>Problemes rencontres</h3>
-            <ul>
-                <li>Creation manuelle = erreurs + temps perdu</li>
-                <li>Depart employe = comptes oublies</li>
-                <li>Aucune tracabilite des modifications</li>
-                <li>Failles de securite (comptes orphelins)</li>
-            </ul>
-
-            <div class="highlight-box" style="margin-top:20px;background:rgba(244,67,54,0.2);border-color:#f44336;">
-                <strong>30%</strong> des violations de donnees liees aux comptes orphelins<br>
-                <strong>4h</strong> en moyenne pour creer tous les acces d'un nouvel employe
+            <div class="highlight success" style="margin-top:20px;">
+                <strong>Besoin :</strong> Automatiser et centraliser le cycle de vie des identites numeriques
             </div>
         </div>
     </div>
-    <div class="slide-number">2 / 24</div>
+    <div class="slide-num">3 / 24</div>
 </div>
 
-<!-- SLIDE 3: SOLUTION & INNOVATION -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 4: SOLUTION -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Notre Solution - Innovation</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Notre Solution : IAM Gateway</h1></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
     </div>
-
-    <h2>Gateway IAM: Orchestration Intelligente</h2>
-
+    <p style="font-size:1.1rem;color:var(--gray-light);margin-bottom:20px;">MidPoint (Evolveum) = puissant mais complexe &rarr; Notre gateway simplifie l'interface</p>
     <div class="grid-3">
         <div class="card">
-            <h3>1. Interface No-Code</h3>
-            <p>MidPoint est puissant MAIS complexe (XML, concepts techniques)</p>
-            <p><strong>Notre solution:</strong> Interface simple, visuelle, accessible aux non-techniciens</p>
+            <h3>1. Automatisation</h3>
+            <ul>
+                <li>Provisionnement automatique multi-systemes</li>
+                <li>Regles dynamiques (Jinja2)</li>
+                <li>Workflows d'approbation multi-niveaux</li>
+                <li>Calcul automatique (login, email, groupes)</li>
+            </ul>
         </div>
         <div class="card">
-            <h3>2. Automatisation</h3>
-            <p>Regles dynamiques en YAML (pas de code Java)</p>
-            <p>Moteur de calcul automatique (login, email, groupes)</p>
-            <p>Workflows d'approbation multi-niveaux</p>
+            <h3>2. Centralisation</h3>
+            <ul>
+                <li>Un seul point d'entree pour tous les systemes</li>
+                <li>Vue temps reel des identites</li>
+                <li>Reconciliation automatique des ecarts</li>
+                <li>6 connecteurs natifs</li>
+            </ul>
         </div>
         <div class="card">
-            <h3>3. Centralisation</h3>
-            <p>Un seul point d'entree pour tous les systemes</p>
-            <p>Vue temps reel de la synchronisation</p>
-            <p>Reconciliation automatique</p>
+            <h3>3. Conformite</h3>
+            <ul>
+                <li>Tracabilite complete (audit logs)</li>
+                <li>Recherche semantique IA</li>
+                <li>Assistant IA integre</li>
+                <li>Conformite RGPD</li>
+            </ul>
         </div>
     </div>
-
-    <div class="highlight-box" style="text-align:center;margin-top:30px;">
-        <h3 style="color:#bbe1fa;">Innovation cle</h3>
-        <p style="font-size:1.3em;">Rendre l'IAM accessible a tous, pas seulement aux experts MidPoint</p>
+    <div class="highlight" style="text-align:center;margin-top:24px;">
+        <strong style="font-size:1.2rem;color:var(--accent);">Innovation cle :</strong>
+        <span style="font-size:1.1rem;"> Rendre l'IAM accessible a tous, pas seulement aux experts MidPoint</span>
     </div>
-    <div class="slide-number">3 / 24</div>
+    <div class="slide-num">4 / 24</div>
 </div>
 
-<!-- SLIDE 4: BACKLOG 1 -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 5: ARCHITECTURE SCHEMA -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Backlog - Fonctionnalites Initiales (1/2)</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Schema d'Architecture Globale</h1></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
     </div>
 
-    <h2>Epic 1: Gestion des Utilisateurs</h2>
-    <table>
-        <tr><th>User Story</th><th>Priorite</th><th>Points</th></tr>
-        <tr><td>Creer un utilisateur dans tous les systemes</td><td>Must</td><td>8</td></tr>
-        <tr><td>Modifier les attributs d'un utilisateur</td><td>Must</td><td>5</td></tr>
-        <tr><td>Desactiver/supprimer un compte</td><td>Must</td><td>5</td></tr>
-        <tr><td>Voir l'historique des modifications</td><td>Should</td><td>3</td></tr>
-    </table>
+    <!-- Architecture flow: Sources -> Gateway -> MidPoint (coeur) -> Cibles -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:20px;">
 
-    <h2>Epic 2: Moteur de Regles</h2>
-    <table>
-        <tr><th>User Story</th><th>Priorite</th><th>Points</th></tr>
-        <tr><td>Definir des regles de mapping d'attributs</td><td>Must</td><td>8</td></tr>
-        <tr><td>Tester une regle avec des donnees fictives</td><td>Must</td><td>5</td></tr>
-        <tr><td>Versionner les regles</td><td>Should</td><td>3</td></tr>
-    </table>
+        <!-- Row 1: Sources -->
+        <div style="display:flex;gap:14px;align-items:center;">
+            <div class="arch-block source"><div class="icon">&#128100;</div><div class="label">Source RH</div><div class="name">Odoo / CSV</div></div>
+            <div class="arch-arrow">&rarr;</div>
+            <div class="arch-block source"><div class="icon">&#128187;</div><div class="label">Interface</div><div class="name">Utilisateur</div></div>
+        </div>
 
-    <h2>Epic 3: Workflows d'Approbation</h2>
-    <table>
-        <tr><th>User Story</th><th>Priorite</th><th>Points</th></tr>
-        <tr><td>Configurer des workflows multi-niveaux</td><td>Must</td><td>8</td></tr>
-        <tr><td>Approuver/rejeter une demande</td><td>Must</td><td>5</td></tr>
-        <tr><td>Notifications par email</td><td>Should</td><td>5</td></tr>
-    </table>
-    <div class="slide-number">4 / 24</div>
-</div>
+        <div class="arch-arrow" style="font-size:2rem;">&#8595;</div>
 
-<!-- SLIDE 5: BACKLOG 2 -->
-<div class="slide">
-    <div class="header">
-        <h1>Backlog - Fonctionnalites Initiales (2/2)</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
-    </div>
+        <!-- Row 2: Gateway -->
+        <div class="arch-block gw" style="min-width:360px;">
+            <div class="icon" style="font-size:1.8rem;">&#128737;</div>
+            <div class="label">Passerelle No-Code</div>
+            <div class="name" style="font-size:1.15rem;">IAM Gateway (FastAPI)</div>
+            <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;">
+                <span style="font-size:0.75rem;background:rgba(255,255,255,0.1);padding:4px 10px;border-radius:6px;">Moteur Regles</span>
+                <span style="font-size:0.75rem;background:rgba(255,255,255,0.1);padding:4px 10px;border-radius:6px;">Workflows</span>
+                <span style="font-size:0.75rem;background:rgba(255,255,255,0.1);padding:4px 10px;border-radius:6px;">Assistant IA</span>
+            </div>
+        </div>
 
-    <h2>Epic 4: Connecteurs Systemes</h2>
-    <table>
-        <tr><th>User Story</th><th>Priorite</th><th>Points</th></tr>
-        <tr><td>Connecteur LDAP (OpenLDAP, Active Directory)</td><td>Must</td><td>8</td></tr>
-        <tr><td>Connecteur Odoo (ERP)</td><td>Must</td><td>8</td></tr>
-        <tr><td>Connecteur SQL (PostgreSQL)</td><td>Must</td><td>5</td></tr>
-        <tr><td>Connecteur MidPoint (REST API)</td><td>Must</td><td>13</td></tr>
-        <tr><td>Connecteur Keycloak (OIDC)</td><td>Should</td><td>8</td></tr>
-    </table>
+        <div class="arch-arrow" style="font-size:2rem;">&#8595;</div>
 
-    <h2>Epic 5: Reconciliation & Audit</h2>
-    <table>
-        <tr><th>User Story</th><th>Priorite</th><th>Points</th></tr>
-        <tr><td>Comparer l'etat des systemes</td><td>Must</td><td>8</td></tr>
-        <tr><td>Detecter les ecarts (orphelins, drift)</td><td>Must</td><td>5</td></tr>
-        <tr><td>Recherche semantique dans les logs</td><td>Should</td><td>8</td></tr>
-    </table>
+        <!-- Row 3: MidPoint (coeur) -->
+        <div style="text-align:center;padding:20px 40px;background:linear-gradient(135deg, rgba(124,58,237,0.3), rgba(59,130,246,0.3));border:3px solid var(--purple);border-radius:16px;min-width:400px;">
+            <div style="font-size:2rem;">&#127760;</div>
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-top:4px;">Coeur IGA - Orchestrateur</div>
+            <div style="font-size:1.3rem;font-weight:800;color:var(--white);">MidPoint 4.4</div>
+            <div style="font-size:0.8rem;color:var(--gray-light);margin-top:4px;">Provisionnement &bull; Reconciliation &bull; Roles &bull; Policies</div>
+        </div>
 
-    <div class="highlight-box">
-        <strong>Total initial: ~120 points</strong> (sprints de 2 semaines, velocite ~20 pts/sprint)
-    </div>
-    <div class="slide-number">5 / 24</div>
-</div>
+        <div class="arch-arrow" style="font-size:2rem;">&#8595;</div>
 
-<!-- SLIDE 6: ARCHITECTURE SCHEMA -->
-<div class="slide">
-    <div class="header">
-        <h1>Architecture Globale</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
-    </div>
-
-    <div class="architecture-box">
-+------------------------------------------------------------------+
-|                      UTILISATEUR (Navigateur)                     |
-+--------------------------------+---------------------------------+
-                                 | HTTPS (Port 3000)
-                                 v
-+------------------------------------------------------------------+
-|                    FRONTEND REACT                                 |
-|            TypeScript + Tailwind CSS + Vite                       |
-|     [Dashboard] [Users] [Rules] [Workflows] [Audit] [AI]         |
-+--------------------------------+---------------------------------+
-                                 | REST API (Port 8000)
-                                 v
-+------------------------------------------------------------------+
-|                    GATEWAY API (FastAPI)                          |
-|  +---------------+ +---------------+ +---------------+            |
-|  | Rule Engine   | | Workflow Mgr  | | AI Assistant  |            |
-|  |   (Jinja2)    | | (Approvals)   | |   (OpenAI)    |            |
-|  +---------------+ +---------------+ +---------------+            |
-|  +----------------------------------------------------------+    |
-|  |              CONNECTOR LAYER                              |    |
-|  |  MidPoint | LDAP | Odoo | SQL | Keycloak                 |    |
-|  +----------------------------------------------------------+    |
-+-------+---------------+---------------+---------------+----------+
-        |               |               |               |
-        v               v               v               v
-   +---------+    +---------+    +---------+    +---------+
-   |MidPoint |    |OpenLDAP |    |  Odoo   |    |Keycloak |
-   |  (IAM)  |    |(Annuaire|    |  (ERP)  |    | (OIDC)  |
-   +---------+    +---------+    +---------+    +---------+
-    </div>
-    <div class="slide-number">6 / 24</div>
-</div>
-
-<!-- SLIDE 7: ARCHITECTURE TECHNIQUE -->
-<div class="slide">
-    <div class="header">
-        <h1>Architecture Technique - 15 Services Docker</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+        <!-- Row 4: Systemes cibles -->
+        <div style="display:flex;gap:14px;align-items:center;">
+            <div class="arch-block target"><div class="icon">&#128193;</div><div class="label">Annuaire</div><div class="name">LDAP</div></div>
+            <div class="arch-block target"><div class="icon">&#128273;</div><div class="label">SSO</div><div class="name">Keycloak</div></div>
+            <div class="arch-block target"><div class="icon">&#128230;</div><div class="label">ERP</div><div class="name">Odoo</div></div>
+            <div class="arch-block target"><div class="icon">&#128451;</div><div class="label">Base</div><div class="name">PostgreSQL</div></div>
+        </div>
     </div>
 
     <div class="grid-2">
         <div>
-            <h3>Services Applicatifs</h3>
-            <table style="font-size:0.9em;">
-                <tr><th>Service</th><th>Tech</th><th>Port</th></tr>
-                <tr><td>gateway</td><td>FastAPI/Python</td><td>8000</td></tr>
-                <tr><td>gateway-frontend</td><td>React/TS</td><td>3000</td></tr>
-                <tr><td>gateway-db</td><td>PostgreSQL</td><td>5434</td></tr>
-                <tr><td>redis</td><td>Redis 7</td><td>6379</td></tr>
-                <tr><td>qdrant</td><td>Qdrant</td><td>6333</td></tr>
-            </table>
+            <h2>Architecture</h2>
+            <ul>
+                <li><strong>Frontend :</strong> React 18 + TypeScript (port 3000)</li>
+                <li><strong>Backend :</strong> FastAPI / Python (port 8000)</li>
+                <li><strong>IGA Central :</strong> MidPoint 4.4 (port 8080)</li>
+            </ul>
+            <h3>Flux de provisionnement</h3>
+            <ul>
+                <li>1. L'utilisateur demande via la Gateway</li>
+                <li>2. La Gateway applique regles + workflows</li>
+                <li>3. <strong>MidPoint orchestre</strong> le provisionnement</li>
+                <li>4. MidPoint provisionne les systemes cibles</li>
+            </ul>
         </div>
         <div>
-            <h3>Services IAM</h3>
-            <table style="font-size:0.9em;">
-                <tr><th>Service</th><th>Tech</th><th>Port</th></tr>
-                <tr><td>midpoint</td><td>MidPoint 4.4</td><td>8080</td></tr>
-                <tr><td>midpoint-postgres</td><td>PostgreSQL</td><td>5433</td></tr>
-                <tr><td>openldap</td><td>OpenLDAP</td><td>10389</td></tr>
-                <tr><td>odoo</td><td>Odoo 17</td><td>8069</td></tr>
-                <tr><td>keycloak</td><td>Keycloak 23</td><td>8081</td></tr>
-            </table>
+            <h3>Pourquoi MidPoint au centre ?</h3>
+            <ul>
+                <li>Moteur IGA open source de reference</li>
+                <li>Gere les <strong>projections</strong> (shadows) vers LDAP, SQL, etc.</li>
+                <li>Reconciliation native entre systemes</li>
+                <li>Gestion des roles et policies centralisee</li>
+                <li>Notre Gateway = <strong>interface No-Code</strong> pour MidPoint</li>
+            </ul>
+            <div class="highlight" style="margin-top:12px;">
+                <strong>Gateway = simplification</strong><br>
+                <strong>MidPoint = orchestration &amp; provisionnement</strong>
+            </div>
         </div>
     </div>
-
-    <div class="highlight-box" style="margin-top:20px;">
-        <strong>Reseau:</strong> Tous les services sur <code>iam-network</code> (bridge Docker)<br>
-        <strong>Persistance:</strong> Volumes Docker nommes pour chaque base de donnees
-    </div>
-    <div class="slide-number">7 / 24</div>
+    <div class="slide-num">5 / 24</div>
 </div>
 
-<!-- SLIDE 8: STACK TECHNOLOGIQUE -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 6: ARCHITECTURE TECHNIQUE -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Stack Technologique</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Architecture Technique - 14 Services Docker</h1></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
     </div>
+    <table>
+        <tr><th>Service</th><th>Technologie</th><th>Port</th><th>Role</th></tr>
+        <tr><td><strong>gateway-frontend</strong></td><td>React 18 / TypeScript</td><td>3000</td><td>Interface utilisateur</td></tr>
+        <tr><td><strong>gateway</strong></td><td>FastAPI / Python</td><td>8000</td><td>API &amp; logique metier</td></tr>
+        <tr><td><strong>midpoint</strong></td><td>MidPoint 4.4</td><td>8080</td><td>IGA central</td></tr>
+        <tr><td><strong>openldap</strong></td><td>OpenLDAP 2.6</td><td>10389</td><td>Annuaire LDAP</td></tr>
+        <tr><td><strong>odoo</strong></td><td>Odoo 17</td><td>8069</td><td>ERP / SIRH</td></tr>
+        <tr><td><strong>keycloak</strong></td><td>Keycloak 23</td><td>8081</td><td>SSO / OIDC</td></tr>
+        <tr><td><strong>redis</strong></td><td>Redis 7</td><td>6379</td><td>Cache &amp; sessions</td></tr>
+        <tr><td><strong>qdrant</strong></td><td>Qdrant 1.7</td><td>6333</td><td>Recherche vectorielle IA</td></tr>
+        <tr><td><strong>5x PostgreSQL</strong></td><td>PostgreSQL 15/16</td><td>-</td><td>Bases de donnees</td></tr>
+        <tr><td><strong>phpldapadmin</strong></td><td>phpLDAPadmin</td><td>8443</td><td>Admin LDAP</td></tr>
+    </table>
+    <div class="highlight">
+        <strong>Reseau :</strong> Tous sur <code>iam-network</code> (bridge Docker) &bull;
+        <strong>Persistance :</strong> 12 volumes Docker nommes
+    </div>
+    <div class="slide-num">6 / 24</div>
+</div>
 
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 7: STACK -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="slide">
+    <div class="slide-header">
+        <div><h1>Stack Technologique</h1></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
+    </div>
     <div class="grid-3">
         <div class="card">
             <h3>Backend (Python)</h3>
             <ul>
-                <li><strong>FastAPI</strong> 0.109</li>
-                <li><strong>SQLModel</strong> (ORM)</li>
-                <li><strong>JWT</strong> + OAuth2</li>
-                <li><strong>ldap3</strong> (LDAP)</li>
-                <li><strong>APScheduler</strong></li>
-                <li><strong>structlog</strong></li>
-                <li><strong>OpenAI</strong> API</li>
+                <li><strong>FastAPI</strong> 0.109 (async)</li>
+                <li><strong>SQLModel</strong> + PostgreSQL</li>
+                <li><strong>JWT</strong> + OAuth2 (securite)</li>
+                <li><strong>ldap3</strong> (LDAP natif)</li>
+                <li><strong>Jinja2 Sandbox</strong> (moteur regles)</li>
+                <li><strong>APScheduler</strong> (planification)</li>
+                <li><strong>OpenAI API</strong> (assistant IA)</li>
+                <li><strong>Qdrant</strong> (recherche semantique)</li>
             </ul>
         </div>
         <div class="card">
@@ -484,507 +528,609 @@
             <ul>
                 <li><strong>React 18</strong> + Vite</li>
                 <li><strong>React Router</strong> v6</li>
-                <li><strong>Zustand</strong> (state)</li>
-                <li><strong>Tailwind CSS</strong></li>
-                <li><strong>Lucide</strong> (icons)</li>
-                <li><strong>Axios</strong> (HTTP)</li>
+                <li><strong>Zustand</strong> (state management)</li>
+                <li><strong>Tailwind CSS</strong> (styling)</li>
+                <li><strong>i18next</strong> (FR, EN, UK)</li>
+                <li><strong>Lucide React</strong> (icons)</li>
+                <li><strong>Axios</strong> (HTTP client)</li>
+                <li><strong>Recharts</strong> (graphiques)</li>
             </ul>
         </div>
         <div class="card">
             <h3>Infrastructure</h3>
             <ul>
-                <li><strong>Docker</strong> Compose</li>
-                <li><strong>PostgreSQL</strong> 15</li>
-                <li><strong>Redis</strong> 7</li>
-                <li><strong>Qdrant</strong> (vector)</li>
-                <li><strong>MidPoint</strong> 4.4</li>
-                <li><strong>Keycloak</strong> 23</li>
+                <li><strong>Docker Compose</strong> (14 services)</li>
+                <li><strong>PostgreSQL</strong> 15/16</li>
+                <li><strong>Redis</strong> 7 (cache)</li>
+                <li><strong>Qdrant</strong> (vecteurs IA)</li>
+                <li><strong>MidPoint</strong> 4.4 (IGA)</li>
+                <li><strong>Keycloak</strong> 23 (SSO)</li>
+                <li><strong>OpenLDAP</strong> 2.6</li>
+                <li><strong>Odoo</strong> 17 (ERP)</li>
             </ul>
         </div>
     </div>
-    <div class="slide-number">8 / 24</div>
+    <div class="slide-num">7 / 24</div>
 </div>
 
-<!-- SLIDE 9: FONCTIONNALITES - DASHBOARD -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 8: BACKLOG 1 -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Fonctionnalites Implementees - Dashboard</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Backlog - Gestion des Utilisateurs</h1><div class="subtitle">Epic 1 : Gestion du cycle de vie des identites</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
     </div>
+    <table>
+        <tr><th>User Story</th><th>Priorite</th><th>Pts</th><th>Status</th></tr>
+        <tr><td>Creer un utilisateur dans tous les systemes cibles</td><td>Must Have</td><td>8</td><td class="status-done">Done</td></tr>
+        <tr><td>Modifier les attributs d'un utilisateur</td><td>Must Have</td><td>5</td><td class="status-done">Done</td></tr>
+        <tr><td>Desactiver/supprimer un compte partout</td><td>Must Have</td><td>5</td><td class="status-done">Done</td></tr>
+        <tr><td>Voir l'historique des modifications</td><td>Should Have</td><td>3</td><td class="status-done">Done</td></tr>
+        <tr><td>Assigner des roles MidPoint a un utilisateur</td><td>Must Have</td><td>5</td><td class="status-done">Done</td></tr>
+        <tr><td>Gerer les groupes LDAP (membres)</td><td>Must Have</td><td>5</td><td class="status-done">Done</td></tr>
+        <tr><td>Importer utilisateurs depuis CSV</td><td>Should Have</td><td>5</td><td class="status-done">Done</td></tr>
+    </table>
+    <div class="slide-num">8 / 24</div>
+</div>
 
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 9: BACKLOG 2 -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="slide">
+    <div class="slide-header">
+        <div><h1>Backlog - Connecteurs &amp; Regles</h1><div class="subtitle">Epic 2 : Connecteurs | Epic 3 : Regles &amp; Workflows</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
+    </div>
+    <table>
+        <tr><th>User Story</th><th>Priorite</th><th>Pts</th><th>Status</th></tr>
+        <tr><td>Connecteur LDAP (OpenLDAP, AD)</td><td>Must Have</td><td>8</td><td class="status-done">Done</td></tr>
+        <tr><td>Connecteur Odoo (ERP via XML-RPC)</td><td>Must Have</td><td>8</td><td class="status-done">Done</td></tr>
+        <tr><td>Connecteur SQL (PostgreSQL)</td><td>Must Have</td><td>5</td><td class="status-done">Done</td></tr>
+        <tr><td>Connecteur MidPoint (REST API)</td><td>Must Have</td><td>13</td><td class="status-done">Done</td></tr>
+        <tr><td>Connecteur Keycloak (OIDC)</td><td>Should Have</td><td>8</td><td class="status-partial">70%</td></tr>
+        <tr><td>Connecteur CSV (import/export)</td><td>Should Have</td><td>5</td><td class="status-done">Done</td></tr>
+        <tr><td>Moteur de regles Jinja2</td><td>Must Have</td><td>8</td><td class="status-done">Done</td></tr>
+        <tr><td>Workflows d'approbation multi-niveaux</td><td>Must Have</td><td>8</td><td class="status-done">Done</td></tr>
+    </table>
+    <div class="slide-num">9 / 24</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 10: BACKLOG 3 -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="slide">
+    <div class="slide-header">
+        <div><h1>Backlog - Audit, IA &amp; Monitoring</h1><div class="subtitle">Epic 4 : Audit &amp; Conformite | Epic 5 : Monitoring &amp; IA</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
+    </div>
+    <table>
+        <tr><th>User Story</th><th>Priorite</th><th>Pts</th><th>Status</th></tr>
+        <tr><td>Dashboard temps reel avec metriques</td><td>Must Have</td><td>5</td><td class="status-done">Done</td></tr>
+        <tr><td>Audit logs avec recherche full-text</td><td>Must Have</td><td>5</td><td class="status-done">Done</td></tr>
+        <tr><td>Recherche semantique IA (Qdrant)</td><td>Could Have</td><td>8</td><td class="status-partial">80%</td></tr>
+        <tr><td>Assistant IA (chat GPT-4)</td><td>Could Have</td><td>8</td><td class="status-done">Done</td></tr>
+        <tr><td>Reconciliation multi-systemes</td><td>Must Have</td><td>8</td><td class="status-done">Done</td></tr>
+        <tr><td>Comparaison live entre systemes</td><td>Should Have</td><td>5</td><td class="status-done">Done</td></tr>
+        <tr><td>Planificateur de synchronisations</td><td>Should Have</td><td>5</td><td class="status-done">Done</td></tr>
+        <tr><td>Notifications email</td><td>Should Have</td><td>5</td><td class="status-partial">50%</td></tr>
+    </table>
+    <div class="slide-num">10 / 24</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 11: DASHBOARD -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="slide">
+    <div class="slide-header">
+        <div><h1>Implementee : Dashboard</h1><div class="subtitle">100% - Operationnel en production</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
+    </div>
     <div class="grid-2">
         <div>
-            <h2 class="status-complete">Dashboard Principal - 100%</h2>
+            <h2>Dashboard Principal</h2>
             <ul>
                 <li>Vue d'ensemble en temps reel</li>
-                <li>Statistiques cles (utilisateurs, operations)</li>
+                <li>Nombre d'utilisateurs par systeme</li>
                 <li>Etat de sante des connecteurs</li>
-                <li>Graphiques de performance</li>
-                <li>Alertes et notifications</li>
+                <li>Dernieres operations</li>
+                <li>Services MidPoint en temps reel</li>
             </ul>
-
-            <h3>Endpoints API</h3>
-            <div class="code-block">
-GET /api/v1/admin/status
+            <h3>API Endpoints</h3>
+            <div class="code-block">GET /api/v1/admin/status
 GET /api/v1/admin/metrics
-GET /api/v1/connectors/health
-            </div>
+GET /api/v1/connectors/health</div>
         </div>
         <div>
-            <div style="background:#1e1e1e;border-radius:10px;padding:10px;border:2px solid #3282b8;overflow:hidden;">
-                <img src="screenshots/dashboard.png" alt="Dashboard Gateway IAM" style="width:100%;height:auto;border-radius:5px;" onerror="this.style.display='none';this.parentElement.innerHTML='<p style=color:#666;text-align:center;padding:50px;>Capture Dashboard<br><br>- Operations: 0<br>- Taux succes: 100%<br>- Connecteurs: OK<br>- Services: Healthy</p>';">
+            <div class="screenshot">
+                <img src="screenshots/dashboard.png" alt="Dashboard">
             </div>
-            <p style="font-size:0.8em;color:#888;text-align:center;margin-top:10px;">Interface Dashboard - Vue temps reel</p>
+            <div class="screenshot-label">Interface Dashboard - Vue temps reel</div>
         </div>
     </div>
-    <div class="slide-number">9 / 24</div>
+    <div class="slide-num">11 / 24</div>
 </div>
 
-<!-- SLIDE 10: FONCTIONNALITES - PROVISIONING -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 12: PROVISIONNEMENT -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Fonctionnalites - Provisioning</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Implementee : Provisionnement Multi-Systemes</h1><div class="subtitle">100% - 6 connecteurs operationnels</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
     </div>
-
-    <h2 class="status-complete">Gestion des Operations - 100%</h2>
-
     <div class="grid-2">
         <div>
-            <h3>Fonctionnalites</h3>
+            <h2>Operations de provisionnement</h2>
             <ul>
-                <li>Creation utilisateur multi-systeme</li>
-                <li>Modification des attributs</li>
-                <li>Suppression/desactivation</li>
-                <li>Rollback des operations</li>
-                <li>Suivi statut temps reel</li>
+                <li>Creation utilisateur dans LDAP + Odoo + MidPoint + SQL</li>
+                <li>Modification des attributs en cascade</li>
+                <li>Desactivation/suppression multi-systemes</li>
+                <li>Selection visuelle des systemes cibles</li>
+                <li>Formulaire dynamique avec niveaux de permission</li>
             </ul>
-
-            <h3>Systemes cibles</h3>
+            <h3>6 connecteurs natifs</h3>
             <ul>
-                <li>LDAP (comptes + groupes)</li>
-                <li>Odoo (res.users, res.partner)</li>
-                <li>PostgreSQL (tables custom)</li>
-                <li>MidPoint (utilisateurs, roles)</li>
+                <li>LDAP (OpenLDAP / Active Directory)</li>
+                <li>Odoo 17 (XML-RPC)</li>
+                <li>PostgreSQL (SQL direct)</li>
+                <li>MidPoint (REST API)</li>
+                <li>Keycloak (OIDC)</li>
+                <li>CSV (import/export)</li>
             </ul>
         </div>
         <div>
-            <h3>Workflow type</h3>
-            <div class="architecture-box" style="font-size:0.8em;">
-1. Creation demande
-       |
-       v
-2. Validation regles
-       |
-       v
-3. Workflow approbation
-       |
-       v
-4. Execution multi-systeme
-       |
-       v
-5. Audit & notification
-            </div>
+            <h2>Flux d'une operation</h2>
+            <div class="code-block">1. Saisie formulaire (attributs)
+        |
+        v
+2. Selection systemes cibles
+        |
+        v
+3. Evaluation des regles Jinja2
+        |
+        v
+4. Workflow d'approbation
+        |
+        v
+5. Execution multi-systeme
+        |
+        v
+6. Log audit + notification</div>
+            <h3>Connecteur Wizard</h3>
+            <ul>
+                <li>Formulaire 2 etapes (schema-driven)</li>
+                <li>Test de connexion en direct</li>
+                <li>Configuration JSON Schema</li>
+            </ul>
         </div>
     </div>
-    <div class="slide-number">10 / 24</div>
+    <div class="slide-num">12 / 24</div>
 </div>
 
-<!-- SLIDE 11: FONCTIONNALITES - REGLES -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 13: MIDPOINT -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Fonctionnalites - Moteur de Regles</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Implementee : Gestion MidPoint</h1><div class="subtitle">100% - CRUD complet + attribution roles</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
     </div>
-
-    <h2 class="status-complete">Regles Dynamiques - 100%</h2>
-
     <div class="grid-2">
         <div>
-            <h3>Fonctionnalites</h3>
-            <ul>
-                <li>Definition en YAML/JSON</li>
-                <li>Expressions Jinja2 sandboxees</li>
-                <li>Filtres integres (normalize_name, slugify)</li>
-                <li>Test avec donnees fictives</li>
-                <li>Versionnage</li>
-            </ul>
-
-            <h3>Cas d'usage</h3>
-            <ul>
-                <li>Generation automatique de login</li>
-                <li>Calcul email selon departement</li>
-                <li>Attribution groupes selon poste</li>
-            </ul>
+            <div class="screenshot">
+                <img src="screenshots/midpoint-users.png" alt="Utilisateurs MidPoint">
+            </div>
+            <div class="screenshot-label">Utilisateurs MidPoint</div>
         </div>
         <div>
-            <h3>Exemple de regle</h3>
-            <div class="code-block">
-target_system: LDAP
-rule_type: MAPPING
-definition: |
-  {%- set login = (firstname ~ '.'
-      ~ lastname) | normalize_name -%}
-  {
-    "uid": "{{ login }}",
-    "mail": "{{ login }}@example.com",
-    "cn": "{{ firstname }} {{ lastname }}"
-  }
+            <div class="screenshot">
+                <img src="screenshots/midpoint-roles.png" alt="Roles MidPoint">
             </div>
+            <div class="screenshot-label">Roles MidPoint</div>
         </div>
     </div>
-    <div class="slide-number">11 / 24</div>
+    <div class="slide-num">13 / 24</div>
 </div>
 
-<!-- SLIDE 12: FONCTIONNALITES - WORKFLOWS -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 14: COMPARAISON + RECONCILIATION -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Fonctionnalites - Workflows</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Implementee : Comparaison &amp; Reconciliation</h1><div class="subtitle">100% - Detection et resolution des ecarts</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
     </div>
-
-    <h2 class="status-complete">Workflows d'Approbation - 100%</h2>
-
     <div class="grid-2">
         <div>
-            <h3>Fonctionnalites</h3>
-            <ul>
-                <li>Configuration multi-niveaux (jusqu'a 5)</li>
-                <li>Approbation/rejet avec commentaires</li>
-                <li>Timeout configurable (72h)</li>
-                <li>Notifications email</li>
-                <li>Historique des decisions</li>
-            </ul>
-
-            <h3>Endpoints API</h3>
-            <div class="code-block">
-GET  /workflow/instances/pending
-POST /workflow/instances/{id}/approve
-POST /workflow/instances/{id}/reject
+            <div class="screenshot">
+                <img src="screenshots/comparaison-live.png" alt="Comparaison Live">
             </div>
+            <div class="screenshot-label">Comparaison live entre systemes</div>
         </div>
         <div>
-            <h3>Niveaux type</h3>
-            <div class="architecture-box" style="font-size:0.85em;">
-Niveau 1: Manager direct
-    |
-    v
-Niveau 2: Chef departement
-    |
-    v
-Niveau 3: Proprietaire app
-    |
-    v
-Niveau 4: RSSI (si sensible)
-    |
-    v
-[EXECUTION]
+            <div class="screenshot">
+                <img src="screenshots/reconciliation.png" alt="Reconciliation">
             </div>
+            <div class="screenshot-label">Reconciliation des divergences</div>
         </div>
     </div>
-    <div class="slide-number">12 / 24</div>
+    <div class="slide-num">14 / 24</div>
 </div>
 
-<!-- SLIDE 13: FONCTIONNALITES - GROUPES LDAP -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 15: GROUPES LDAP -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Fonctionnalites - Groupes LDAP</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Implementee : Groupes LDAP</h1><div class="subtitle">100% - Gestion groupes LDAP operationnelle</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
     </div>
-
-    <h2 class="status-complete">Gestion des Groupes LDAP - 100%</h2>
-
     <div class="grid-2">
         <div>
-            <h3>Fonctionnalites</h3>
+            <h2>Gestion complete des groupes LDAP</h2>
             <ul>
-                <li>Liste de tous les groupes LDAP</li>
+                <li>Liste de tous les groupes</li>
                 <li>Visualisation des membres</li>
-                <li>Ajout de membres (avec autocomplete)</li>
+                <li>Ajout avec autocomplete intelligent</li>
                 <li>Suppression de membres</li>
                 <li>Support groupOfUniqueNames</li>
+                <li>Filtrage automatique OIDs MidPoint</li>
             </ul>
-
             <h3>Interface</h3>
             <ul>
-                <li>Recherche utilisateurs temps reel</li>
-                <li>Autocompletion intelligente</li>
-                <li>Filtrage des OIDs MidPoint</li>
+                <li>Recherche temps reel</li>
+                <li>Autocompletion depuis annuaire</li>
             </ul>
         </div>
         <div>
-            <div style="background:#1e1e1e;border-radius:10px;padding:10px;border:2px solid #3282b8;overflow:hidden;">
-                <img src="screenshots/ldap-groups.png" alt="Groupes LDAP" style="width:100%;height:auto;border-radius:5px;">
+            <div class="screenshot">
+                <img src="screenshots/ldap-groups.png" alt="Groupes LDAP">
             </div>
-            <p style="font-size:0.8em;color:#888;text-align:center;margin-top:10px;">Interface Groupes LDAP</p>
+            <div class="screenshot-label">Interface Groupes LDAP</div>
         </div>
     </div>
-    <div class="slide-number">13 / 24</div>
+    <div class="slide-num">15 / 24</div>
 </div>
 
-<!-- SLIDE 14: FONCTIONNALITES - COMPARAISON LIVE -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 16: WORKFLOWS, AUDIT, IA -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Fonctionnalites - Comparaison Live</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Implementees : Workflows, Audit &amp; IA</h1><div class="subtitle">100% - 4 modules operationnels</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
     </div>
-
-    <h2 class="status-complete">Comparaison Temps Reel - 100%</h2>
-
     <div class="grid-2">
         <div>
-            <h3>Fonctionnalites</h3>
-            <ul>
-                <li>Statistiques live de chaque systeme</li>
-                <li>Comparaison croisee des populations</li>
-                <li>Detection des ecarts</li>
-                <li>Synchronisation Odoo -> MidPoint</li>
-                <li>Planification des syncs</li>
-            </ul>
-
-            <h3>Metriques affichees</h3>
-            <ul>
-                <li>Nombre utilisateurs par systeme</li>
-                <li>Utilisateurs communs vs orphelins</li>
-                <li>Etat derniere synchronisation</li>
-            </ul>
+            <div class="card">
+                <h3>Workflows d'Approbation</h3>
+                <ul>
+                    <li>Configuration 5 niveaux</li>
+                    <li>Approbation / rejet avec commentaires</li>
+                    <li>Timeout configurable (72h)</li>
+                    <li>Notifications par email</li>
+                    <li>Historique complet des decisions</li>
+                </ul>
+            </div>
+            <div class="card" style="margin-top:16px;">
+                <h3>Moteur de Regles</h3>
+                <ul>
+                    <li>Expressions Jinja2 sandboxees</li>
+                    <li>Types: mapping, calcul, validation, aggregation</li>
+                    <li>Test avec donnees fictives</li>
+                    <li>Filtres integres (normalize_name, etc.)</li>
+                </ul>
+            </div>
         </div>
         <div>
-            <div style="background:#1e1e1e;border-radius:10px;padding:10px;border:2px solid #3282b8;overflow:hidden;">
-                <img src="screenshots/comparaison-live.png" alt="Comparaison Live" style="width:100%;height:auto;border-radius:5px;">
+            <div class="card">
+                <h3>Audit &amp; Conformite</h3>
+                <ul>
+                    <li>Logging structure JSON</li>
+                    <li>Recherche full-text dans les logs</li>
+                    <li>Recherche semantique IA (Qdrant)</li>
+                    <li>Filtrage par date, type, source</li>
+                    <li>Conformite RGPD</li>
+                </ul>
             </div>
-            <p style="font-size:0.8em;color:#888;text-align:center;margin-top:10px;">Interface Comparaison Live - Planification</p>
+            <div class="card" style="margin-top:16px;">
+                <h3>Assistant IA</h3>
+                <ul>
+                    <li>Chat intelligent (GPT-4)</li>
+                    <li>Analyse des identites</li>
+                    <li>Suggestions de regles</li>
+                    <li>Aide au diagnostic</li>
+                </ul>
+            </div>
         </div>
     </div>
-    <div class="slide-number">14 / 24</div>
+    <div class="slide-num">16 / 24</div>
 </div>
 
-<!-- SLIDE 15: FONCTIONNALITES - AUDIT & IA -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 17: EN PRODUCTION -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Fonctionnalites - Audit & IA</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Fonctionnalites en Production</h1><div class="subtitle">12 modules deployes et fonctionnels</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
     </div>
-
-    <div class="grid-2">
-        <div>
-            <h2 class="status-complete">Audit & Logs - 100%</h2>
-            <ul>
-                <li>Logging structure (JSON)</li>
-                <li>Recherche full-text</li>
-                <li>Recherche semantique (Qdrant)</li>
-                <li>Filtrage par date, type, utilisateur</li>
-                <li>Export des rapports</li>
-            </ul>
-
-            <h3>Endpoints</h3>
-            <div class="code-block">
-POST /admin/audit/search
-GET  /admin/audit/recent
-            </div>
-        </div>
-        <div>
-            <h2 class="status-complete">Assistant IA - 100%</h2>
-            <ul>
-                <li>Chat avec GPT-4</li>
-                <li>Suggestions de regles</li>
-                <li>Aide au diagnostic d'erreurs</li>
-                <li>Generation de code connecteur</li>
-            </ul>
-
-            <h3>Endpoints</h3>
-            <div class="code-block">
-POST /ai/query
-POST /ai/suggest-mapping
-POST /ai/analyze-error
-            </div>
-        </div>
-    </div>
-    <div class="slide-number">15 / 24</div>
-</div>
-
-<!-- SLIDE 16: FONCTIONNALITES PARTIELLES -->
-<div class="slide">
-    <div class="header">
-        <h1>Fonctionnalites Partiellement Implementees</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
-    </div>
-
     <table>
-        <tr><th>Fonctionnalite</th><th>Progression</th><th>Reste a faire</th></tr>
+        <tr><th>Module</th><th>Pages UI</th><th>Endpoints API</th><th>Status</th></tr>
+        <tr><td>Dashboard</td><td>1</td><td>3</td><td class="status-done">Operationnel</td></tr>
+        <tr><td>Provisionnement</td><td>1 + modal</td><td>6</td><td class="status-done">Operationnel</td></tr>
+        <tr><td>Connecteurs</td><td>1 + wizard</td><td>5</td><td class="status-done">Operationnel</td></tr>
+        <tr><td>Utilisateurs MidPoint</td><td>1 + modal roles</td><td>8</td><td class="status-done">Operationnel</td></tr>
+        <tr><td>Utilisateurs Gateway</td><td>1 + approbation</td><td>5</td><td class="status-done">Operationnel</td></tr>
+        <tr><td>Comparaison Live</td><td>1</td><td>4</td><td class="status-done">Operationnel</td></tr>
+        <tr><td>Reconciliation</td><td>1</td><td>3</td><td class="status-done">Operationnel</td></tr>
+        <tr><td>Groupes LDAP</td><td>1</td><td>4</td><td class="status-done">Operationnel</td></tr>
+        <tr><td>Workflows</td><td>1</td><td>4</td><td class="status-done">Operationnel</td></tr>
+        <tr><td>Audit &amp; Logs</td><td>1</td><td>3</td><td class="status-done">Operationnel</td></tr>
+        <tr><td>Assistant IA</td><td>1</td><td>2</td><td class="status-done">Operationnel</td></tr>
+    </table>
+    <div class="slide-num">17 / 24</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 18: A FINALISER -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="slide">
+    <div class="slide-header">
+        <div><h1>Fonctionnalites a Finaliser</h1><div class="subtitle">6 fonctionnalites partiellement implementees</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
+    </div>
+    <table>
+        <tr><th>Fonctionnalite</th><th>Progression</th><th style="width:40%">Details</th></tr>
         <tr>
-            <td>Integration Keycloak</td>
-            <td>
-                <div class="progress-bar" style="width:200px;"><div class="progress-fill" style="width:70%;background:linear-gradient(90deg,#ff9800,#ffc107);"></div></div>
-                <span class="status-partial">70%</span>
-            </td>
-            <td>Sync groupes, mapping roles</td>
+            <td><strong>Recherche Vectorielle (refresh)</strong></td>
+            <td><div class="progress-bar pct-80"><div class="progress-fill"></div></div><span class="status-partial">80%</span></td>
+            <td>Refresh auto des embeddings Qdrant</td>
         </tr>
         <tr>
-            <td>Notifications Email</td>
-            <td>
-                <div class="progress-bar" style="width:200px;"><div class="progress-fill" style="width:50%;background:linear-gradient(90deg,#ff9800,#ffc107);"></div></div>
-                <span class="status-partial">50%</span>
-            </td>
-            <td>Templates HTML, personnalisation</td>
+            <td><strong>Integration Keycloak (sync groupes)</strong></td>
+            <td><div class="progress-bar pct-70"><div class="progress-fill"></div></div><span class="status-partial">70%</span></td>
+            <td>Mapping roles OIDC &harr; MidPoint</td>
         </tr>
         <tr>
-            <td>Recherche Vectorielle</td>
-            <td>
-                <div class="progress-bar" style="width:200px;"><div class="progress-fill" style="width:80%;background:linear-gradient(90deg,#ff9800,#ffc107);"></div></div>
-                <span class="status-partial">80%</span>
-            </td>
-            <td>Rafraichissement auto embeddings</td>
+            <td><strong>Rollback Operations (nettoyage)</strong></td>
+            <td><div class="progress-bar pct-60"><div class="progress-fill"></div></div><span class="status-partial">60%</span></td>
+            <td>Annulation en cascade + etats intermediaires</td>
         </tr>
         <tr>
-            <td>Rollback Complet</td>
-            <td>
-                <div class="progress-bar" style="width:200px;"><div class="progress-fill" style="width:60%;background:linear-gradient(90deg,#ff9800,#ffc107);"></div></div>
-                <span class="status-partial">60%</span>
-            </td>
-            <td>Nettoyage etats intermediaires</td>
+            <td><strong>Notifications Email (templates)</strong></td>
+            <td><div class="progress-bar pct-50"><div class="progress-fill"></div></div><span class="status-partial">50%</span></td>
+            <td>Templates Jinja2 HTML + config SMTP</td>
         </tr>
         <tr>
-            <td>Versionnage Git Regles</td>
-            <td>
-                <div class="progress-bar" style="width:200px;"><div class="progress-fill" style="width:40%;background:linear-gradient(90deg,#ff9800,#ffc107);"></div></div>
-                <span class="status-partial">40%</span>
-            </td>
-            <td>Integration Git bare repo</td>
+            <td><strong>Persistance Operations (DB)</strong></td>
+            <td><div class="progress-bar pct-40"><div class="progress-fill"></div></div><span class="status-partial">40%</span></td>
+            <td>Migrer du memory_store vers PostgreSQL</td>
         </tr>
         <tr>
-            <td>Multi-langue UI</td>
-            <td>
-                <div class="progress-bar" style="width:200px;"><div class="progress-fill" style="width:10%;background:linear-gradient(90deg,#ff9800,#ffc107);"></div></div>
-                <span class="status-partial">10%</span>
-            </td>
-            <td>Traduction anglais, i18n React</td>
+            <td><strong>Editeur de Regles (UI)</strong></td>
+            <td><div class="progress-bar pct-30"><div class="progress-fill"></div></div><span class="status-partial">30%</span></td>
+            <td>Formulaire creation/edition regles dans l'UI</td>
         </tr>
     </table>
-    <div class="slide-number">16 / 24</div>
+    <div class="slide-num">18 / 24</div>
 </div>
 
-<!-- SLIDE 17: FONCTIONNALITES A IMPLEMENTER -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 19: FUTURES -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Fonctionnalites a Implementer</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Fonctionnalites a Implementer (Futur)</h1><div class="subtitle">Roadmap produit post-SAE</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
     </div>
+    <div class="grid-3">
+        <div class="card">
+            <h3>Priorite Haute</h3>
+            <ul>
+                <li>Deploiement Kubernetes / Helm</li>
+                <li>Masquage donnees PII (RGPD)</li>
+                <li>Migration schema DB (Alembic)</li>
+                <li>Connecteur Azure AD / Entra ID</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Priorite Moyenne</h3>
+            <ul>
+                <li>Connecteur Google Workspace</li>
+                <li>Connecteur Firebase</li>
+                <li>Detection SoD</li>
+                <li>Constructeur visuel de workflows</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Priorite Basse</h3>
+            <ul>
+                <li>Application mobile (React Native)</li>
+                <li>Multi-tenancy (mode SaaS)</li>
+                <li>Machine Learning (anomalies)</li>
+                <li>MFA biometrique</li>
+            </ul>
+        </div>
+    </div>
+    <div class="highlight" style="text-align:center;margin-top:24px;">
+        <strong>~60 story points restants</strong> &bull; 3 sprints supplementaires &bull; Feuille de route sur GitHub Issues
+    </div>
+    <div class="slide-num">19 / 24</div>
+</div>
 
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 20: ENVIRONNEMENT DEV -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="slide">
+    <div class="slide-header">
+        <div><h1>Environnement de Developpement</h1><div class="subtitle">Outils, workflow et organisation du projet</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
+    </div>
     <div class="grid-2">
         <div>
-            <h2>Priorite Haute (Should)</h2>
-            <table style="font-size:0.9em;">
-                <tr><th>Fonctionnalite</th><th>Est.</th></tr>
-                <tr><td>Deploiement Kubernetes</td><td>8 pts</td></tr>
-                <tr><td>Masquage donnees PII (RGPD)</td><td>3 pts</td></tr>
-                <tr><td>Migration Alembic</td><td>5 pts</td></tr>
-            </table>
-
-            <h2 style="margin-top:20px;">Priorite Moyenne (Could)</h2>
-            <table style="font-size:0.9em;">
-                <tr><th>Fonctionnalite</th><th>Est.</th></tr>
-                <tr><td>Connecteur Firebase</td><td>8 pts</td></tr>
-                <tr><td>Connecteur GLPI</td><td>5 pts</td></tr>
-                <tr><td>Detection SoD</td><td>8 pts</td></tr>
-                <tr><td>App Mobile</td><td>21 pts</td></tr>
-            </table>
+            <div class="card">
+                <h3>IDE : Visual Studio Code</h3>
+                <ul>
+                    <li>Extensions : Python, ESLint, Prettier, Docker</li>
+                    <li>Terminal integre pour docker-compose</li>
+                    <li>Debugger FastAPI (launch.json)</li>
+                    <li>Live reload frontend (Vite HMR)</li>
+                </ul>
+            </div>
+            <div class="card" style="margin-top:16px;">
+                <h3>Git &amp; GitHub</h3>
+                <ul>
+                    <li>Organisation : <strong>NEXUS-AI-Innovation-lab</strong></li>
+                    <li>Repo : <strong>IAM-Gateway</strong></li>
+                    <li>Branches : main + feature branches</li>
+                    <li>Commits conventionnels</li>
+                </ul>
+            </div>
         </div>
         <div>
-            <h2>Won't (cette version)</h2>
-            <ul>
-                <li>Multi-tenancy (multi-organisations)</li>
-                <li>MFA Biometrique</li>
-                <li>Machine Learning (detection anomalies)</li>
-            </ul>
-
-            <div class="highlight-box" style="margin-top:30px;">
-                <h3>Estimation totale restante</h3>
-                <p><strong>~60 points</strong> pour fonctionnalites prioritaires</p>
-                <p>Soit environ 3 sprints supplementaires</p>
+            <div class="card">
+                <h3>GitHub Issues &amp; Project</h3>
+                <ul>
+                    <li>9+ issues creees (7 closed, 2 open)</li>
+                    <li>Labels : bug, enhancement, documentation</li>
+                    <li>Milestones par sprint</li>
+                </ul>
+            </div>
+            <div class="card" style="margin-top:16px;">
+                <h3>Docker &amp; CI/CD</h3>
+                <ul>
+                    <li>docker-compose.yml (14 services)</li>
+                    <li>.env pour configuration</li>
+                    <li>Volumes persistants (12 volumes)</li>
+                    <li>Build frontend : <code>npm run build</code></li>
+                </ul>
+            </div>
+            <div class="card" style="margin-top:16px;">
+                <h3>Documentation</h3>
+                <ul>
+                    <li>GUIDE_DEVELOPPEUR.md (1300+ lignes)</li>
+                    <li>README.md par module</li>
+                </ul>
             </div>
         </div>
     </div>
-    <div class="slide-number">17 / 24</div>
+    <div class="slide-num">20 / 24</div>
 </div>
 
-<!-- SLIDE 18: DIFFICULTES 1 -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 21: GITHUB -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Difficultes Rencontrees (1/2)</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>GitHub : Issues, Commits &amp; Organisation</h1><div class="subtitle">Historique et gestion du projet</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
     </div>
-
     <div class="grid-2">
-        <div class="card">
-            <h3>1. Complexite de MidPoint</h3>
-            <p><strong>Probleme:</strong> XML complexe, concepts avances (shadows, projections)</p>
-            <p><strong>Solution:</strong> Abstraction via notre API REST simplifiee</p>
-            <p><strong>Apprentissage:</strong> Importance de l'encapsulation</p>
+        <div>
+            <h2>Issues creees</h2>
+            <ul>
+                <li>#1 Configurer CI pipeline</li>
+                <li>#2 Ajouter tests unitaires backend</li>
+                <li>#3 Optimiser requetes LDAP</li>
+                <li>#4 Ameliorer UX mobile</li>
+                <li>#5 Documenter API REST (Swagger)</li>
+                <li>#6 Ajouter monitoring Prometheus</li>
+                <li>#7 Audit de securite</li>
+            </ul>
         </div>
-        <div class="card">
-            <h3>2. Transactions Distribuees</h3>
-            <p><strong>Probleme:</strong> 1 operation = 4 systemes. Si un echoue?</p>
-            <p><strong>Solution:</strong> Pattern Saga avec compensations</p>
-            <p><strong>Apprentissage:</strong> ACID ne fonctionne pas en distribue</p>
-        </div>
-        <div class="card">
-            <h3>3. Securite Moteur Regles</h3>
-            <p><strong>Probleme:</strong> Jinja2 peut executer du code arbitraire</p>
-            <p><strong>Solution:</strong> SandboxedEnvironment + whitelist</p>
-            <p><strong>Apprentissage:</strong> Ne jamais faire confiance aux entrees</p>
-        </div>
-        <div class="card">
-            <h3>4. Synchronisation Temps Reel</h3>
-            <p><strong>Probleme:</strong> Coherence eventuelle entre systemes</p>
-            <p><strong>Solution:</strong> Cache invalidation + polling</p>
-            <p><strong>Apprentissage:</strong> CAP theorem en pratique</p>
+        <div>
+            <h2>Commits recents</h2>
+            <ul>
+                <li>Add i18n support (FR, EN, UK)</li>
+                <li>Add developer guide &amp; code docs</li>
+                <li>Update poster and presentation</li>
+                <li>Add real IUT and LISSI logos</li>
+                <li>Fix user management &amp; approval system</li>
+                <li>Add IGA connector types</li>
+            </ul>
+            <div class="highlight" style="margin-top:16px;">
+                <strong>50+ commits</strong> &bull; <strong>2 contributeurs</strong> &bull; <strong>21,000+ lignes de code</strong>
+            </div>
         </div>
     </div>
-    <div class="slide-number">18 / 24</div>
+    <div class="slide-num">21 / 24</div>
 </div>
 
-<!-- SLIDE 19: DIFFICULTES 2 -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 22: DIFFICULTES -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Difficultes Rencontrees (2/2)</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Difficultes Rencontrees</h1></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
     </div>
-
     <div class="grid-2">
-        <div class="card">
-            <h3>5. Mapping Attributs LDAP</h3>
-            <p><strong>Probleme:</strong> Schemas differents (uid vs sAMAccountName)</p>
-            <p><strong>Solution:</strong> Configuration mappings par connecteur</p>
-            <p><strong>Apprentissage:</strong> Standards != implementations</p>
+        <div>
+            <div class="card" style="margin-bottom:12px;">
+                <h3>1. Complexite MidPoint</h3>
+                <p><strong>Probleme :</strong> API XML complexe, peu documentee</p>
+                <p><strong>Solution :</strong> Abstraction via REST API</p>
+            </div>
+            <div class="card" style="margin-bottom:12px;">
+                <h3>2. Transactions distribuees</h3>
+                <p><strong>Probleme :</strong> 1 operation = 4 systemes cibles</p>
+                <p><strong>Solution :</strong> Pattern Saga + compensations</p>
+            </div>
+            <div class="card" style="margin-bottom:12px;">
+                <h3>3. Securite moteur regles</h3>
+                <p><strong>Probleme :</strong> Jinja2 peut executer du code arbitraire</p>
+                <p><strong>Solution :</strong> SandboxedEnvironment</p>
+            </div>
+            <div class="card">
+                <h3>4. Gestion des secrets</h3>
+                <p><strong>Probleme :</strong> 20+ variables sensibles</p>
+                <p><strong>Solution :</strong> .env + validation au demarrage</p>
+            </div>
         </div>
-        <div class="card">
-            <h3>6. Couts & Latence IA</h3>
-            <p><strong>Probleme:</strong> Chaque requete OpenAI = $$ + latence</p>
-            <p><strong>Solution:</strong> Cache reponses, rate limiting</p>
-            <p><strong>Apprentissage:</strong> L'IA a un cout operationnel</p>
-        </div>
-        <div class="card">
-            <h3>7. Gestion des Secrets</h3>
-            <p><strong>Probleme:</strong> 20+ variables d'environnement sensibles</p>
-            <p><strong>Solution:</strong> Fichier .env + validation demarrage</p>
-            <p><strong>Apprentissage:</strong> Configuration != Code</p>
-        </div>
-        <div class="card">
-            <h3>8. Tests d'Integration</h3>
-            <p><strong>Probleme:</strong> Tester avec 15 services = complexe</p>
-            <p><strong>Solution:</strong> Mocks unitaires + env dedie integration</p>
-            <p><strong>Apprentissage:</strong> Pyramide des tests</p>
+        <div>
+            <div class="card" style="margin-bottom:12px;">
+                <h3>5. Synchronisation temps reel</h3>
+                <p><strong>Probleme :</strong> Coherence eventuelle entre systemes</p>
+                <p><strong>Solution :</strong> Cache invalidation + polling</p>
+            </div>
+            <div class="card" style="margin-bottom:12px;">
+                <h3>6. Mapping attributs</h3>
+                <p><strong>Probleme :</strong> Schemas differents par systeme</p>
+                <p><strong>Solution :</strong> Config mappings par connecteur</p>
+            </div>
+            <div class="card" style="margin-bottom:12px;">
+                <h3>7. Couts &amp; latence IA</h3>
+                <p><strong>Probleme :</strong> OpenAI API = cout + latence</p>
+                <p><strong>Solution :</strong> Cache + rate limiting</p>
+            </div>
+            <div class="card">
+                <h3>8. Tests d'integration</h3>
+                <p><strong>Probleme :</strong> 14 services = complexite</p>
+                <p><strong>Solution :</strong> Mocks + env dedie</p>
+            </div>
         </div>
     </div>
-    <div class="slide-number">19 / 24</div>
+    <div class="slide-num">22 / 24</div>
 </div>
 
-<!-- SLIDE 20: APPRENTISSAGES -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 23: CONCLUSION & COMPETENCES -->
+<!-- ════════════════════════════════════════════════════════════ -->
 <div class="slide">
-    <div class="header">
-        <h1>Ce que nous avons appris</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+    <div class="slide-header">
+        <div><h1>Conclusion &amp; Competences Acquises</h1><div class="subtitle">Bilan du projet SAE 2026</div></div>
+        <div class="logos"><img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC"><img src="Lissi-cmjn.png" alt="LISSI"></div>
+    </div>
+
+    <div class="grid-3" style="margin-bottom:24px;">
+        <div class="metric-box"><div class="metric-number">16,000+</div><div class="metric-label">Lignes Python (Backend)</div></div>
+        <div class="metric-box"><div class="metric-number">5,000+</div><div class="metric-label">Lignes TypeScript (Frontend)</div></div>
+        <div class="metric-box"><div class="metric-number">14</div><div class="metric-label">Services Docker</div></div>
+        <div class="metric-box"><div class="metric-number">80+</div><div class="metric-label">Endpoints API REST</div></div>
+        <div class="metric-box"><div class="metric-number">6</div><div class="metric-label">Connecteurs Systemes</div></div>
+        <div class="metric-box"><div class="metric-number">15</div><div class="metric-label">Pages Frontend</div></div>
     </div>
 
     <div class="grid-3">
@@ -992,222 +1138,56 @@ POST /ai/analyze-error
             <h3>Competences Techniques</h3>
             <ul>
                 <li>Architecture microservices</li>
-                <li>API REST avec FastAPI</li>
-                <li>React moderne (hooks)</li>
-                <li>Docker & orchestration</li>
-                <li>Securite (JWT, RBAC)</li>
-                <li>Bases de donnees</li>
+                <li>API REST avancee (FastAPI)</li>
+                <li>React moderne (hooks, Zustand)</li>
+                <li>Docker &amp; orchestration</li>
+                <li>Securite (JWT, RBAC, OAuth2)</li>
+                <li>PostgreSQL, LDAP, Redis</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Competences IAM / IGA</h3>
+            <ul>
+                <li>Provisionnement des identites</li>
+                <li>Reconciliation multi-systemes</li>
+                <li>Workflows d'approbation</li>
+                <li>Audit et conformite (RGPD)</li>
+                <li>RBAC / ABAC</li>
+                <li>SSO / OIDC / Keycloak</li>
             </ul>
         </div>
         <div class="card">
             <h3>Competences Projet</h3>
             <ul>
-                <li>Gestion backlog Agile</li>
-                <li>Travail en binome</li>
+                <li>Methodologie SCRUM</li>
+                <li>Gestion backlog (user stories)</li>
+                <li>Git &amp; GitHub (issues, branches)</li>
                 <li>Documentation technique</li>
-                <li>Versionnage Git</li>
-                <li>Code review</li>
-                <li>Tests automatises</li>
-            </ul>
-        </div>
-        <div class="card">
-            <h3>Concepts IAM</h3>
-            <ul>
-                <li>Provisionnement identites</li>
-                <li>Reconciliation</li>
-                <li>Workflows approbation</li>
-                <li>Audit et conformite</li>
-                <li>RBAC / ABAC</li>
-                <li>SSO / OIDC</li>
+                <li>Presentation et communication</li>
+                <li>MidPoint administration</li>
             </ul>
         </div>
     </div>
-    <div class="slide-number">20 / 24</div>
+    <div class="slide-num">23 / 24</div>
 </div>
 
-<!-- SLIDE 21: VIDEO DEMO -->
-<div class="slide">
-    <div class="header">
-        <h1>Demonstration Video</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 24: MERCI -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="slide title-slide">
+    <div class="main-logos">
+        <img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="IUT Creteil-Vitry - UPEC">
+        <img src="Lissi-cmjn.png" alt="Laboratoire LISSI">
     </div>
-
-    <div class="grid-2">
-        <div>
-            <h2>Scenario 1: Creation Employe (5 min)</h2>
-            <ol>
-                <li>Creation dans Odoo (RH)</li>
-                <li>Synchronisation vers MidPoint</li>
-                <li>Attribution role "Employe Complet"</li>
-                <li>Verification compte LDAP cree</li>
-                <li>Ajout a un groupe LDAP</li>
-            </ol>
-
-            <h2>Scenario 2: Gestion Regles (3 min)</h2>
-            <ol>
-                <li>Visualisation regles existantes</li>
-                <li>Test regle avec donnees</li>
-                <li>Modification d'une regle</li>
-            </ol>
-        </div>
-        <div>
-            <h2>Scenario 3: Workflow (3 min)</h2>
-            <ol>
-                <li>Demande creation compte sensible</li>
-                <li>Notification manager</li>
-                <li>Approbation avec commentaire</li>
-                <li>Execution automatique</li>
-            </ol>
-
-            <h2>Scenario 4: Reconciliation (2 min)</h2>
-            <ol>
-                <li>Comparaison live des systemes</li>
-                <li>Detection compte orphelin</li>
-                <li>Resolution</li>
-            </ol>
-        </div>
+    <h1 style="margin-top:30px;">Merci de votre attention !</h1>
+    <div class="sub" style="font-size:2rem;margin-top:16px;">Questions ?</div>
+    <div class="info" style="margin-top:40px;">
+        GitHub : github.com/NEXUS-AI-Innovation-lab/IAM-Gateway<br>
+        Equipe MOE : Zhmuryk Andrii &amp; Aydin Ibrahim<br>
+        Product Owner : A. CHIBANI<br>
+        IUT Creteil-Vitry | Laboratoire LISSI | UPEC
     </div>
-
-    <div class="highlight-box" style="text-align:center;margin-top:20px;">
-        <p style="font-size:1.3em;">[VIDEO DE DEMONSTRATION]</p>
-    </div>
-    <div class="slide-number">21 / 24</div>
-</div>
-
-<!-- SLIDE 22: ROADMAP -->
-<div class="slide">
-    <div class="header">
-        <h1>Roadmap Future</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
-    </div>
-
-    <div class="grid-3">
-        <div class="card">
-            <h3>Court terme (1-2 mois)</h3>
-            <ul>
-                <li>Finaliser Keycloak</li>
-                <li>Templates email</li>
-                <li>Tests automatises</li>
-                <li>Documentation complete</li>
-            </ul>
-        </div>
-        <div class="card">
-            <h3>Moyen terme (3-6 mois)</h3>
-            <ul>
-                <li>Deploiement Kubernetes</li>
-                <li>Azure AD connector</li>
-                <li>Google Workspace</li>
-                <li>Dashboard analytics</li>
-            </ul>
-        </div>
-        <div class="card">
-            <h3>Long terme (6-12 mois)</h3>
-            <ul>
-                <li>Application mobile</li>
-                <li>Machine Learning</li>
-                <li>Multi-tenancy SaaS</li>
-                <li>Marketplace connecteurs</li>
-            </ul>
-        </div>
-    </div>
-
-    <div class="highlight-box" style="text-align:center;margin-top:30px;">
-        <h3>Vision</h3>
-        <p style="font-size:1.2em;">Devenir une plateforme IAM No-Code complete,<br>accessible aux PME sans experts MidPoint</p>
-    </div>
-    <div class="slide-number">22 / 24</div>
-</div>
-
-<!-- SLIDE 23: CONCLUSION -->
-<div class="slide">
-    <div class="header">
-        <h1>Conclusion</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
-    </div>
-
-    <h2>Ce que nous avons realise</h2>
-    <p><strong>Objectif:</strong> Simplifier MidPoint avec une interface No-Code</p>
-    <p><strong>Resultat:</strong> Plateforme complete avec 12+ fonctionnalites operationnelles</p>
-
-    <div class="grid-3" style="margin-top:30px;">
-        <div class="metric-box">
-            <div class="metric-number">16,000+</div>
-            <div class="metric-label">Lignes Python (Backend)</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-number">5,000+</div>
-            <div class="metric-label">Lignes TypeScript (Frontend)</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-number">15</div>
-            <div class="metric-label">Services Docker</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-number">80+</div>
-            <div class="metric-label">Endpoints API REST</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-number">6</div>
-            <div class="metric-label">Connecteurs Systemes</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-number">14</div>
-            <div class="metric-label">Pages Frontend</div>
-        </div>
-    </div>
-
-    <div class="highlight-box" style="text-align:center;margin-top:30px;">
-        <h2 style="color:#bbe1fa;">Merci de votre attention!</h2>
-        <p style="font-size:1.3em;">Questions?</p>
-    </div>
-    <div class="slide-number">23 / 24</div>
-</div>
-
-<!-- SLIDE 24: ANNEXES -->
-<div class="slide">
-    <div class="header">
-        <h1>Annexes - Ressources</h1>
-        <img src="../cropped-Logo-INFO-FOND-BLANC.jpg" alt="UPEC" style="width:120px;height:auto;border-radius:5px;background:white;padding:5px;">
-    </div>
-
-    <div class="grid-2">
-        <div>
-            <h2>Acces au projet</h2>
-            <ul>
-                <li><strong>Code source:</strong> [Repository Git]</li>
-                <li><strong>Documentation:</strong> /docs/</li>
-                <li><strong>Video demo:</strong> [Lien video]</li>
-            </ul>
-
-            <h2>Technologies utilisees</h2>
-            <ul>
-                <li>MidPoint: evolveum.com/midpoint/</li>
-                <li>FastAPI: fastapi.tiangolo.com</li>
-                <li>React: react.dev</li>
-                <li>Docker: docker.com</li>
-            </ul>
-        </div>
-        <div>
-            <h2>Contact</h2>
-            <ul>
-                <li><strong>Zhmuryk Andrii:</strong> [email]</li>
-                <li><strong>Aydin Ibrahim:</strong> [email]</li>
-            </ul>
-
-            <h2>Remerciements</h2>
-            <ul>
-                <li>Professeur encadrant</li>
-                <li>Departement Informatique UPEC</li>
-                <li>Communaute Open Source</li>
-            </ul>
-
-            <div class="highlight-box" style="margin-top:20px;">
-                <p><strong>Projet realise dans le cadre du BUT Informatique 3eme annee</strong></p>
-                <p>Universite Paris-Est Creteil - 2025/2026</p>
-            </div>
-        </div>
-    </div>
-    <div class="slide-number">24 / 24</div>
+    <div class="slide-num">24 / 24</div>
 </div>
 
 </body>

@@ -7,14 +7,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #2563eb;
+            --primary: #1e40af;
+            --primary-light: #3b82f6;
             --secondary: #7c3aed;
             --accent: #06b6d4;
+            --accent-light: #22d3ee;
             --success: #10b981;
-            --dark: #0f172a;
+            --warning: #f59e0b;
+            --dark: #0a0f1e;
+            --dark-mid: #111827;
             --dark-light: #1e293b;
             --gray: #94a3b8;
-            --light: #f8fafc;
+            --gray-light: #cbd5e1;
+            --light: #f1f5f9;
+            --white: #ffffff;
         }
 
         * {
@@ -28,319 +34,417 @@
             height: 420mm;
             font-family: 'Inter', sans-serif;
             background: var(--dark);
-            color: var(--light);
+            color: var(--white);
             overflow: hidden;
         }
 
         .poster {
             width: 297mm;
             height: 420mm;
-            display: grid;
-            grid-template-rows: auto 1fr auto;
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Background decoration removed for print compatibility */
+        /* Subtle background grid */
+        .poster::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(30, 64, 175, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(124, 58, 237, 0.1) 0%, transparent 50%);
+            z-index: 0;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+        }
 
-        /* Header */
+        /* ===== HEADER ===== */
         .header {
-            padding: 40px 50px;
+            padding: 30px 45px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             position: relative;
             z-index: 1;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .logo-icon {
-            width: 60px;
-            height: 60px;
-            background: var(--primary);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .logo-icon svg {
-            width: 35px;
-            height: 35px;
-            fill: white;
-        }
-
-        .logo-text {
-            font-size: 1.8rem;
-            font-weight: 800;
-        }
-
-        .badge {
-            background: #1a3a4a;
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            padding: 10px 25px;
-            border-radius: 30px;
-            font-size: 0.95rem;
-            font-weight: 600;
+            border-bottom: 2px solid rgba(59, 130, 246, 0.2);
         }
 
         .institutional-logos {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 18px;
         }
 
         .institutional-logos img {
-            height: 55px;
+            height: 52px;
             object-fit: contain;
             background: white;
-            padding: 6px 12px;
-            border-radius: 10px;
+            padding: 5px 10px;
+            border-radius: 8px;
         }
 
-        /* Team section */
-        .team-section {
-            grid-column: 1 / -1;
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-icon svg {
+            width: 30px;
+            height: 30px;
+            fill: white;
+        }
+
+        .brand-text {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .badge {
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 8px 22px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== HERO ===== */
+        .hero-section {
+            padding: 30px 45px 20px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-section h1 {
+            font-size: 3.2rem;
+            font-weight: 900;
+            line-height: 1.1;
+            letter-spacing: -2px;
+            margin-bottom: 14px;
+        }
+
+        .hero-section h1 .highlight {
+            background: linear-gradient(135deg, var(--primary-light), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.15rem;
+            color: var(--gray-light);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ===== ARCHITECTURE DIAGRAM ===== */
+        .architecture {
+            padding: 20px 45px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .arch-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 25px 20px;
+            background: rgba(17, 24, 39, 0.7);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 16px;
+        }
+
+        .arch-block {
+            text-align: center;
+            padding: 14px 16px;
+            border-radius: 12px;
+            min-width: 100px;
+        }
+
+        .arch-block.source {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .arch-block.gateway {
+            background: linear-gradient(135deg, rgba(30, 64, 175, 0.3), rgba(124, 58, 237, 0.3));
+            border: 2px solid var(--primary-light);
+            padding: 18px 24px;
+            min-width: 140px;
+        }
+
+        .arch-block.target {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .arch-block .arch-icon {
+            font-size: 1.6rem;
+            margin-bottom: 6px;
+        }
+
+        .arch-block .arch-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray-light);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .arch-block .arch-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        .arch-arrow {
+            font-size: 1.4rem;
+            color: var(--primary-light);
+            font-weight: 300;
+        }
+
+        /* ===== FEATURES ===== */
+        .features-section {
+            padding: 15px 45px;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 18px;
+            letter-spacing: -0.5px;
+        }
+
+        .section-title .accent {
+            color: var(--accent);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .feature-card {
+            background: var(--dark-mid);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            border-radius: 16px;
+            padding: 22px;
+            transition: border-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .feature-card:nth-child(1)::before { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+        .feature-card:nth-child(2)::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+        .feature-card:nth-child(3)::before { background: linear-gradient(90deg, #10b981, #34d399); }
+        .feature-card:nth-child(4)::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .feature-card:nth-child(5)::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+        .feature-card:nth-child(6)::before { background: linear-gradient(90deg, #06b6d4, #67e8f9); }
+
+        .feature-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .feature-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .feature-card:nth-child(1) .feature-icon { background: rgba(59, 130, 246, 0.2); }
+        .feature-card:nth-child(2) .feature-icon { background: rgba(124, 58, 237, 0.2); }
+        .feature-card:nth-child(3) .feature-icon { background: rgba(16, 185, 129, 0.2); }
+        .feature-card:nth-child(4) .feature-icon { background: rgba(245, 158, 11, 0.2); }
+        .feature-card:nth-child(5) .feature-icon { background: rgba(239, 68, 68, 0.2); }
+        .feature-card:nth-child(6) .feature-icon { background: rgba(6, 182, 212, 0.2); }
+
+        .feature-card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .feature-card p {
+            font-size: 0.82rem;
+            color: var(--gray);
+            line-height: 1.5;
+        }
+
+        /* ===== STATS BAR ===== */
+        .stats-bar {
+            padding: 18px 45px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stats-inner {
             display: flex;
             justify-content: center;
-            gap: 60px;
-            padding: 15px 0;
-            border-top: 1px solid #2a3a4a;
-            margin-top: 10px;
+            gap: 50px;
+            padding: 18px 30px;
+            background: linear-gradient(135deg, rgba(30, 64, 175, 0.2), rgba(124, 58, 237, 0.2));
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 14px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-item .stat-number {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--accent-light);
+        }
+
+        .stat-item .stat-label {
+            font-size: 0.78rem;
+            color: var(--gray);
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        /* ===== TECH STACK ===== */
+        .tech-section {
+            padding: 10px 45px 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .tech-row {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .tech-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(59, 130, 246, 0.12);
+            border-radius: 8px;
+        }
+
+        .tech-item .tech-icon {
+            font-size: 1.1rem;
+        }
+
+        .tech-item span {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--gray-light);
+        }
+
+        /* ===== TEAM & FOOTER ===== */
+        .footer {
+            padding: 20px 45px 25px;
+            background: linear-gradient(180deg, transparent, rgba(30, 64, 175, 0.15));
+            border-top: 1px solid rgba(59, 130, 246, 0.15);
+            position: relative;
+            z-index: 1;
+        }
+
+        .team-grid {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            margin-bottom: 14px;
         }
 
         .team-group {
             text-align: center;
         }
 
-        .team-group .team-label {
-            font-size: 0.75rem;
+        .team-group .team-role {
+            font-size: 0.68rem;
             color: var(--accent);
             text-transform: uppercase;
             letter-spacing: 2px;
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
-
-        .team-group .team-names {
-            font-size: 0.95rem;
-            color: var(--light);
-            font-weight: 500;
-        }
-
-        /* Main Content */
-        .main {
-            padding: 20px 50px 40px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 50px;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Left side - Hero */
-        .hero {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .hero h1 {
-            font-size: 3.8rem;
-            font-weight: 900;
-            line-height: 1.1;
-            margin-bottom: 25px;
-            letter-spacing: -2px;
-        }
-
-        .hero h1 span {
-            color: white;
-        }
-
-        .hero p {
-            font-size: 1.3rem;
-            color: var(--gray);
-            line-height: 1.7;
-            margin-bottom: 35px;
-        }
-
-        .hero-stats {
-            display: flex;
-            gap: 40px;
-        }
-
-        .hero-stat {
-            text-align: center;
-        }
-
-        .hero-stat .number {
-            font-size: 3rem;
-            font-weight: 900;
-            color: var(--accent);
-        }
-
-        .hero-stat .label {
-            font-size: 0.9rem;
-            color: var(--gray);
-            margin-top: 5px;
-        }
-
-        /* Right side - Visual */
-        .visual {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .central-graphic {
-            width: 100%;
-            max-width: 450px;
-            aspect-ratio: 1;
-            position: relative;
-        }
-
-        .orbit {
-            position: absolute;
-            border: 2px dashed #2a3a4a;
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .orbit-1 { width: 200px; height: 200px; }
-        .orbit-2 { width: 320px; height: 320px; }
-        .orbit-3 { width: 440px; height: 440px; }
-
-        .center-hub {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 120px;
-            height: 120px;
-            background: var(--primary);
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2;
-        }
-
-        .center-hub svg {
-            width: 60px;
-            height: 60px;
-            fill: white;
-        }
-
-        .satellite {
-            position: absolute;
-            width: 70px;
-            height: 70px;
-            background: var(--dark-light);
-            border: 2px solid #3a4a5a;
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-        }
-
-        .satellite-1 { top: 5%; left: 50%; transform: translateX(-50%); }
-        .satellite-2 { top: 25%; right: 5%; }
-        .satellite-3 { bottom: 25%; right: 5%; }
-        .satellite-4 { bottom: 5%; left: 50%; transform: translateX(-50%); }
-        .satellite-5 { bottom: 25%; left: 5%; }
-        .satellite-6 { top: 25%; left: 5%; }
-
-        /* Features Section */
-        .features {
-            grid-column: 1 / -1;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 25px;
-            margin-top: 20px;
-        }
-
-        .feature-card {
-            background: var(--dark-light);
-            border: 1px solid #3a4a5a;
-            border-radius: 20px;
-            padding: 30px;
-        }
-
-        .feature-card .icon {
-            width: 55px;
-            height: 55px;
-            background: var(--primary);
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-        }
-
-        .feature-card h3 {
-            font-size: 1.25rem;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
 
-        .feature-card p {
-            font-size: 0.95rem;
-            color: var(--gray);
-            line-height: 1.5;
+        .team-group .team-name {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--white);
         }
 
-        /* Footer */
-        .footer {
-            padding: 30px 50px;
+        .footer-bottom {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: var(--primary);
-            position: relative;
-            z-index: 1;
+            padding-top: 12px;
+            border-top: 1px solid rgba(59, 130, 246, 0.1);
         }
 
-        .footer-content h3 {
-            font-size: 1.6rem;
-            font-weight: 700;
-            margin-bottom: 5px;
+        .footer-org {
+            font-size: 0.8rem;
+            color: var(--gray);
         }
 
-        .footer-content p {
-            font-size: 1rem;
-            opacity: 0.9;
+        .footer-org strong {
+            color: var(--gray-light);
+            font-weight: 600;
         }
 
-        .tech-logos {
-            display: flex;
-            gap: 25px;
-            align-items: center;
-        }
-
-        .tech-logo {
-            text-align: center;
-            opacity: 0.9;
-        }
-
-        .tech-logo .icon {
-            font-size: 1.8rem;
-            margin-bottom: 5px;
-        }
-
-        .tech-logo span {
-            font-size: 0.75rem;
+        .footer-year {
+            font-size: 0.8rem;
+            color: var(--gray);
             font-weight: 500;
+        }
+
+        .footer-github {
+            font-size: 0.78rem;
+            color: var(--gray);
+        }
+
+        .footer-github strong {
+            color: var(--accent);
         }
 
         /* Print */
@@ -365,143 +469,207 @@
                 <img src="cropped-Logo-INFO-FOND-BLANC.jpg" alt="IUT Creteil-Vitry - UPEC - Departement Informatique">
                 <img src="Lissi-cmjn.png" alt="Laboratoire LISSI">
             </div>
-            <div class="logo">
-                <div class="logo-icon">
+            <div class="brand">
+                <div class="brand-icon">
                     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4a3 3 0 110 6 3 3 0 010-6zm0 8c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                     </svg>
                 </div>
-                <div class="logo-text">IAM Gateway</div>
+                <div class="brand-text">IAM Gateway</div>
             </div>
             <div class="badge">Projet SAE 2026</div>
         </header>
 
-        <!-- Main Content -->
-        <div class="main">
-            <!-- Hero Section -->
-            <div class="hero">
-                <h1>Gérez vos <span>identités</span> en toute simplicité</h1>
-                <p>La solution complète pour automatiser le provisionnement des comptes, centraliser la gestion des accès et garantir la conformité de votre organisation.</p>
-                <div class="hero-stats">
-                    <div class="hero-stat">
-                        <div class="number">90%</div>
-                        <div class="label">Gain de temps</div>
+        <!-- Hero -->
+        <section class="hero-section">
+            <h1>Passerelle de <span class="highlight">Provisionnement</span><br>Intelligente des Identites</h1>
+            <p class="hero-subtitle">Solution complete pour automatiser le cycle de vie des identites numeriques : provisionnement, gouvernance des acces, reconciliation et conformite.</p>
+        </section>
+
+        <!-- Architecture Diagram: Source -> Gateway -> MidPoint (coeur) -> Cibles -->
+        <section class="architecture">
+            <div class="arch-diagram" style="flex-direction:column;gap:8px;padding:18px 20px;">
+                <!-- Row 1: Source -> Gateway -> MidPoint -->
+                <div style="display:flex;align-items:center;gap:12px;justify-content:center;">
+                    <div class="arch-block source">
+                        <div class="arch-icon">&#128100;</div>
+                        <div class="arch-label">Source</div>
+                        <div class="arch-name">SIRH / CSV</div>
                     </div>
-                    <div class="hero-stat">
-                        <div class="number">100%</div>
-                        <div class="label">Traçabilité</div>
+                    <div class="arch-arrow">&#10230;</div>
+                    <div class="arch-block gateway">
+                        <div class="arch-icon">&#128737;</div>
+                        <div class="arch-label">Passerelle No-Code</div>
+                        <div class="arch-name">IAM Gateway</div>
                     </div>
-                    <div class="hero-stat">
-                        <div class="number">24/7</div>
-                        <div class="label">Disponibilité</div>
+                    <div class="arch-arrow">&#10230;</div>
+                    <div class="arch-block" style="background:linear-gradient(135deg, rgba(124,58,237,0.3), rgba(59,130,246,0.3));border:2px solid #7c3aed;padding:16px 22px;min-width:140px;">
+                        <div class="arch-icon">&#127760;</div>
+                        <div class="arch-label" style="color:#a78bfa;font-size:0.65rem;letter-spacing:2px;">Coeur IGA</div>
+                        <div class="arch-name" style="font-size:1.05rem;">MidPoint 4.4</div>
+                    </div>
+                </div>
+                <!-- Row 2: Arrow down from MidPoint to targets -->
+                <div style="text-align:center;font-size:1.2rem;color:#7c3aed;">&#8595; Provisionnement &#8595;</div>
+                <!-- Row 3: Systemes cibles -->
+                <div style="display:flex;align-items:center;gap:12px;justify-content:center;">
+                    <div class="arch-block target">
+                        <div class="arch-icon">&#128193;</div>
+                        <div class="arch-label">Annuaire</div>
+                        <div class="arch-name">LDAP</div>
+                    </div>
+                    <div class="arch-block target">
+                        <div class="arch-icon">&#128273;</div>
+                        <div class="arch-label">SSO</div>
+                        <div class="arch-name">Keycloak</div>
+                    </div>
+                    <div class="arch-block target">
+                        <div class="arch-icon">&#128230;</div>
+                        <div class="arch-label">ERP</div>
+                        <div class="arch-name">Odoo</div>
+                    </div>
+                    <div class="arch-block target">
+                        <div class="arch-icon">&#128451;</div>
+                        <div class="arch-label">Base</div>
+                        <div class="arch-name">SQL</div>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Visual Section -->
-            <div class="visual">
-                <div class="central-graphic">
-                    <div class="orbit orbit-1"></div>
-                    <div class="orbit orbit-2"></div>
-                    <div class="orbit orbit-3"></div>
-
-                    <div class="center-hub">
-                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-                        </svg>
+        <!-- Features -->
+        <section class="features-section">
+            <div class="section-title">Fonctionnalites <span class="accent">Principales</span></div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <div class="feature-icon">&#128274;</div>
+                        <h3>Provisionnement Automatique</h3>
                     </div>
-
-                    <div class="satellite satellite-1">&#128100;</div>
-                    <div class="satellite satellite-2">&#128193;</div>
-                    <div class="satellite satellite-3">&#128274;</div>
-                    <div class="satellite satellite-4">&#128202;</div>
-                    <div class="satellite satellite-5">&#9881;</div>
-                    <div class="satellite satellite-6">&#127760;</div>
+                    <p>Synchronisation automatique des comptes depuis le SIRH vers les systemes cibles. Creation, modification et desactivation en temps reel.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <div class="feature-icon">&#9881;</div>
+                        <h3>Moteur de Regles</h3>
+                    </div>
+                    <p>Attribution intelligente des droits basee sur le departement, la fonction et la localisation. Regles Jinja2 personnalisables.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <div class="feature-icon">&#128260;</div>
+                        <h3>Reconciliation</h3>
+                    </div>
+                    <p>Detection automatique des divergences entre la source de verite et les systemes cibles. Resolution guidee des ecarts.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <div class="feature-icon">&#128203;</div>
+                        <h3>Workflows d'Approbation</h3>
+                    </div>
+                    <p>Chaine d'approbation multi-niveaux pour les operations sensibles. Notifications email et tableau de suivi.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <div class="feature-icon">&#128202;</div>
+                        <h3>Audit &amp; Conformite</h3>
+                    </div>
+                    <p>Tracabilite complete de toutes les operations. Recherche semantique IA dans les logs. Conformite RGPD.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <div class="feature-icon">&#129302;</div>
+                        <h3>Assistant IA Integre</h3>
+                    </div>
+                    <p>Chat intelligent pour interroger le systeme en langage naturel. Analyse des identites et recommandations automatiques.</p>
                 </div>
             </div>
+        </section>
 
-            <!-- Features -->
-            <div class="features">
-                <div class="feature-card">
-                    <div class="icon">&#128274;</div>
-                    <h3>Provisionnement Automatique</h3>
-                    <p>Synchronisation automatique des comptes avec votre SIRH. Création, modification et suppression en temps réel.</p>
+        <!-- Stats -->
+        <section class="stats-bar">
+            <div class="stats-inner">
+                <div class="stat-item">
+                    <div class="stat-number">6</div>
+                    <div class="stat-label">Connecteurs natifs</div>
                 </div>
-                <div class="feature-card">
-                    <div class="icon">&#9881;</div>
-                    <h3>Règles Dynamiques</h3>
-                    <p>Attribution intelligente des droits basée sur le département, la fonction et la localisation de l'employé.</p>
+                <div class="stat-item">
+                    <div class="stat-number">14</div>
+                    <div class="stat-label">Services Docker</div>
                 </div>
-                <div class="feature-card">
-                    <div class="icon">&#128279;</div>
-                    <h3>Multi-Connecteurs</h3>
-                    <p>Intégration native avec LDAP, Active Directory, Odoo, Keycloak, bases SQL et bien plus encore.</p>
+                <div class="stat-item">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Tracabilite</div>
                 </div>
-                <div class="feature-card">
-                    <div class="icon">&#128202;</div>
-                    <h3>Tableaux de Bord</h3>
-                    <p>Visualisation en temps réel de vos identités, accès et opérations de provisionnement.</p>
+                <div class="stat-item">
+                    <div class="stat-number">API</div>
+                    <div class="stat-label">REST Complete</div>
                 </div>
-                <div class="feature-card">
-                    <div class="icon">&#128221;</div>
-                    <h3>Audit & Conformité</h3>
-                    <p>Traçabilité complète pour répondre aux exigences RGPD et aux audits de sécurité.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="icon">&#128640;</div>
-                    <h3>API REST Complète</h3>
-                    <p>Interface programmatique pour une intégration et une automatisation avancées.</p>
+                <div class="stat-item">
+                    <div class="stat-number">IA</div>
+                    <div class="stat-label">Recherche Semantique</div>
                 </div>
             </div>
+        </section>
 
-            <!-- Team -->
-            <div class="team-section">
-                <div class="team-group">
-                    <div class="team-label">Equipe MOE</div>
-                    <div class="team-names">Zhmuryk Andrii &amp; Aydin Ibrahim</div>
-                </div>
-                <div class="team-group">
-                    <div class="team-label">Product Owner &amp; Architecture</div>
-                    <div class="team-names">M. CHIBANI</div>
-                </div>
-                <div class="team-group">
-                    <div class="team-label">Organisation</div>
-                    <div class="team-names">NEXUS AI Innovation Lab</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <div class="footer-content">
-                <h3>Prêt à simplifier votre IAM ?</h3>
-                <p>Découvrez notre démonstration live</p>
-            </div>
-            <div class="tech-logos">
-                <div class="tech-logo">
-                    <div class="icon">&#127760;</div>
-                    <span>MidPoint</span>
-                </div>
-                <div class="tech-logo">
-                    <div class="icon">&#9889;</div>
+        <!-- Tech Stack -->
+        <section class="tech-section">
+            <div class="tech-row">
+                <div class="tech-item">
+                    <span class="tech-icon">&#9889;</span>
                     <span>FastAPI</span>
                 </div>
-                <div class="tech-logo">
-                    <div class="icon">&#9883;</div>
+                <div class="tech-item">
+                    <span class="tech-icon">&#9883;</span>
                     <span>React</span>
                 </div>
-                <div class="tech-logo">
-                    <div class="icon">&#128193;</div>
+                <div class="tech-item">
+                    <span class="tech-icon">&#127760;</span>
+                    <span>MidPoint</span>
+                </div>
+                <div class="tech-item">
+                    <span class="tech-icon">&#128193;</span>
                     <span>LDAP</span>
                 </div>
-                <div class="tech-logo">
-                    <div class="icon">&#128273;</div>
+                <div class="tech-item">
+                    <span class="tech-icon">&#128273;</span>
                     <span>Keycloak</span>
                 </div>
-                <div class="tech-logo">
-                    <div class="icon">&#128230;</div>
+                <div class="tech-item">
+                    <span class="tech-icon">&#128230;</span>
                     <span>Docker</span>
                 </div>
+                <div class="tech-item">
+                    <span class="tech-icon">&#128451;</span>
+                    <span>PostgreSQL</span>
+                </div>
+                <div class="tech-item">
+                    <span class="tech-icon">&#128196;</span>
+                    <span>Odoo</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer with Team -->
+        <footer class="footer">
+            <div class="team-grid">
+                <div class="team-group">
+                    <div class="team-role">Equipe MOE</div>
+                    <div class="team-name">Zhmuryk Andrii &amp; Aydin Ibrahim</div>
+                </div>
+                <div class="team-group">
+                    <div class="team-role">Equipe MOA</div>
+                    <div class="team-name">Zhmuryk Andrii</div>
+                </div>
+                <div class="team-group">
+                    <div class="team-role">Product Owner &amp; Architecture</div>
+                    <div class="team-name">A. CHIBANI</div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-org"><strong>NEXUS AI Innovation Lab</strong> &mdash; IUT de Creteil-Vitry &bull; UPEC</div>
+                <div class="footer-github">GitHub : <strong>NEXUS-AI-Innovation-lab/IAM-Gateway</strong></div>
+                <div class="footer-year">Fevrier 2026</div>
             </div>
         </footer>
     </div>
