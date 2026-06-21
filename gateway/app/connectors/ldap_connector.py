@@ -40,10 +40,13 @@ class LDAPConnector(BaseConnector):
 
     def __init__(self):
         super().__init__()
+        # Borne le temps de connexion pour qu'un annuaire injoignable ne bloque pas
+        self.timeout = 10
         self.server = Server(
             settings.LDAP_HOST,
             port=settings.LDAP_PORT,
-            get_info=ALL
+            get_info=ALL,
+            connect_timeout=self.timeout
         )
         self.bind_dn = settings.LDAP_BIND_DN
         self.bind_password = settings.LDAP_BIND_PASSWORD
@@ -52,14 +55,27 @@ class LDAPConnector(BaseConnector):
         self.groups_ou = f"ou=groups,{self.base_dn}"
 
     def _get_connection(self) -> Connection:
-        """Get LDAP connection."""
-        conn = Connection(
-            self.server,
-            user=self.bind_dn,
-            password=self.bind_password,
-            auto_bind=True
-        )
-        return conn
+        """
+        Ouvre une connexion LDAP avec timeouts et une tentative de reconnexion.
+
+        ldap3 est synchrone: on borne connect_timeout (Server) et receive_timeout
+        (Connection), et on retente une fois en cas d'echec transitoire du bind
+        (annuaire qui redemarre, coupure reseau breve).
+        """
+        last_error = None
+        for attempt in range(2):
+            try:
+                return Connection(
+                    self.server,
+                    user=self.bind_dn,
+                    password=self.bind_password,
+                    auto_bind=True,
+                    receive_timeout=self.timeout
+                )
+            except Exception as e:
+                last_error = e
+                logger.warning("LDAP bind failed, retrying", attempt=attempt + 1, error=str(e))
+        raise last_error
 
     async def test_connection(self) -> bool:
         """Test LDAP connectivity."""
