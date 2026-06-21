@@ -6,6 +6,7 @@ l'analyse dans des outils comme ELK ou Grafana Loki.
 Le niveau de log est configurable via settings.LOG_LEVEL.
 """
 import structlog
+from structlog.contextvars import merge_contextvars
 import logging
 import sys
 
@@ -16,6 +17,7 @@ def setup_logging():
     """Configure structured logging."""
     structlog.configure(
         processors=[
+            merge_contextvars,
             structlog.stdlib.filter_by_level,
             structlog.stdlib.add_logger_name,
             structlog.stdlib.add_log_level,
