@@ -14,6 +14,7 @@ Flux d'authentification :
     4. Client envoie le token dans Authorization: Bearer <token>
     5. Chaque requete : decode JWT + verifie JTI dans blacklist Redis
 """
+import asyncio
 from datetime import datetime, timedelta
 from typing import Optional
 import uuid
@@ -38,8 +39,20 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_password_hash(password: str) -> str:
-    """Hache un mot de passe avec bcrypt (sel aleatoire genere automatiquement)."""
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    """Hache un mot de passe avec bcrypt (sel aleatoire, cout configurable)."""
+    return bcrypt.hashpw(
+        password.encode('utf-8'), bcrypt.gensalt(rounds=settings.BCRYPT_ROUNDS)
+    ).decode('utf-8')
+
+
+async def verify_password_async(plain_password: str, hashed_password: str) -> bool:
+    """Verifie un mot de passe hors de la boucle d'evenements (bcrypt est bloquant et CPU-intensif)."""
+    return await asyncio.to_thread(verify_password, plain_password, hashed_password)
+
+
+async def get_password_hash_async(password: str) -> str:
+    """Hache un mot de passe hors de la boucle d'evenements."""
+    return await asyncio.to_thread(get_password_hash, password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -56,6 +69,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
     to_encode.update({
         "exp": expire,
+        "iss": settings.JWT_ISSUER,
+        "aud": settings.JWT_AUDIENCE,
         "jti": str(uuid.uuid4())  # ID unique pour la revocation via Redis
     })
     encoded_jwt = jwt.encode(
@@ -68,7 +83,11 @@ def decode_token(token: str) -> dict:
     """Decode et valide un token JWT (signature + expiration)."""
     try:
         payload = jwt.decode(
-            token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+            audience=settings.JWT_AUDIENCE,
+            issuer=settings.JWT_ISSUER,
         )
         return payload
     except JWTError as e:

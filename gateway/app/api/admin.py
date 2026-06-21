@@ -28,6 +28,7 @@ from app.core.security import (
     require_role,
     create_access_token,
     verify_password,
+    verify_password_async,
     get_password_hash
 )
 from app.core.config import settings
@@ -112,7 +113,7 @@ async def login_for_access_token(
     # Ensure password is hashed
     _ensure_password_hashed(form_data.username)
 
-    if not verify_password(form_data.password, user["password_hash"]):
+    if not await verify_password_async(form_data.password, user["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
