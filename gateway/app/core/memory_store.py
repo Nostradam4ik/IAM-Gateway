@@ -58,6 +58,8 @@ class MemoryStore:
         self.discrepancies: Dict[str, List[Any]] = {}
         self.workflows: Dict[str, Any] = {}
         self._cache_loaded = False
+        # References fortes vers les taches de persistance en cours (evite le GC)
+        self._pending_tasks: set = set()
         # NE PAS charger de donnees de demo - on charge depuis la DB
 
     async def ensure_cache_loaded(self):
@@ -236,18 +238,38 @@ class MemoryStore:
             # En cas d'erreur, on garde des dictionnaires vides
 
     def _run_async(self, coro):
-        """Execute une coroutine de maniere asynchrone."""
+        """
+        Execute une coroutine de persistance sans bloquer la requete HTTP.
+
+        La tache est conservee dans un set (reference forte) pour empecher sa
+        collecte par le GC avant la fin - asyncio ne garde qu'une reference
+        faible, donc une tache non referencee peut etre detruite en cours
+        d'execution et l'ecriture DB perdue silencieusement. Un callback
+        journalise toute exception au lieu de la perdre.
+        """
         try:
             loop = asyncio.get_running_loop()
-            # Si on est dans une loop, creer une task qui s'executera
-            asyncio.ensure_future(coro)
-            return None
         except RuntimeError:
-            # Pas de loop en cours, en creer une nouvelle
+            # Pas de loop en cours: executer immediatement de maniere bloquante
             try:
                 return asyncio.run(coro)
             except Exception as e:
                 logger.error("Failed to run async task", error=str(e))
+            return None
+
+        task = loop.create_task(coro)
+        self._pending_tasks.add(task)
+
+        def _on_done(t: "asyncio.Task") -> None:
+            self._pending_tasks.discard(t)
+            if t.cancelled():
+                return
+            exc = t.exception()
+            if exc is not None:
+                logger.error("Background persistence task failed", error=str(exc))
+
+        task.add_done_callback(_on_done)
+        return None
 
     # Operations
     def save_operation(self, operation_id: str, operation_data: Dict[str, Any]) -> None:

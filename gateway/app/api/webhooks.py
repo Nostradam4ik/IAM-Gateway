@@ -2,12 +2,18 @@
 Webhooks API - Receives notifications from MidPoint
 Handles automatic provisioning to Keycloak
 """
-from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Request, BackgroundTasks, Depends, status
 from typing import Dict, Any, Optional
 from pydantic import BaseModel
+import hmac
+import hashlib
+import secrets as _secrets
 import httpx
 import structlog
 import os
+
+from app.core.config import settings
+from app.core.security import require_role
 
 router = APIRouter(prefix="/api/v1/webhooks", tags=["Webhooks"])
 logger = structlog.get_logger()
@@ -91,7 +97,7 @@ class KeycloakProvisioner:
             "emailVerified": True,
             "credentials": [{
                 "type": "password",
-                "value": "changeme123",
+                "value": _secrets.token_urlsafe(24),
                 "temporary": True
             }]
         }
@@ -229,7 +235,46 @@ async def process_user_change(user_event: UserChangeEvent):
     logger.info("Keycloak provisioning result", **result)
 
 
-@router.post("/midpoint/user-change")
+async def verify_midpoint_signature(request: Request) -> None:
+    """
+    Authentifie un webhook entrant de MidPoint via HMAC-SHA256.
+
+    MidPoint doit signer le corps brut de la requete avec un secret partage
+    (settings.MIDPOINT_WEBHOOK_SECRET) et envoyer la signature hex dans l'en-tete
+    X-MidPoint-Signature. La verification se fait en temps constant AVANT tout
+    traitement, afin qu'un appelant non authentifie ne puisse pas creer/modifier/
+    supprimer des comptes Keycloak.
+    """
+    # Lire le corps une seule fois (mis en cache pour request.json() du handler)
+    body = await request.body()
+    secret = settings.MIDPOINT_WEBHOOK_SECRET
+
+    if not secret:
+        if settings.DEBUG:
+            logger.warning(
+                "MIDPOINT_WEBHOOK_SECRET non configure - verification ignoree (DEBUG uniquement)"
+            )
+            return
+        logger.error("MIDPOINT_WEBHOOK_SECRET non configure - webhook rejete")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Webhook authentication not configured",
+        )
+
+    signature = request.headers.get("X-MidPoint-Signature", "")
+    if signature.startswith("sha256="):
+        signature = signature.split("=", 1)[1]
+
+    expected = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, signature):
+        logger.warning("Signature de webhook MidPoint invalide")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid webhook signature",
+        )
+
+
+@router.post("/midpoint/user-change", dependencies=[Depends(verify_midpoint_signature)])
 async def midpoint_user_change_webhook(
     request: Request,
     background_tasks: BackgroundTasks
@@ -260,7 +305,10 @@ async def midpoint_user_change_webhook(
 
 
 @router.post("/midpoint/sync-all")
-async def sync_all_to_keycloak(background_tasks: BackgroundTasks):
+async def sync_all_to_keycloak(
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(require_role(["admin"])),
+):
     """
     Manually trigger synchronization of all MidPoint users to Keycloak.
 

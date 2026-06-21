@@ -96,7 +96,7 @@ class EmailService:
 
             context = ssl.create_default_context()
 
-            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=15) as server:
                 server.starttls(context=context)
                 if self.smtp_user and self.smtp_password:
                     server.login(self.smtp_user, self.smtp_password)

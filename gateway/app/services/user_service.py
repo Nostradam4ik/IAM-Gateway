@@ -7,7 +7,8 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 import structlog
-import bcrypt
+
+from app.core.security import get_password_hash_async
 
 logger = structlog.get_logger()
 
@@ -126,8 +127,8 @@ class UserService:
             L'utilisateur cree ou None si erreur
         """
         try:
-            # Hash du mot de passe
-            password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            # Hash du mot de passe (hors de la boucle d'evenements - bcrypt bloque)
+            password_hash = await get_password_hash_async(password)
 
             # Role principal = premier role de la liste
             primary_role = roles[0] if roles else "viewer"

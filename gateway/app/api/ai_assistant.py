@@ -18,7 +18,7 @@ from pydantic import BaseModel
 import structlog
 from sqlalchemy import text
 
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_role
 from app.core.database import get_session
 from app.services.ai_agent import AIAgent
 from app.services.audit_service import AuditService
@@ -268,19 +268,13 @@ async def get_ai_config(
 @router.post("/config", response_model=AIConfigResponse)
 async def update_ai_config(
     config: AIConfigRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role(["admin"])),
     session=Depends(get_session)
 ):
     """
     Met a jour la configuration de l'IA.
     Seuls les administrateurs peuvent modifier cette configuration.
     """
-    if "admin" not in current_user.get("roles", []):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Seuls les administrateurs peuvent configurer l'IA"
-        )
-
     try:
         # Creer la table si elle n'existe pas
         await session.execute(text("""

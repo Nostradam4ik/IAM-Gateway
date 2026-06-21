@@ -15,10 +15,22 @@ Sections :
   - Qdrant : URL (recherche semantique audit)
   - Email/SMTP : configuration envoi notifications
 """
+import secrets as _secrets
+import warnings
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, model_validator
 from typing import List
-import os
+
+
+# Known insecure placeholder secret values that must never reach production.
+_INSECURE_SECRETS = frozenset({
+    "",
+    "change-me-in-production",
+    "change-me-in-production-use-openssl-rand-hex-32",
+    "your-secret-key-change-in-production",
+    "jwt-secret-key-change-in-production",
+    "jwt-secret-change-in-production",
+})
 
 
 class Settings(BaseSettings):
@@ -27,7 +39,7 @@ class Settings(BaseSettings):
     # Application
     APP_NAME: str = "Gateway IAM"
     DEBUG: bool = Field(default=False)
-    SECRET_KEY: str = Field(default="your-secret-key-change-in-production")
+    SECRET_KEY: str = Field(default="")
 
     # Database
     DATABASE_URL: str = Field(
@@ -40,6 +52,8 @@ class Settings(BaseSettings):
     MIDPOINT_USER: str = Field(default="administrator")
     MIDPOINT_PASSWORD: str = Field(default="5ecr3t")
     MIDPOINT_ENABLED: bool = Field(default=True)  # Use MidPoint as central hub
+    MIDPOINT_VERIFY_SSL: bool = Field(default=True)  # Verify TLS certs on MidPoint REST calls
+    MIDPOINT_WEBHOOK_SECRET: str = Field(default="")  # HMAC shared secret for inbound MidPoint webhooks
 
     # LDAP/AD
     LDAP_HOST: str = Field(default="localhost")
@@ -80,9 +94,13 @@ class Settings(BaseSettings):
     )
 
     # JWT
-    JWT_SECRET_KEY: str = Field(default="jwt-secret-key-change-in-production")
+    JWT_SECRET_KEY: str = Field(default="")
     JWT_ALGORITHM: str = Field(default="HS256")
     JWT_EXPIRE_MINUTES: int = Field(default=60)
+    JWT_ISSUER: str = Field(default="iam-gateway")
+    JWT_AUDIENCE: str = Field(default="iam-gateway")
+    # Password hashing
+    BCRYPT_ROUNDS: int = Field(default=12)
 
     # Workflow
     WORKFLOW_DEFAULT_TIMEOUT_HOURS: int = Field(default=72)
@@ -98,7 +116,35 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = Field(default="")
     FROM_EMAIL: str = Field(default="noreply@iam-gateway.local")
     BASE_URL: str = Field(default="http://localhost:8000")
-    DEV_MODE: bool = Field(default=True)
+    DEV_MODE: bool = Field(default=False)
+
+    @model_validator(mode="after")
+    def _enforce_secret_strength(self) -> "Settings":
+        """
+        Fail fast in production when signing secrets are missing or weak.
+
+        In DEBUG mode an ephemeral strong secret is generated so local dev and
+        tests still work without committing real secrets; in non-DEBUG mode a
+        missing or placeholder secret raises at startup, so no insecure default
+        can silently ship to production and enable JWT forgery.
+        """
+        for name in ("SECRET_KEY", "JWT_SECRET_KEY"):
+            value = getattr(self, name) or ""
+            if value not in _INSECURE_SECRETS and len(value) >= 32:
+                continue
+            if self.DEBUG:
+                setattr(self, name, _secrets.token_urlsafe(48))
+                warnings.warn(
+                    f"{name} was unset/weak; generated an ephemeral DEBUG secret. "
+                    f"Set a strong {name} via the environment for any real deployment.",
+                    stacklevel=2,
+                )
+            else:
+                raise RuntimeError(
+                    f"{name} must be set to a strong random value (>= 32 chars) when DEBUG is false. "
+                    "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(48))\""
+                )
+        return self
 
     class Config:
         env_file = ".env"

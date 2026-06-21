@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (lint, test, audit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gateway
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        continue-on-error: true   # legacy code has known lint debt; surface but don't gate yet
+        run: ruff check app
+
+      - name: Tests
+        run: pytest -q
+
+      - name: Dependency vulnerability audit
+        continue-on-error: true
+        run: pip-audit -r requirements.txt
+
+  frontend:
+    name: Frontend (lint, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gateway/frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      # No package-lock.json is committed (it's gitignored), so npm caching is
+      # disabled — setup-node's npm cache requires a lockfile to resolve.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Build
+        run: npm run build

@@ -459,11 +459,11 @@ class MidPointResourceService:
             import httpx
             from app.core.config import settings
 
-            async with httpx.AsyncClient(verify=False) as client:
+            async with httpx.AsyncClient(verify=settings.MIDPOINT_VERIFY_SSL) as client:
                 response = await client.post(
                     f"{settings.MIDPOINT_URL}/ws/rest/resources",
                     json=resource_object,
-                    auth=(settings.MIDPOINT_USERNAME, settings.MIDPOINT_PASSWORD),
+                    auth=(settings.MIDPOINT_USER, settings.MIDPOINT_PASSWORD),
                     headers={"Content-Type": "application/json"},
                     timeout=30.0
                 )
@@ -549,11 +549,11 @@ class MidPointResourceService:
                 }
             }
 
-            async with httpx.AsyncClient(verify=False) as client:
+            async with httpx.AsyncClient(verify=settings.MIDPOINT_VERIFY_SSL) as client:
                 response = await client.patch(
                     f"{settings.MIDPOINT_URL}/ws/rest/resources/{resource_oid}",
                     json=modification,
-                    auth=(settings.MIDPOINT_USERNAME, settings.MIDPOINT_PASSWORD),
+                    auth=(settings.MIDPOINT_USER, settings.MIDPOINT_PASSWORD),
                     headers={"Content-Type": "application/json"},
                     timeout=30.0
                 )
@@ -585,10 +585,10 @@ class MidPointResourceService:
             import httpx
             from app.core.config import settings
 
-            async with httpx.AsyncClient(verify=False) as client:
+            async with httpx.AsyncClient(verify=settings.MIDPOINT_VERIFY_SSL) as client:
                 response = await client.delete(
                     f"{settings.MIDPOINT_URL}/ws/rest/resources/{resource_oid}",
-                    auth=(settings.MIDPOINT_USERNAME, settings.MIDPOINT_PASSWORD),
+                    auth=(settings.MIDPOINT_USER, settings.MIDPOINT_PASSWORD),
                     timeout=30.0
                 )
 
@@ -619,10 +619,10 @@ class MidPointResourceService:
             import httpx
             from app.core.config import settings
 
-            async with httpx.AsyncClient(verify=False) as client:
+            async with httpx.AsyncClient(verify=settings.MIDPOINT_VERIFY_SSL) as client:
                 response = await client.post(
                     f"{settings.MIDPOINT_URL}/ws/rest/resources/{resource_oid}/test",
-                    auth=(settings.MIDPOINT_USERNAME, settings.MIDPOINT_PASSWORD),
+                    auth=(settings.MIDPOINT_USER, settings.MIDPOINT_PASSWORD),
                     headers={"Content-Type": "application/json"},
                     timeout=60.0
                 )
@@ -666,10 +666,10 @@ class MidPointResourceService:
             import httpx
             from app.core.config import settings
 
-            async with httpx.AsyncClient(verify=False) as client:
+            async with httpx.AsyncClient(verify=settings.MIDPOINT_VERIFY_SSL) as client:
                 response = await client.get(
                     f"{settings.MIDPOINT_URL}/ws/rest/resources/{resource_oid}",
-                    auth=(settings.MIDPOINT_USERNAME, settings.MIDPOINT_PASSWORD),
+                    auth=(settings.MIDPOINT_USER, settings.MIDPOINT_PASSWORD),
                     headers={"Accept": "application/json"},
                     timeout=30.0
                 )
@@ -710,10 +710,10 @@ class MidPointResourceService:
             import httpx
             from app.core.config import settings
 
-            async with httpx.AsyncClient(verify=False) as client:
+            async with httpx.AsyncClient(verify=settings.MIDPOINT_VERIFY_SSL) as client:
                 response = await client.get(
                     f"{settings.MIDPOINT_URL}/ws/rest/resources",
-                    auth=(settings.MIDPOINT_USERNAME, settings.MIDPOINT_PASSWORD),
+                    auth=(settings.MIDPOINT_USER, settings.MIDPOINT_PASSWORD),
                     headers={"Accept": "application/json"},
                     timeout=30.0
                 )

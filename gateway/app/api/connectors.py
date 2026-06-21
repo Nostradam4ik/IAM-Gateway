@@ -283,10 +283,10 @@ async def test_connector(
 @router.post("/test-preview", response_model=ConnectorTestResult)
 async def test_connector_preview(
     data: ConnectorTestRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role(["admin"])),
     session=Depends(get_session)
 ):
-    """Teste une configuration avant de la sauvegarder."""
+    """Teste une configuration avant de la sauvegarder (admin uniquement: cible arbitraire = risque SSRF)."""
     service = ConnectorManagementService(session)
 
     result = await service.test_connection_preview(

@@ -1,0 +1,5 @@
+# Shell scripts must use LF so they run under bash/WSL2 even when edited on Windows.
+*.sh text eol=lf
+
+# Normalize text files; let Git handle line endings.
+* text=auto

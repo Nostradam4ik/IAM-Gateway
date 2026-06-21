@@ -17,7 +17,11 @@ logger = structlog.get_logger()
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
-    future=True
+    future=True,
+    pool_pre_ping=True,   # detect & replace stale connections (e.g. after a PG restart)
+    pool_recycle=1800,    # recycle connections every 30 min (avoids proxy idle drops)
+    pool_size=10,
+    max_overflow=20,
 )
 
 async_session = sessionmaker(
@@ -33,6 +37,10 @@ async def init_db():
 
 
 async def get_session() -> AsyncSession:
-    """Get database session."""
+    """Get database session, rolling back on unhandled exceptions."""
     async with async_session() as session:
-        yield session
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise

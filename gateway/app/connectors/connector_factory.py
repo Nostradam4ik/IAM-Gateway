@@ -7,6 +7,7 @@ ou la configuration statique (.env). Retourne l'instance appropriee
 en fonction du type/sous-type demande.
 """
 from typing import Dict, Optional, Any
+import re
 import structlog
 
 from app.connectors.base import BaseConnector
@@ -16,6 +17,16 @@ from app.connectors.odoo_connector import OdooConnector
 from app.connectors.midpoint_connector import MidPointConnector
 
 logger = structlog.get_logger()
+
+# SQL identifiers (column names) must never be derived unescaped from user input.
+_SQL_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _safe_sql_identifier(name: str) -> str:
+    """Validate a SQL identifier (column name) against a strict allowlist."""
+    if not isinstance(name, str) or not _SQL_IDENTIFIER_RE.match(name):
+        raise ValueError(f"Invalid SQL identifier: {name!r}")
+    return name
 
 
 class DynamicConnector(BaseConnector):
@@ -50,8 +61,9 @@ class DynamicConnector(BaseConnector):
         conn = await self._get_sql_connection()
         try:
             if operation_type == "create":
-                # Insert générique - peut être customisé via les règles
-                columns = ", ".join(user_data.keys())
+                # Insert générique - les noms de colonnes sont valides contre une
+                # allowlist stricte pour empecher l'injection SQL via les cles JSON.
+                columns = ", ".join(_safe_sql_identifier(k) for k in user_data.keys())
                 placeholders = ", ".join(f"${i+1}" for i in range(len(user_data)))
                 query = f"INSERT INTO users ({columns}) VALUES ({placeholders}) RETURNING id"
                 result = await conn.fetchval(query, *user_data.values())
@@ -60,7 +72,7 @@ class DynamicConnector(BaseConnector):
                 user_id = user_data.pop("id", None)
                 if not user_id:
                     return {"success": False, "error": "Missing user id"}
-                sets = ", ".join(f"{k} = ${i+2}" for i, k in enumerate(user_data.keys()))
+                sets = ", ".join(f"{_safe_sql_identifier(k)} = ${i+2}" for i, k in enumerate(user_data.keys()))
                 query = f"UPDATE users SET {sets} WHERE id = $1"
                 await conn.execute(query, user_id, *user_data.values())
                 return {"success": True, "updated": user_id}
@@ -75,7 +87,8 @@ class DynamicConnector(BaseConnector):
 
     async def _provision_ldap(self, operation_type: str, user_data: dict) -> dict:
         """Provision vers LDAP dynamique."""
-        from ldap3 import Server, Connection, ALL, SUBTREE
+        from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_REPLACE
+        from ldap3.utils.dn import escape_rdn
 
         server = Server(
             self.config.get("host"),
@@ -97,7 +110,7 @@ class DynamicConnector(BaseConnector):
 
             if operation_type == "create":
                 uid = user_data.get("uid") or user_data.get("username")
-                dn = f"uid={uid},{users_ou},{base_dn}"
+                dn = f"uid={escape_rdn(uid)},{users_ou},{base_dn}"
 
                 attributes = {
                     "objectClass": ["inetOrgPerson", "posixAccount", "top"],
@@ -119,7 +132,7 @@ class DynamicConnector(BaseConnector):
 
             elif operation_type == "update":
                 uid = user_data.get("uid") or user_data.get("username")
-                dn = f"uid={uid},{users_ou},{base_dn}"
+                dn = f"uid={escape_rdn(uid)},{users_ou},{base_dn}"
 
                 changes = {}
                 for key, value in user_data.items():
@@ -132,7 +145,7 @@ class DynamicConnector(BaseConnector):
 
             elif operation_type == "delete":
                 uid = user_data.get("uid") or user_data.get("username")
-                dn = f"uid={uid},{users_ou},{base_dn}"
+                dn = f"uid={escape_rdn(uid)},{users_ou},{base_dn}"
                 conn.delete(dn)
                 return {"success": conn.result["result"] == 0, "deleted": dn}
 

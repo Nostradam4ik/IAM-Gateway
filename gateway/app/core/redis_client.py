@@ -202,17 +202,24 @@ class RedisClient:
 
     # ==================== Rate Limiting ====================
 
+    # Script Lua atomique: incremente et pose le TTL en une seule operation
+    # (evite la fenetre INCR/EXPIRE non atomique qui laissait des cles sans TTL).
+    _RATE_LIMIT_LUA = (
+        "local c = redis.call('INCR', KEYS[1]) "
+        "if c == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end "
+        "return c"
+    )
+
     async def check_rate_limit(self, key: str, max_requests: int = 10, window_seconds: int = 60) -> bool:
-        """Verifie et incremente le compteur de rate limiting. Retourne True si autorise."""
+        """Verifie et incremente le compteur de rate limiting (atomique). Retourne True si autorise."""
         if not self._redis:
-            return True  # Si Redis est down, on ne bloque pas
+            return True  # Redis indisponible: on ne bloque pas (disponibilite > defense-en-profondeur)
         try:
             rate_key = f"rate:{key}"
-            current = await self._redis.incr(rate_key)
-            if current == 1:
-                await self._redis.expire(rate_key, window_seconds)
-            return current <= max_requests
-        except Exception:
+            current = await self._redis.eval(self._RATE_LIMIT_LUA, 1, rate_key, window_seconds)
+            return int(current) <= max_requests
+        except Exception as e:
+            logger.warning("Rate limit check failed (allowing)", error=str(e))
             return True
 
 

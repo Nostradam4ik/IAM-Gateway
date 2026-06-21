@@ -13,10 +13,17 @@ Services geres au demarrage :
     4. Qdrant : moteur de recherche vectorielle pour logs d'audit semantique
     5. APScheduler : planificateur de taches periodiques (reconciliation, sync)
 """
-from fastapi import FastAPI
+import time
+import uuid
+import contextvars
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
 import structlog
+from structlog.contextvars import bind_contextvars, clear_contextvars
 
 # Import de tous les modules API definissant les routeurs REST
 from app.api import provision, rules, workflow, reconcile, ai_assistant, admin, live_comparison, permissions, connectors, webhooks, midpoint, scheduler, ldap_groups, users
@@ -29,6 +36,9 @@ from app.core.qdrant_store import qdrant_store
 from app.services.scheduler_service import init_scheduler, shutdown_scheduler
 
 logger = structlog.get_logger()
+
+# Identifiant de correlation propage par requete (logs + en-tete X-Request-ID)
+_request_id_ctx: contextvars.ContextVar = contextvars.ContextVar("request_id", default=None)
 
 
 @asynccontextmanager
@@ -91,9 +101,52 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
+
+
+@app.middleware("http")
+async def request_context_middleware(request: Request, call_next):
+    """Genere/propage un X-Request-ID, le lie aux logs et journalise chaque requete."""
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    _request_id_ctx.set(request_id)
+    clear_contextvars()
+    bind_contextvars(request_id=request_id, method=request.method, path=request.url.path)
+    start = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        duration_ms = round((time.perf_counter() - start) * 1000, 2)
+        logger.error("Unhandled exception", error=str(exc), duration_ms=duration_ms, exc_info=True)
+        response = JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error", "request_id": request_id},
+        )
+    response.headers["X-Request-ID"] = request_id
+    duration_ms = round((time.perf_counter() - start) * 1000, 2)
+    logger.info("request", status_code=response.status_code, duration_ms=duration_ms)
+    return response
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Reponse d'erreur coherente pour les HTTPException (conserve 'detail')."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "request_id": _request_id_ctx.get()},
+        headers=getattr(exc, "headers", None),
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Reponse coherente pour les erreurs de validation (422)."""
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "request_id": _request_id_ctx.get()},
+    )
+
 
 # =============================================================================
 # ENREGISTREMENT DES ROUTEURS (ENDPOINTS API)

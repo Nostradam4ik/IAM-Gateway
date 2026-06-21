@@ -16,6 +16,7 @@ from datetime import datetime
 import json
 import uuid
 import time
+import asyncio
 import structlog
 from sqlalchemy import text
 
@@ -369,31 +370,37 @@ class ConnectorManagementService:
         subtype: ConnectorSubtype,
         config: Dict[str, Any]
     ) -> ConnectorTestResult:
-        """Teste une connexion LDAP."""
-        try:
+        """Teste une connexion LDAP (I/O bloquant ldap3 deporte hors de la boucle)."""
+        timeout = config.get("timeout", 10)
+
+        def _probe():
             from ldap3 import Server, Connection, ALL
 
             server = Server(
                 config.get("host", "localhost"),
                 port=config.get("port", 389),
                 use_ssl=config.get("use_ssl", False),
-                get_info=ALL
+                get_info=ALL,
+                connect_timeout=timeout
             )
 
             conn = Connection(
                 server,
                 user=config.get("bind_dn"),
                 password=config.get("bind_password"),
-                auto_bind=True
+                auto_bind=True,
+                receive_timeout=timeout
             )
 
-            # Test recherche
             base_dn = config.get("base_dn")
             conn.search(base_dn, "(objectClass=*)", size_limit=1)
 
             server_info = str(server.info)[:100] if server.info else "Unknown"
             conn.unbind()
+            return server_info, base_dn
 
+        try:
+            server_info, base_dn = await asyncio.to_thread(_probe)
             return ConnectorTestResult(
                 success=True,
                 message="Connexion LDAP reussie",
@@ -474,21 +481,23 @@ class ConnectorManagementService:
         subtype: ConnectorSubtype,
         config: Dict[str, Any]
     ) -> ConnectorTestResult:
-        """Teste une connexion ERP."""
+        """Teste une connexion ERP (XML-RPC bloquant deporte hors de la boucle)."""
         try:
             if subtype == ConnectorSubtype.ODOO:
-                import xmlrpc.client
+                def _probe():
+                    import xmlrpc.client
 
-                url = config.get("url", "").rstrip("/")
-                db = config.get("database")
-                username = config.get("username")
-                password = config.get("password")
+                    url = config.get("url", "").rstrip("/")
+                    db = config.get("database")
+                    username = config.get("username")
+                    password = config.get("password")
 
-                # Test authentification
-                common = xmlrpc.client.ServerProxy(f"{url}/xmlrpc/2/common")
-                version = common.version()
+                    common = xmlrpc.client.ServerProxy(f"{url}/xmlrpc/2/common")
+                    version = common.version()
+                    uid = common.authenticate(db, username, password, {})
+                    return version, uid
 
-                uid = common.authenticate(db, username, password, {})
+                version, uid = await asyncio.to_thread(_probe)
                 if uid:
                     return ConnectorTestResult(
                         success=True,

@@ -16,7 +16,7 @@ Authentification :
     Les mots de passe ne sont haches qu'a la premiere utilisation pour eviter
     le cout du hachage au demarrage.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
@@ -28,6 +28,7 @@ from app.core.security import (
     require_role,
     create_access_token,
     verify_password,
+    verify_password_async,
     get_password_hash
 )
 from app.core.config import settings
@@ -97,22 +98,39 @@ class SystemStatusResponse(BaseModel):
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends()
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    session=Depends(get_session)
 ):
     """Authentification et obtention d'un token JWT."""
-    user = TEMP_USERS.get(form_data.username)
-
-    if not user:
+    # Rate limiting anti-brute-force (par IP + username)
+    client_ip = request.client.host if request.client else "unknown"
+    allowed = await redis_client.check_rate_limit(
+        f"login:{client_ip}:{form_data.username}", max_requests=10, window_seconds=300
+    )
+    if not allowed:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts, please try again later",
         )
 
-    # Ensure password is hashed
-    _ensure_password_hashed(form_data.username)
+    username = form_data.username
+    password_hash = None
+    roles = []
 
-    if not verify_password(form_data.password, user["password_hash"]):
+    # 1) Source d'authentification principale: la table gateway_users
+    from app.services.user_service import UserService
+    db_user = await UserService(session).get_user_by_username(username)
+    if db_user and db_user.get("is_active") and db_user.get("password_hash"):
+        password_hash = db_user["password_hash"]
+        roles = db_user.get("roles") or ([db_user["role"]] if db_user.get("role") else [])
+    elif settings.DEBUG and username in TEMP_USERS:
+        # Fixture de developpement uniquement - jamais active hors DEBUG
+        _ensure_password_hashed(username)
+        password_hash = TEMP_USERS[username]["password_hash"]
+        roles = TEMP_USERS[username]["roles"]
+
+    if not password_hash or not await verify_password_async(form_data.password, password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -121,11 +139,11 @@ async def login_for_access_token(
 
     access_token_expires = timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user["username"], "roles": user["roles"]},
+        data={"sub": username, "roles": roles},
         expires_delta=access_token_expires
     )
 
-    logger.info("User logged in", username=form_data.username)
+    logger.info("User logged in", username=username)
 
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -185,10 +203,10 @@ async def get_system_status(
     midpoint_status = "error"
     try:
         import httpx
-        async with httpx.AsyncClient(timeout=5.0, verify=False) as client:
+        async with httpx.AsyncClient(timeout=5.0, verify=settings.MIDPOINT_VERIFY_SSL) as client:
             resp = await client.get(
                 f"{settings.MIDPOINT_URL}/ws/rest/self",
-                auth=("administrator", "5ecr3t")
+                auth=(settings.MIDPOINT_USER, settings.MIDPOINT_PASSWORD)
             )
             if resp.status_code in (200, 240):
                 midpoint_status = "healthy"
