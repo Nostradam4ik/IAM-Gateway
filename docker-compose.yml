@@ -7,6 +7,7 @@ services:
   midpoint-postgres:
     image: postgres:15
     container_name: midpoint-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: midpoint
       POSTGRES_USER: midpoint
@@ -26,6 +27,7 @@ services:
   midpoint:
     image: evolveum/midpoint:4.4
     container_name: midpoint-core
+    mem_limit: 3g
     depends_on:
       midpoint-postgres:
         condition: service_healthy
@@ -56,6 +58,7 @@ services:
       context: ./gateway
       dockerfile: Dockerfile
     container_name: gateway-iam
+    mem_limit: 768m
     depends_on:
       gateway-db:
         condition: service_healthy
@@ -122,6 +125,7 @@ services:
   gateway-db:
     image: postgres:15
     container_name: gateway-db
+    restart: unless-stopped
     environment:
       POSTGRES_DB: gateway
       POSTGRES_USER: gateway
@@ -177,6 +181,7 @@ services:
   qdrant:
     image: qdrant/qdrant:v1.12.4
     container_name: gateway-qdrant
+    mem_limit: 1g
     ports:
       - "127.0.0.1:6333:6333"
       - "127.0.0.1:6334:6334"
@@ -213,6 +218,7 @@ services:
   phpldapadmin:
     image: osixia/phpldapadmin:0.9.0
     container_name: phpldapadmin
+    restart: unless-stopped
     depends_on:
       - openldap
     environment:
@@ -226,6 +232,7 @@ services:
   odoo-db:
     image: postgres:15
     container_name: odoo-db
+    restart: unless-stopped
     environment:
       POSTGRES_DB: odoo
       POSTGRES_USER: odoo
@@ -243,6 +250,7 @@ services:
   odoo:
     image: odoo:17
     container_name: odoo
+    mem_limit: 1g
     depends_on:
       odoo-db:
         condition: service_healthy
@@ -263,6 +271,7 @@ services:
   intranet-db:
     image: postgres:15
     container_name: intranet-db
+    restart: unless-stopped
     environment:
       POSTGRES_DB: intranet
       POSTGRES_USER: intranet
@@ -286,6 +295,7 @@ services:
   keycloak-db:
     image: postgres:15
     container_name: keycloak-db
+    restart: unless-stopped
     environment:
       POSTGRES_DB: keycloak
       POSTGRES_USER: keycloak
@@ -303,6 +313,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:23.0
     container_name: keycloak
+    mem_limit: 1g
     depends_on:
       keycloak-db:
         condition: service_healthy
