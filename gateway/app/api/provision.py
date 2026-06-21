@@ -18,7 +18,7 @@ from app.models.provision import (
     OperationStatus,
     TargetSystem
 )
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_role
 from app.core.database import get_session
 from app.core.config import settings
 from app.core.memory_store import memory_store
@@ -36,7 +36,7 @@ logger = structlog.get_logger()
 async def provision_account(
     request: ProvisioningRequest,
     background_tasks: BackgroundTasks,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"])),
     session=Depends(get_session)
 ):
     """
@@ -413,7 +413,7 @@ async def get_operation_status(
 @router.post("/{operation_id}/rollback")
 async def rollback_operation(
     operation_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"])),
     session=Depends(get_session)
 ):
     """Annule une operation de provisionnement (rollback)."""
@@ -476,7 +476,7 @@ async def update_operation(
     operation_id: str,
     request: ProvisioningRequest,
     background_tasks: BackgroundTasks,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"])),
     session=Depends(get_session)
 ):
     """
@@ -565,7 +565,7 @@ async def update_operation(
 @router.delete("/{operation_id}")
 async def delete_operation(
     operation_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role(["admin"])),
     session=Depends(get_session)
 ):
     """
@@ -718,7 +718,7 @@ async def list_midpoint_roles(
 async def assign_role_to_user(
     account_id: str,
     role_name: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role(["admin"])),
     session=Depends(get_session)
 ):
     """Assign a role to a user (triggers provisioning to role's Resources)."""
@@ -752,7 +752,7 @@ async def assign_role_to_user(
 async def remove_role_from_user(
     account_id: str,
     role_name: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role(["admin"])),
     session=Depends(get_session)
 ):
     """Remove a role from a user (may trigger deprovisioning)."""

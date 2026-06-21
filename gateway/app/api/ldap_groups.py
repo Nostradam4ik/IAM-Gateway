@@ -21,6 +21,7 @@ from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_ADD, MODIFY_DELETE
 import structlog
 
 from app.core.config import settings
+from app.core.security import require_role
 from app.api.admin import get_current_user
 
 logger = structlog.get_logger()
@@ -212,7 +213,7 @@ async def get_group_details(group_name: str, current_user: dict = Depends(get_cu
 async def add_member_to_group(
     group_name: str,
     request: AddRemoveMemberRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"]))
 ):
     """
     Ajouter un utilisateur à un groupe LDAP.
@@ -295,7 +296,7 @@ async def add_member_to_group(
 async def remove_member_from_group(
     group_name: str,
     username: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_role(["admin", "iam_engineer"]))
 ):
     """
     Retirer un utilisateur d'un groupe LDAP.

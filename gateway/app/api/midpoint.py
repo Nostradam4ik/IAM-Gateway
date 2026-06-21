@@ -13,7 +13,7 @@ from pydantic import BaseModel
 import structlog
 
 from app.connectors.midpoint_connector import MidPointConnector
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_role
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/midpoint", tags=["MidPoint"])
@@ -96,7 +96,7 @@ async def get_user(
 @router.post("/users")
 async def create_user(
     user: UserCreate,
-    _: dict = Depends(get_current_user)
+    _: dict = Depends(require_role(["admin", "iam_engineer"]))
 ):
     """Crée un nouvel utilisateur dans MidPoint."""
     try:
@@ -131,7 +131,7 @@ async def create_user(
 async def update_user(
     user_id: str,
     user: UserUpdate,
-    _: dict = Depends(get_current_user)
+    _: dict = Depends(require_role(["admin", "iam_engineer"]))
 ):
     """Met à jour un utilisateur dans MidPoint."""
     try:
@@ -156,7 +156,7 @@ async def update_user(
 @router.delete("/users/{user_id}")
 async def delete_user(
     user_id: str,
-    _: dict = Depends(get_current_user)
+    _: dict = Depends(require_role(["admin"]))
 ):
     """Supprime un utilisateur de MidPoint (et de tous les systèmes cibles)."""
     try:
@@ -179,7 +179,7 @@ async def delete_user(
 @router.post("/users/{user_id}/disable")
 async def disable_user(
     user_id: str,
-    _: dict = Depends(get_current_user)
+    _: dict = Depends(require_role(["admin", "iam_engineer"]))
 ):
     """Désactive un utilisateur dans MidPoint."""
     try:
@@ -199,7 +199,7 @@ async def disable_user(
 @router.post("/users/{user_id}/enable")
 async def enable_user(
     user_id: str,
-    _: dict = Depends(get_current_user)
+    _: dict = Depends(require_role(["admin", "iam_engineer"]))
 ):
     """Active un utilisateur dans MidPoint."""
     try:
@@ -239,7 +239,7 @@ async def list_roles(
 async def assign_role(
     user_id: str,
     role_id: str,
-    _: dict = Depends(get_current_user)
+    _: dict = Depends(require_role(["admin"]))
 ):
     """Assigne un rôle à un utilisateur."""
     try:
@@ -264,7 +264,7 @@ async def assign_role(
 async def remove_role(
     user_id: str,
     role_id: str,
-    _: dict = Depends(get_current_user)
+    _: dict = Depends(require_role(["admin"]))
 ):
     """Retire un rôle d'un utilisateur."""
     try:
