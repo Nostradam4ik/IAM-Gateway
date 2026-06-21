@@ -185,10 +185,10 @@ async def get_system_status(
     midpoint_status = "error"
     try:
         import httpx
-        async with httpx.AsyncClient(timeout=5.0, verify=False) as client:
+        async with httpx.AsyncClient(timeout=5.0, verify=settings.MIDPOINT_VERIFY_SSL) as client:
             resp = await client.get(
                 f"{settings.MIDPOINT_URL}/ws/rest/self",
-                auth=("administrator", "5ecr3t")
+                auth=(settings.MIDPOINT_USER, settings.MIDPOINT_PASSWORD)
             )
             if resp.status_code in (200, 240):
                 midpoint_status = "healthy"
