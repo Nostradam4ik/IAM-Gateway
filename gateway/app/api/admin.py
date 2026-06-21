@@ -16,7 +16,7 @@ Authentification :
     Les mots de passe ne sont haches qu'a la premiere utilisation pour eviter
     le cout du hachage au demarrage.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
@@ -98,9 +98,21 @@ class SystemStatusResponse(BaseModel):
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends()
 ):
     """Authentification et obtention d'un token JWT."""
+    # Rate limiting anti-brute-force (par IP + username)
+    client_ip = request.client.host if request.client else "unknown"
+    allowed = await redis_client.check_rate_limit(
+        f"login:{client_ip}:{form_data.username}", max_requests=10, window_seconds=300
+    )
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts, please try again later",
+        )
+
     user = TEMP_USERS.get(form_data.username)
 
     if not user:
