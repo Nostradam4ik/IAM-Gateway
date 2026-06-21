@@ -99,7 +99,8 @@ class SystemStatusResponse(BaseModel):
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
     request: Request,
-    form_data: OAuth2PasswordRequestForm = Depends()
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    session=Depends(get_session)
 ):
     """Authentification et obtention d'un token JWT."""
     # Rate limiting anti-brute-force (par IP + username)
@@ -113,19 +114,23 @@ async def login_for_access_token(
             detail="Too many login attempts, please try again later",
         )
 
-    user = TEMP_USERS.get(form_data.username)
+    username = form_data.username
+    password_hash = None
+    roles = []
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    # 1) Source d'authentification principale: la table gateway_users
+    from app.services.user_service import UserService
+    db_user = await UserService(session).get_user_by_username(username)
+    if db_user and db_user.get("is_active") and db_user.get("password_hash"):
+        password_hash = db_user["password_hash"]
+        roles = db_user.get("roles") or ([db_user["role"]] if db_user.get("role") else [])
+    elif settings.DEBUG and username in TEMP_USERS:
+        # Fixture de developpement uniquement - jamais active hors DEBUG
+        _ensure_password_hashed(username)
+        password_hash = TEMP_USERS[username]["password_hash"]
+        roles = TEMP_USERS[username]["roles"]
 
-    # Ensure password is hashed
-    _ensure_password_hashed(form_data.username)
-
-    if not await verify_password_async(form_data.password, user["password_hash"]):
+    if not password_hash or not await verify_password_async(form_data.password, password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -134,11 +139,11 @@ async def login_for_access_token(
 
     access_token_expires = timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user["username"], "roles": user["roles"]},
+        data={"sub": username, "roles": roles},
         expires_delta=access_token_expires
     )
 
-    logger.info("User logged in", username=form_data.username)
+    logger.info("User logged in", username=username)
 
     return {"access_token": access_token, "token_type": "bearer"}
 
