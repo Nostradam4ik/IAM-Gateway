@@ -18,6 +18,8 @@ Chaque operation ouvre une connexion LDAP, execute l'action, puis ferme la conne
 """
 from typing import Dict, Any, Optional, List
 from ldap3 import Server, Connection, ALL, SUBTREE, MODIFY_ADD, MODIFY_DELETE, MODIFY_REPLACE
+from ldap3.utils.conv import escape_filter_chars
+from ldap3.utils.dn import escape_rdn
 import structlog
 
 from app.connectors.base import BaseConnector
@@ -79,7 +81,7 @@ class LDAPConnector(BaseConnector):
         conn = self._get_connection()
 
         try:
-            dn = f"uid={attributes.get('uid', account_id)},{self.users_ou}"
+            dn = f"uid={escape_rdn(attributes.get('uid', account_id))},{self.users_ou}"
 
             # Build LDAP attributes
             firstname = attributes.get('givenName') or attributes.get('firstname') or ''
@@ -259,7 +261,7 @@ class LDAPConnector(BaseConnector):
             if not user_dn:
                 raise Exception(f"User {account_id} not found")
 
-            group_dn = f"cn={group_id},{self.groups_ou}"
+            group_dn = f"cn={escape_rdn(group_id)},{self.groups_ou}"
 
             result = conn.modify(
                 group_dn,
@@ -284,7 +286,7 @@ class LDAPConnector(BaseConnector):
             if not user_dn:
                 raise Exception(f"User {account_id} not found")
 
-            group_dn = f"cn={group_id},{self.groups_ou}"
+            group_dn = f"cn={escape_rdn(group_id)},{self.groups_ou}"
 
             result = conn.modify(
                 group_dn,
@@ -311,7 +313,7 @@ class LDAPConnector(BaseConnector):
 
             conn.search(
                 search_base=self.groups_ou,
-                search_filter=f"(member={user_dn})",
+                search_filter=f"(member={escape_filter_chars(user_dn)})",
                 search_scope=SUBTREE,
                 attributes=['cn']
             )
@@ -325,7 +327,7 @@ class LDAPConnector(BaseConnector):
         """Find user DN by uid."""
         conn.search(
             search_base=self.users_ou,
-            search_filter=f"(uid={account_id})",
+            search_filter=f"(uid={escape_filter_chars(account_id)})",
             search_scope=SUBTREE,
             attributes=['dn']
         )
