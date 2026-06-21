@@ -53,7 +53,7 @@ async def create_enums(conn):
 
 async def create_tables():
     """Create all database tables aligned with memory_store.py."""
-    engine = create_async_engine(settings.DATABASE_URL, echo=True)
+    engine = create_async_engine(settings.DATABASE_URL, echo=settings.DEBUG)
 
     async with engine.begin() as conn:
         # Create enums first
@@ -543,7 +543,7 @@ async def create_tables():
 
 async def seed_data():
     """Seed initial data."""
-    engine = create_async_engine(settings.DATABASE_URL, echo=True)
+    engine = create_async_engine(settings.DATABASE_URL, echo=settings.DEBUG)
 
     async with engine.begin() as conn:
         # Hash the default admin password using bcrypt directly
