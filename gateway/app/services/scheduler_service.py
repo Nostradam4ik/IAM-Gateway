@@ -15,6 +15,22 @@ import threading
 
 logger = structlog.get_logger()
 
+# References fortes vers les taches de fond (empeche leur collecte par le GC)
+_BACKGROUND_TASKS: set = set()
+
+
+def _track_background_task(task) -> None:
+    """Conserve une reference forte a une tache de fond et journalise ses echecs."""
+    _BACKGROUND_TASKS.add(task)
+
+    def _done(t):
+        _BACKGROUND_TASKS.discard(t)
+        if not t.cancelled() and t.exception() is not None:
+            logger.error("Scheduler background task failed", error=str(t.exception()))
+
+    task.add_done_callback(_done)
+
+
 # ==================== ROLE & GROUP MAPPINGS ====================
 
 # Department to MidPoint Role mapping (role de base par departement)
@@ -876,8 +892,8 @@ class ScheduledSyncService:
         if job_id not in job_status:
             return False
 
-        # Run the sync in background
-        asyncio.create_task(self._execute_odoo_midpoint_sync(job_id))
+        # Run the sync in background (reference retenue pour eviter le GC)
+        _track_background_task(asyncio.create_task(self._execute_odoo_midpoint_sync(job_id)))
         return True
 
     def _get_next_run(self, job_id: str) -> Optional[str]:
