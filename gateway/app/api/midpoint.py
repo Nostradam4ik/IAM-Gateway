@@ -14,6 +14,7 @@ import structlog
 
 from app.connectors.midpoint_connector import MidPointConnector
 from app.core.security import get_current_user, require_role
+from app.models.iam import MidpointRoleList, MidpointResourceList
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/midpoint", tags=["MidPoint"])
@@ -218,7 +219,7 @@ async def enable_user(
 
 # ==================== Roles ====================
 
-@router.get("/roles")
+@router.get("/roles", response_model=MidpointRoleList)
 async def list_roles(
     _: dict = Depends(get_current_user)
 ):
@@ -299,7 +300,7 @@ async def get_user_roles(
 
 # ==================== Resources ====================
 
-@router.get("/resources")
+@router.get("/resources", response_model=MidpointResourceList)
 async def list_resources(
     _: dict = Depends(get_current_user)
 ):
