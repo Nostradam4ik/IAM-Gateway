@@ -42,12 +42,16 @@ class MidPointConnector(BaseConnector):
         self._client: Optional[httpx.AsyncClient] = None
 
     def _get_client(self) -> httpx.AsyncClient:
-        """Get or create HTTP client with authentication."""
+        """Get or create the authenticated HTTP client (reused across calls)."""
         if self._client is None:
             self._client = httpx.AsyncClient(
                 base_url=self.url,
                 auth=(self.username, self.password),
                 timeout=self.timeout,
+                verify=settings.MIDPOINT_VERIFY_SSL,
+                # Retry transient connection failures (e.g. MidPoint mid-restart
+                # while it propagates to downstream Resources).
+                transport=httpx.AsyncHTTPTransport(retries=2),
                 headers={
                     "Content-Type": "application/json",
                     "Accept": "application/json"

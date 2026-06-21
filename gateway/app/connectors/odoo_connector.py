@@ -26,6 +26,19 @@ from app.core.config import settings
 logger = structlog.get_logger()
 
 
+class _TimeoutTransport(xmlrpc.client.Transport):
+    """Transport XML-RPC qui borne le temps des appels reseau (evite les blocages)."""
+
+    def __init__(self, timeout: float = 15.0):
+        super().__init__()
+        self._timeout = timeout
+
+    def make_connection(self, host):
+        conn = super().make_connection(host)
+        conn.timeout = self._timeout
+        return conn
+
+
 class OdooConnector(BaseConnector):
     """
     Connecteur pour Odoo ERP via XML-RPC.
@@ -42,14 +55,21 @@ class OdooConnector(BaseConnector):
         self.db = settings.ODOO_DB
         self.username = settings.ODOO_USER
         self.password = settings.ODOO_PASSWORD
+        self.timeout = 15.0
         self._uid = None
 
+    def _server_proxy(self, endpoint: str) -> xmlrpc.client.ServerProxy:
+        """Build an XML-RPC proxy with a bounded socket timeout."""
+        return xmlrpc.client.ServerProxy(
+            f'{self.url}/xmlrpc/2/{endpoint}', transport=_TimeoutTransport(self.timeout)
+        )
+
     def _authenticate(self) -> int:
-        """Authenticate with Odoo and get user ID."""
+        """Authenticate with Odoo and get user ID (cached until reset)."""
         if self._uid:
             return self._uid
 
-        common = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/common')
+        common = self._server_proxy('common')
         self._uid = common.authenticate(self.db, self.username, self.password, {})
 
         if not self._uid:
@@ -59,10 +79,13 @@ class OdooConnector(BaseConnector):
 
     def _get_models(self):
         """Get Odoo models proxy."""
-        return xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/object')
+        return self._server_proxy('object')
 
     def _execute(self, model: str, method: str, args_list, kwargs_dict=None):
-        """Execute Odoo RPC call.
+        """Execute an Odoo RPC call, re-authenticating once on failure.
+
+        The Odoo uid is cached; if the session has expired or a transient error
+        occurs, reset it and retry once so a stale session does not fail forever.
 
         Args:
             model: Odoo model name (e.g., 'res.users')
@@ -70,22 +93,33 @@ class OdooConnector(BaseConnector):
             args_list: List of positional arguments for the method
             kwargs_dict: Optional dictionary of keyword arguments
         """
-        uid = self._authenticate()
-        models = self._get_models()
-        if kwargs_dict:
-            return models.execute_kw(
-                self.db, uid, self.password,
-                model, method, args_list, kwargs_dict
-            )
-        return models.execute_kw(
-            self.db, uid, self.password,
-            model, method, args_list
-        )
+        last_error = None
+        for attempt in range(2):
+            try:
+                uid = self._authenticate()
+                models = self._get_models()
+                if kwargs_dict:
+                    return models.execute_kw(
+                        self.db, uid, self.password,
+                        model, method, args_list, kwargs_dict
+                    )
+                return models.execute_kw(
+                    self.db, uid, self.password,
+                    model, method, args_list
+                )
+            except Exception as e:
+                last_error = e
+                logger.warning(
+                    "Odoo RPC call failed, re-authenticating",
+                    attempt=attempt + 1, model=model, method=method, error=str(e)
+                )
+                self._uid = None  # forcer une nouvelle authentification au prochain essai
+        raise last_error
 
     async def test_connection(self) -> bool:
         """Test Odoo connectivity."""
         try:
-            common = xmlrpc.client.ServerProxy(f'{self.url}/xmlrpc/2/common')
+            common = self._server_proxy('common')
             version = common.version()
             logger.info("Odoo connected", version=version.get('server_version'))
             return True
