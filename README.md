@@ -22,3 +22,12 @@ Chaque dossier possède un fichier `README.md` décrivant son contenu et la faç
 
 Tous les documents devront référencer l’adresse `achibani@gmail.com` comme co-auteur dans les métadonnées ou en-têtes.
 
+### Licence
+
+Le code source (`gateway/`, `infrastructure/`, `scripts/` et les fichiers de configuration à la racine) est publié sous [licence MIT](LICENSE).
+
+La licence ne couvre **pas** :
+
+- les documents et supports de présentation (`docs/`, `presentations/`, `media/`), qui restent soumis aux règles du projet universitaire et à leurs auteurs ;
+- les logos du laboratoire LISSI et de l'IUT (`Lissi-cmjn.png`, `cropped-Logo-INFO-FOND-BLANC.jpg`), qui appartiennent à leurs propriétaires.
+
