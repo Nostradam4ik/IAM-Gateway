@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 An intelligent multi-target IAM provisioning gateway (SAE student project "Projet 3"). A FastAPI backend (`gateway/app`) + React admin UI (`gateway/frontend`) sit in front of **MidPoint** (the central IAM hub) and a set of target systems (OpenLDAP, Odoo ERP, PostgreSQL "intranet", Keycloak). The gateway adds a dynamic rule engine, multi-level approval workflows, reconciliation, scheduled syncs, an AI assistant, and semantic audit search.
 
-The codebase is primarily **French** (comments, docstrings, log messages, some UI). Match that when editing. Per `README.md`, generated documents/deliverables should credit `achibani@gmail.com` as co-author.
+The codebase is primarily **French** (comments, docstrings, log messages, some UI). Match that when editing. Per `README.md`, generated documents/deliverables should credit the co-author named there.
 
 ## Commands
 
